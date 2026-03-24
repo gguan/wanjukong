@@ -1,10 +1,11 @@
 # wanjukong
 
-Minimal monorepo skeleton with Nuxt 3 (frontend) and NestJS (backend).
+Monorepo for wanjukong — Nuxt 3 frontend, NestJS backend, Nuxt 3 admin dashboard.
 
 ## Tech Stack
 
 - **Frontend:** Nuxt 3 + TypeScript
+- **Admin:** Nuxt 3 + TypeScript + Pinia
 - **Backend:** NestJS + TypeScript
 - **Database:** PostgreSQL 16 + Prisma
 - **Package Manager:** pnpm (workspaces)
@@ -18,7 +19,7 @@ wanjukong/
 │   ├── web/          # Nuxt 3 frontend (port 3000)
 │   ├── admin/        # Nuxt 3 admin dashboard (port 3002)
 │   └── api/          # NestJS backend (port 3001)
-│       └── prisma/   # Prisma schema and migrations
+│       └── prisma/   # Prisma schema, migrations, seed
 ├── infra/
 │   └── docker-compose.yml  # PostgreSQL
 ├── packages/
@@ -28,132 +29,220 @@ wanjukong/
 └── .nvmrc
 ```
 
-## Getting Started
-
-### Prerequisites
-
-- Node.js 20+
-- pnpm 9+
-- Docker (for PostgreSQL) or PostgreSQL 16 installed locally
-
-### Installation
+## Quick Start
 
 ```bash
+# 1. Install dependencies
 pnpm install
-```
 
-### Environment Variables
-
-Copy the example env files:
-
-```bash
-cp apps/web/.env.example apps/web/.env
+# 2. Copy environment files
 cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env
 cp apps/admin/.env.example apps/admin/.env
+
+# 3. Start PostgreSQL (choose one method below)
+
+# 4. Setup database (generate client + run migrations + seed data)
+pnpm db:setup
+
+# 5. Start all apps
+pnpm dev
 ```
 
-### Database Setup
+After step 5, open:
+- Frontend: http://localhost:3000
+- Admin: http://localhost:3002
+- API: http://localhost:3001/api/health
 
-Start PostgreSQL via Docker:
+## Database Setup
+
+The backend requires PostgreSQL. You have two options:
+
+### Option A: Docker (recommended)
+
+Requires [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed.
 
 ```bash
+# Start PostgreSQL container
 pnpm db:up
+
+# Verify it's running
+docker ps | grep wanjukong-postgres
 ```
 
-Run Prisma migrations:
+This starts PostgreSQL with these defaults (defined in `infra/docker-compose.yml`):
 
-```bash
-pnpm db:migrate
-```
+| Setting  | Value      |
+| -------- | ---------- |
+| Host     | localhost  |
+| Port     | 5432       |
+| Database | wanjukong  |
+| User     | postgres   |
+| Password | postgres   |
 
-Generate Prisma client:
+The default `DATABASE_URL` in `.env.example` matches these settings — no changes needed.
 
-```bash
-pnpm db:generate
-```
-
-Seed the database:
-
-```bash
-pnpm db:seed
-```
-
-Stop PostgreSQL:
+To stop PostgreSQL:
 
 ```bash
 pnpm db:down
 ```
 
-### Running
+### Option B: Homebrew (macOS)
 
-Run both frontend and backend:
+If you don't have Docker, install PostgreSQL directly:
 
 ```bash
+brew install postgresql@16
+brew services start postgresql@16
+```
+
+Then create the database:
+
+```bash
+createdb wanjukong
+```
+
+**Important:** Homebrew PostgreSQL uses your macOS username with no password. Update `apps/api/.env`:
+
+```env
+DATABASE_URL=postgresql://YOUR_USERNAME@localhost:5432/wanjukong
+```
+
+Replace `YOUR_USERNAME` with your macOS username (run `whoami` to check).
+
+To stop PostgreSQL:
+
+```bash
+brew services stop postgresql@16
+```
+
+### Initialize the Database
+
+After PostgreSQL is running, set up the schema and seed data:
+
+```bash
+# One command to do it all (generate + migrate + seed)
+pnpm db:setup
+```
+
+Or run each step individually:
+
+```bash
+# Generate Prisma client
+pnpm db:generate
+
+# Run migrations (creates tables)
+pnpm db:migrate
+
+# Seed sample data (brands, categories, products)
+pnpm db:seed
+```
+
+### Reset Database
+
+To drop all data and re-run migrations + seed from scratch:
+
+```bash
+pnpm db:reset
+```
+
+### All Database Scripts
+
+| Script           | Description                                  |
+| ---------------- | -------------------------------------------- |
+| `pnpm db:up`     | Start PostgreSQL via Docker                  |
+| `pnpm db:down`   | Stop PostgreSQL Docker container             |
+| `pnpm db:setup`  | Generate client + migrate + seed (all-in-one)|
+| `pnpm db:generate` | Generate Prisma client from schema         |
+| `pnpm db:migrate`  | Run pending migrations                     |
+| `pnpm db:seed`     | Insert sample data                         |
+| `pnpm db:reset`    | Drop & recreate database with seed         |
+
+## Running
+
+```bash
+# All apps in parallel
 pnpm dev
+
+# Individual apps
+pnpm dev:web      # Frontend  → http://localhost:3000
+pnpm dev:api      # Backend   → http://localhost:3001
+pnpm dev:admin    # Admin     → http://localhost:3002
 ```
 
-Run individually:
+## Default Ports
 
-```bash
-# Frontend only (http://localhost:3000)
-pnpm dev:web
+| App      | Port | URL                    |
+| -------- | ---- | ---------------------- |
+| Frontend | 3000 | http://localhost:3000   |
+| Backend  | 3001 | http://localhost:3001   |
+| Admin    | 3002 | http://localhost:3002   |
 
-# Backend only (http://localhost:3001)
-pnpm dev:api
+## API Endpoints
 
-# Admin only (http://localhost:3002)
-pnpm dev:admin
-```
+### Public
 
-### Build
+| Method | Path                       | Description            |
+| ------ | -------------------------- | ---------------------- |
+| GET    | `/api/health`              | Health check + DB status |
+| GET    | `/api/public/brands`       | List all brands        |
+| GET    | `/api/public/categories`   | List all categories    |
+| GET    | `/api/public/products`     | List active products   |
+| GET    | `/api/public/products/:slug` | Get product by slug  |
+
+### Admin
+
+| Method | Path                         | Description         |
+| ------ | ---------------------------- | ------------------- |
+| GET    | `/api/admin/brands`          | List brands         |
+| POST   | `/api/admin/brands`          | Create brand        |
+| PUT    | `/api/admin/brands/:id`      | Update brand        |
+| DELETE | `/api/admin/brands/:id`      | Delete brand        |
+| GET    | `/api/admin/categories`      | List categories     |
+| POST   | `/api/admin/categories`      | Create category     |
+| PUT    | `/api/admin/categories/:id`  | Update category     |
+| DELETE | `/api/admin/categories/:id`  | Delete category     |
+| GET    | `/api/admin/products`        | List all products   |
+| POST   | `/api/admin/products`        | Create product      |
+| PUT    | `/api/admin/products/:id`    | Update product      |
+| DELETE | `/api/admin/products/:id`    | Delete product      |
+
+## Environment Variables
+
+### Backend (`apps/api/.env`)
+
+| Variable       | Default                                                  | Description             |
+| -------------- | -------------------------------------------------------- | ----------------------- |
+| `PORT`         | `3001`                                                   | API server port         |
+| `CORS_ORIGIN`  | `http://localhost:3000`                                  | Allowed CORS origin     |
+| `DATABASE_URL` | `postgresql://postgres:postgres@localhost:5432/wanjukong` | PostgreSQL connection   |
+
+### Frontend (`apps/web/.env`)
+
+| Variable               | Default                 | Description     |
+| ---------------------- | ----------------------- | --------------- |
+| `NUXT_PUBLIC_API_BASE` | `http://localhost:3001`  | Backend API URL |
+
+### Admin (`apps/admin/.env`)
+
+| Variable                   | Default                 | Description     |
+| -------------------------- | ----------------------- | --------------- |
+| `NUXT_PUBLIC_API_BASE_URL` | `http://localhost:3001`  | Backend API URL |
+
+## Admin Dashboard
+
+The admin dashboard is at http://localhost:3002. It currently uses a **fake login** — any email/password will work. Real authentication will be added in a future step.
+
+## Build
 
 ```bash
 pnpm build
 ```
 
-### Lint & Format
+## Lint & Format
 
 ```bash
 pnpm lint
 pnpm format
 ```
-
-## API Endpoints
-
-| Method | Path          | Description  |
-| ------ | ------------- | ------------ |
-| GET    | `/api/health` | Health check |
-
-## Default Ports
-
-| App      | Port |
-| -------- | ---- |
-| Frontend | 3000 |
-| Admin    | 3002 |
-| Backend  | 3001 |
-
-## Environment Variables
-
-### Frontend (`apps/web/.env`)
-
-| Variable              | Default                 | Description      |
-| --------------------- | ----------------------- | ---------------- |
-| `NUXT_PUBLIC_API_BASE` | `http://localhost:3001` | Backend API URL  |
-
-### Backend (`apps/api/.env`)
-
-| Variable      | Default                 | Description            |
-| ------------- | ----------------------- | ---------------------- |
-| `PORT`        | `3001`                  | API server port        |
-| `CORS_ORIGIN` | `http://localhost:3000` | Allowed CORS origin    |
-| `DATABASE_URL` | `postgresql://postgres:postgres@localhost:5432/wanjukong` | PostgreSQL connection string |
-
-### Admin (`apps/admin/.env`)
-
-| Variable                 | Default                 | Description     |
-| ------------------------ | ----------------------- | --------------- |
-| `NUXT_PUBLIC_API_BASE_URL` | `http://localhost:3001` | Backend API URL |
-
-### Admin Login
-
-The admin app uses a fake login for now. Any email/password will work. Authentication is placeholder only and will be replaced with real auth in a future step.
