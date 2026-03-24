@@ -9,7 +9,12 @@
     "dev:api": "pnpm --filter @wanjukong/api dev",
     "build": "pnpm -r run build",
     "lint": "eslint . --ext .ts,.js,.vue",
-    "format": "prettier --write \"**/*.{ts,js,vue,json,md}\""
+    "format": "prettier --write \"**/*.{ts,js,vue,json,md}\"",
+    "db:up": "docker compose -f infra/docker-compose.yml up -d",
+    "db:down": "docker compose -f infra/docker-compose.yml down",
+    "db:generate": "pnpm --filter @wanjukong/api db:generate",
+    "db:migrate": "pnpm --filter @wanjukong/api db:migrate",
+    "db:seed": "pnpm --filter @wanjukong/api db:seed"
   },
   "engines": {
     "node": ">=20.0.0"
