@@ -16,6 +16,7 @@ Minimal monorepo skeleton with Nuxt 3 (frontend) and NestJS (backend).
 wanjukong/
 ├── apps/
 │   ├── web/          # Nuxt 3 frontend (port 3000)
+│   ├── admin/        # Nuxt 3 admin dashboard (port 3002)
 │   └── api/          # NestJS backend (port 3001)
 │       └── prisma/   # Prisma schema and migrations
 ├── infra/
@@ -48,6 +49,7 @@ Copy the example env files:
 ```bash
 cp apps/web/.env.example apps/web/.env
 cp apps/api/.env.example apps/api/.env
+cp apps/admin/.env.example apps/admin/.env
 ```
 
 ### Database Setup
@@ -98,6 +100,9 @@ pnpm dev:web
 
 # Backend only (http://localhost:3001)
 pnpm dev:api
+
+# Admin only (http://localhost:3002)
+pnpm dev:admin
 ```
 
 ### Build
@@ -124,6 +129,7 @@ pnpm format
 | App      | Port |
 | -------- | ---- |
 | Frontend | 3000 |
+| Admin    | 3002 |
 | Backend  | 3001 |
 
 ## Environment Variables
@@ -141,3 +147,13 @@ pnpm format
 | `PORT`        | `3001`                  | API server port        |
 | `CORS_ORIGIN` | `http://localhost:3000` | Allowed CORS origin    |
 | `DATABASE_URL` | `postgresql://postgres:postgres@localhost:5432/wanjukong` | PostgreSQL connection string |
+
+### Admin (`apps/admin/.env`)
+
+| Variable                 | Default                 | Description     |
+| ------------------------ | ----------------------- | --------------- |
+| `NUXT_PUBLIC_API_BASE_URL` | `http://localhost:3001` | Backend API URL |
+
+### Admin Login
+
+The admin app uses a fake login for now. Any email/password will work. Authentication is placeholder only and will be replaced with real auth in a future step.
