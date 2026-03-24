@@ -6,5 +6,17 @@ export function useAdminApi() {
     return $fetch<T>(`${baseUrl}${path}`);
   }
 
-  return { get };
+  async function post<T>(path: string, body: unknown): Promise<T> {
+    return $fetch<T>(`${baseUrl}${path}`, { method: 'POST', body });
+  }
+
+  async function put<T>(path: string, body: unknown): Promise<T> {
+    return $fetch<T>(`${baseUrl}${path}`, { method: 'PUT', body });
+  }
+
+  async function del<T>(path: string): Promise<T> {
+    return $fetch<T>(`${baseUrl}${path}`, { method: 'DELETE' });
+  }
+
+  return { get, post, put, del };
 }
