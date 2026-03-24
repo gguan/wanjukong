@@ -21,3 +21,60 @@ model HealthCheckLog {
   message   String?
   createdAt DateTime @default(now())
 }
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+  SOLD_OUT
+}
+
+enum AvailabilityType {
+  IN_STOCK
+  PREORDER
+}
+
+model Brand {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  logo      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products Product[]
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products Product[]
+}
+
+model Product {
+  id               String           @id @default(cuid())
+  name             String
+  slug             String           @unique
+  description      String?
+  price            Decimal          @db.Decimal(10, 2)
+  scale            String?
+  status           ProductStatus    @default(DRAFT)
+  availability     AvailabilityType @default(IN_STOCK)
+  imageUrl         String?
+  brandId          String
+  categoryId       String
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  brand    Brand    @relation(fields: [brandId], references: [id])
+  category Category @relation(fields: [categoryId], references: [id])
+
+  @@index([brandId])
+  @@index([categoryId])
+  @@index([status])
+}
