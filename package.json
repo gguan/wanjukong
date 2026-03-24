@@ -15,7 +15,9 @@
     "db:down": "docker compose -f infra/docker-compose.yml down",
     "db:generate": "pnpm --filter @wanjukong/api db:generate",
     "db:migrate": "pnpm --filter @wanjukong/api db:migrate",
-    "db:seed": "pnpm --filter @wanjukong/api db:seed"
+    "db:seed": "pnpm --filter @wanjukong/api db:seed",
+    "db:setup": "pnpm db:generate && pnpm db:migrate && pnpm db:seed",
+    "db:reset": "pnpm --filter @wanjukong/api prisma migrate reset --force"
   },
   "engines": {
     "node": ">=20.0.0"
