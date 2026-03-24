@@ -2,6 +2,7 @@ import {
   IsString,
   IsOptional,
   IsNumber,
+  IsInt,
   IsEnum,
   Min,
 } from 'class-validator';
@@ -24,6 +25,11 @@ export class UpdateProductDto {
   @Min(0)
   @IsOptional()
   price?: number;
+
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  stock?: number;
 
   @IsString()
   @IsOptional()

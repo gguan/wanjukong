@@ -18,6 +18,7 @@ const form = ref({
   slug: '',
   description: '',
   price: 0,
+  stock: 0,
   scale: '',
   status: 'DRAFT',
   availability: 'IN_STOCK',
@@ -41,6 +42,7 @@ onMounted(async () => {
     slug: product.slug as string,
     description: (product.description as string) || '',
     price: Number(product.price),
+    stock: Number(product.stock ?? 0),
     scale: (product.scale as string) || '',
     status: product.status as string,
     availability: product.availability as string,
@@ -59,6 +61,7 @@ async function save() {
     await api.put(`/api/admin/products/${route.params.id}`, {
       ...form.value,
       price: Number(form.value.price),
+      stock: Number(form.value.stock),
       imageUrl: form.value.imageUrl || undefined,
       description: form.value.description || undefined,
     });
@@ -119,6 +122,11 @@ async function save() {
           </label>
 
           <label>
+            Stock
+            <input v-model="form.stock" type="number" min="0" />
+          </label>
+
+          <label>
             Status
             <select v-model="form.status">
               <option value="DRAFT">Draft</option>
@@ -136,10 +144,10 @@ async function save() {
             </select>
           </label>
 
-          <label class="full-width">
-            Image URL
-            <input v-model="form.imageUrl" placeholder="https://..." />
-          </label>
+          <div class="full-width">
+            <span class="field-label">Cover Image</span>
+            <ProductImageUploader v-model="form.imageUrl" />
+          </div>
 
           <label class="full-width">
             Description
@@ -165,7 +173,8 @@ h2 { margin: 0 0 20px; }
 .product-form { max-width: 700px; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .full-width { grid-column: 1 / -1; }
-label { display: block; font-size: 0.875rem; color: #555; }
+label, .field-label { display: block; font-size: 0.875rem; color: #555; }
+.field-label { margin-bottom: 6px; }
 input, select, textarea {
   display: block; width: 100%; margin-top: 4px; padding: 8px 10px;
   border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem;

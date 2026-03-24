@@ -212,6 +212,7 @@ pnpm dev:admin    # Admin     → http://localhost:3002
 | DELETE | `/api/admin/products/:id`    | Delete product      |
 | GET    | `/api/admin/orders`          | List all orders     |
 | GET    | `/api/admin/orders/:id`      | Get order detail    |
+| GET    | `/api/admin/uploads/cos-sts` | Get temporary COS upload credentials |
 
 ## Environment Variables
 
@@ -222,6 +223,11 @@ pnpm dev:admin    # Admin     → http://localhost:3002
 | `PORT`         | `3001`                                                   | API server port         |
 | `CORS_ORIGIN`  | `http://localhost:3000`                                  | Allowed CORS origin     |
 | `DATABASE_URL` | `postgresql://postgres:postgres@localhost:5432/wanjukong` | PostgreSQL connection   |
+| `TENCENT_COS_SECRET_ID` | —                                              | Tencent Cloud API SecretId |
+| `TENCENT_COS_SECRET_KEY` | —                                             | Tencent Cloud API SecretKey |
+| `TENCENT_COS_BUCKET` | —                                                   | COS bucket name (e.g. `my-bucket-1250000000`) |
+| `TENCENT_COS_REGION` | `ap-guangzhou`                                         | COS bucket region       |
+| `TENCENT_COS_PUBLIC_BASE_URL` | —                                          | Public URL prefix for uploaded images |
 
 ### Frontend (`apps/web/.env`)
 
@@ -269,6 +275,40 @@ The storefront supports a single-product "Buy Now" checkout flow:
 | `/orders/:orderNo` | Order confirmation / detail page |
 
 Order numbers follow the format `WJK-YYYYMMDD-XXXXX`. Prices are calculated server-side; the frontend never sends price data.
+
+## Product Image Upload (Tencent COS)
+
+Product cover images are uploaded directly from the admin frontend to Tencent Cloud COS using temporary credentials. The flow:
+
+1. Admin frontend requests temporary STS credentials from `GET /api/admin/uploads/cos-sts`
+2. Backend generates time-limited credentials (30 min) using Tencent STS SDK
+3. Frontend uses `cos-js-sdk-v5` to upload directly to COS
+4. The resulting public URL is saved as the product's `imageUrl`
+
+**No permanent cloud secrets are exposed to the frontend.**
+
+### COS Bucket Setup
+
+In Tencent Cloud Console, configure your COS bucket CORS:
+
+| Setting | Value |
+| ------- | ----- |
+| Allowed Origin | `http://localhost:3002` (add your admin domain in production) |
+| Allowed Methods | `GET, POST, PUT, HEAD` |
+| Allowed Headers | `*` |
+| Expose Headers | `ETag, Content-Length` |
+| Max Age | `600` |
+
+### Testing Image Upload
+
+1. Set `TENCENT_COS_*` variables in `apps/api/.env`
+2. Start backend: `pnpm dev:api`
+3. Start admin: `pnpm dev:admin`
+4. Go to http://localhost:3002/products/create
+5. Click "Upload Image" and select a file
+6. The image uploads to COS and the URL auto-fills
+
+If COS is not configured, you can still paste image URLs manually.
 
 ## Build
 
