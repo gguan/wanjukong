@@ -62,6 +62,7 @@ model Product {
   slug             String           @unique
   description      String?
   price            Decimal          @db.Decimal(10, 2)
+  stock            Int              @default(0)
   scale            String?
   status           ProductStatus    @default(DRAFT)
   availability     AvailabilityType @default(IN_STOCK)
@@ -71,10 +72,85 @@ model Product {
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
-  brand    Brand    @relation(fields: [brandId], references: [id])
-  category Category @relation(fields: [categoryId], references: [id])
+  brand      Brand       @relation(fields: [brandId], references: [id])
+  category   Category    @relation(fields: [categoryId], references: [id])
+  orderItems OrderItem[]
 
   @@index([brandId])
   @@index([categoryId])
   @@index([status])
+}
+
+// ─── Order Enums ──────────────────────────────────────────
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  FAILED
+  REFUNDED
+}
+
+// ─── Order Models ─────────────────────────────────────────
+
+model Order {
+  id                 String        @id @default(cuid())
+  orderNo            String        @unique
+  status             OrderStatus   @default(PENDING)
+  paymentStatus      PaymentStatus @default(UNPAID)
+
+  // Customer / contact
+  fullName           String
+  email              String
+  phone              String?
+
+  // Shipping address
+  country            String
+  stateOrProvince    String?
+  city               String
+  addressLine1       String
+  addressLine2       String?
+  postalCode         String?
+
+  // Pricing
+  currency           String        @default("USD")
+  subtotalPriceCents Int
+  totalPriceCents    Int
+
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  items OrderItem[]
+
+  @@index([email])
+  @@index([status])
+}
+
+model OrderItem {
+  id                    String  @id @default(cuid())
+  orderId               String
+  productId             String
+
+  // Snapshots (preserve historical info)
+  productNameSnapshot   String
+  productSlugSnapshot   String
+  brandNameSnapshot     String?
+  categoryNameSnapshot  String?
+  coverImageUrlSnapshot String?
+  scaleSnapshot         String?
+
+  unitPriceCents        Int
+  quantity              Int
+  totalPriceCents       Int
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
 }

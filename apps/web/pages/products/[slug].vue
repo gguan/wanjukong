@@ -52,6 +52,10 @@ function availabilityLabel(a: string) {
 
         <p class="price">{{ formatPrice(product.price) }}</p>
 
+        <NuxtLink :to="`/checkout/${product.slug}`" class="buy-now-btn">
+          Buy Now
+        </NuxtLink>
+
         <div v-if="product.description" class="description">
           <h3>Description</h3>
           <p>{{ product.description }}</p>
@@ -160,7 +164,23 @@ function availabilityLabel(a: string) {
 .price {
   font-size: 1.5rem;
   font-weight: 700;
-  margin: 0 0 24px;
+  margin: 0 0 16px;
+}
+
+.buy-now-btn {
+  display: inline-block;
+  padding: 12px 32px;
+  background: #111;
+  color: #fff;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  margin-bottom: 24px;
+}
+
+.buy-now-btn:hover {
+  background: #333;
 }
 
 .description h3 {

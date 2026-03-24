@@ -78,6 +78,7 @@ async function main() {
       description:
         'Spider-Man (Integrated Suit) 1/6th scale collectible figure',
       price: 275.0,
+      stock: 10,
       scale: '1/6',
       status: ProductStatus.ACTIVE,
       availability: AvailabilityType.IN_STOCK,
@@ -89,6 +90,7 @@ async function main() {
       slug: 'hot-toys-the-batman',
       description: 'The Batman 1/6th scale collectible figure',
       price: 310.0,
+      stock: 0,
       scale: '1/6',
       status: ProductStatus.ACTIVE,
       availability: AvailabilityType.PREORDER,
@@ -100,6 +102,7 @@ async function main() {
       slug: 'dam-assassins-creed-altair',
       description: "Altair the Mentor Assassin's Creed collectible figure",
       price: 230.0,
+      stock: 5,
       scale: '1/6',
       status: ProductStatus.ACTIVE,
       availability: AvailabilityType.IN_STOCK,
@@ -111,6 +114,7 @@ async function main() {
       slug: 'threezero-ultraman-suit',
       description: 'Ultraman Suit anime edition 1/6th scale figure',
       price: 199.0,
+      stock: 0,
       scale: '1/6',
       status: ProductStatus.DRAFT,
       availability: AvailabilityType.PREORDER,
@@ -122,6 +126,7 @@ async function main() {
       slug: 'hot-toys-headsculpt-tony-stark-mk85',
       description: 'Tony Stark battle damaged head sculpt for MK85',
       price: 45.0,
+      stock: 20,
       scale: '1/6',
       status: ProductStatus.ACTIVE,
       availability: AvailabilityType.IN_STOCK,
@@ -133,6 +138,7 @@ async function main() {
       slug: 'dam-narrow-shoulder-body-2',
       description: 'DAM narrow shoulder male body version 2.0',
       price: 38.0,
+      stock: 15,
       scale: '1/6',
       status: ProductStatus.ACTIVE,
       availability: AvailabilityType.IN_STOCK,
@@ -144,6 +150,7 @@ async function main() {
       slug: 'hot-toys-tactical-suit-set',
       description: 'Generic tactical clothing set for 1/6 figures',
       price: 55.0,
+      stock: 8,
       scale: '1/6',
       status: ProductStatus.INACTIVE,
       availability: AvailabilityType.IN_STOCK,
@@ -155,7 +162,7 @@ async function main() {
   for (const p of products) {
     await prisma.product.upsert({
       where: { slug: p.slug },
-      update: {},
+      update: { stock: p.stock },
       create: p,
     });
   }

@@ -191,6 +191,8 @@ pnpm dev:admin    # Admin     → http://localhost:3002
 | GET    | `/api/public/categories`   | List all categories    |
 | GET    | `/api/public/products`     | List active products (supports `?brand=`, `?category=`, `?scale=`, `?availability=` filters) |
 | GET    | `/api/public/products/:slug` | Get product by slug  |
+| POST   | `/api/public/orders/buy-now` | Create a single-product order |
+| GET    | `/api/public/orders/:orderNo` | Get order by order number |
 
 ### Admin
 
@@ -208,6 +210,8 @@ pnpm dev:admin    # Admin     → http://localhost:3002
 | POST   | `/api/admin/products`        | Create product      |
 | PUT    | `/api/admin/products/:id`    | Update product      |
 | DELETE | `/api/admin/products/:id`    | Delete product      |
+| GET    | `/api/admin/orders`          | List all orders     |
+| GET    | `/api/admin/orders/:id`      | Get order detail    |
 
 ## Environment Variables
 
@@ -248,6 +252,23 @@ The public storefront at http://localhost:3000 provides:
 | `/brands/:slug` | Brand detail with products |
 
 All pages fetch data from the public API. The API base URL is configured via `NUXT_PUBLIC_API_BASE` in `apps/web/.env`.
+
+## Buy Now Flow
+
+The storefront supports a single-product "Buy Now" checkout flow:
+
+1. Browse to a product detail page → `/products/:slug`
+2. Click **Buy Now**
+3. Fill in contact + shipping info on the checkout page → `/checkout/:slug`
+4. Submit the order
+5. View order confirmation → `/orders/:orderNo`
+
+| Route | Description |
+| ----- | ----------- |
+| `/checkout/:slug` | Checkout page for a single product |
+| `/orders/:orderNo` | Order confirmation / detail page |
+
+Order numbers follow the format `WJK-YYYYMMDD-XXXXX`. Prices are calculated server-side; the frontend never sends price data.
 
 ## Build
 
