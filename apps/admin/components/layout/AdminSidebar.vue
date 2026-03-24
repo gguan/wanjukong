@@ -2,6 +2,9 @@
   <aside class="admin-sidebar">
     <nav>
       <NuxtLink to="/" class="admin-sidebar__link">Dashboard</NuxtLink>
+      <NuxtLink to="/brands" class="admin-sidebar__link">Brands</NuxtLink>
+      <NuxtLink to="/categories" class="admin-sidebar__link">Categories</NuxtLink>
+      <NuxtLink to="/products" class="admin-sidebar__link">Products</NuxtLink>
     </nav>
   </aside>
 </template>
