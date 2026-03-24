@@ -1,4 +1,10 @@
-import { Controller, Get, Param, NotFoundException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  NotFoundException,
+} from '@nestjs/common';
 import { ProductsService } from './products.service';
 
 @Controller('public/products')
@@ -6,8 +12,13 @@ export class ProductsPublicController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Get()
-  findAll() {
-    return this.productsService.findAllActive();
+  findAll(
+    @Query('brand') brand?: string,
+    @Query('category') category?: string,
+    @Query('scale') scale?: string,
+    @Query('availability') availability?: string,
+  ) {
+    return this.productsService.findAllActive({ brand, category, scale, availability });
   }
 
   @Get(':slug')

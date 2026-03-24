@@ -1,10 +1,17 @@
 import { Injectable } from '@nestjs/common';
-import { ProductStatus } from '@prisma/client';
+import { Prisma, ProductStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 
 const includeRelations = { brand: true, category: true };
+
+export interface ProductFilters {
+  brand?: string;
+  category?: string;
+  scale?: string;
+  availability?: string;
+}
 
 @Injectable()
 export class ProductsService {
@@ -43,9 +50,26 @@ export class ProductsService {
     return this.prisma.product.delete({ where: { id } });
   }
 
-  findAllActive() {
+  findAllActive(filters: ProductFilters = {}) {
+    const where: Prisma.ProductWhereInput = {
+      status: ProductStatus.ACTIVE,
+    };
+
+    if (filters.brand) {
+      where.brand = { slug: filters.brand };
+    }
+    if (filters.category) {
+      where.category = { slug: filters.category };
+    }
+    if (filters.scale) {
+      where.scale = filters.scale;
+    }
+    if (filters.availability) {
+      where.availability = filters.availability as any;
+    }
+
     return this.prisma.product.findMany({
-      where: { status: ProductStatus.ACTIVE },
+      where,
       include: includeRelations,
       orderBy: { createdAt: 'desc' },
     });

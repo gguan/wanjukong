@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ProductStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { UpdateBrandDto } from './dto/update-brand.dto';
@@ -13,6 +14,18 @@ export class BrandsService {
 
   findOne(id: string) {
     return this.prisma.brand.findUniqueOrThrow({ where: { id } });
+  }
+
+  findBySlug(slug: string) {
+    return this.prisma.brand.findUnique({ where: { slug } });
+  }
+
+  findActiveProductsByBrandSlug(slug: string) {
+    return this.prisma.product.findMany({
+      where: { brand: { slug }, status: ProductStatus.ACTIVE },
+      include: { brand: true, category: true },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   create(dto: CreateBrandDto) {

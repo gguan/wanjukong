@@ -187,8 +187,9 @@ pnpm dev:admin    # Admin     → http://localhost:3002
 | ------ | -------------------------- | ---------------------- |
 | GET    | `/api/health`              | Health check + DB status |
 | GET    | `/api/public/brands`       | List all brands        |
+| GET    | `/api/public/brands/:slug` | Brand detail + products |
 | GET    | `/api/public/categories`   | List all categories    |
-| GET    | `/api/public/products`     | List active products   |
+| GET    | `/api/public/products`     | List active products (supports `?brand=`, `?category=`, `?scale=`, `?availability=` filters) |
 | GET    | `/api/public/products/:slug` | Get product by slug  |
 
 ### Admin
@@ -233,6 +234,20 @@ pnpm dev:admin    # Admin     → http://localhost:3002
 ## Admin Dashboard
 
 The admin dashboard is at http://localhost:3002. It currently uses a **fake login** — any email/password will work. Real authentication will be added in a future step.
+
+## Storefront (apps/web)
+
+The public storefront at http://localhost:3000 provides:
+
+| Route | Description |
+| ----- | ----------- |
+| `/` | Homepage — featured brands and products |
+| `/products` | Product listing with brand/category/scale/availability filters |
+| `/products/:slug` | Product detail page |
+| `/brands` | Brand listing |
+| `/brands/:slug` | Brand detail with products |
+
+All pages fetch data from the public API. The API base URL is configured via `NUXT_PUBLIC_API_BASE` in `apps/web/.env`.
 
 ## Build
 
