@@ -210,9 +210,15 @@ pnpm dev:admin    # Admin     → http://localhost:3002
 | POST   | `/api/admin/products`        | Create product      |
 | PUT    | `/api/admin/products/:id`    | Update product      |
 | DELETE | `/api/admin/products/:id`    | Delete product      |
+| GET    | `/api/admin/products/:id/images` | List product images |
+| POST   | `/api/admin/products/:id/images` | Attach images to product |
+| PATCH  | `/api/admin/products/:id/images/reorder` | Reorder images |
+| PATCH  | `/api/admin/products/:id/images/:imageId/primary` | Set primary image |
+| DELETE | `/api/admin/products/:id/images/:imageId` | Remove image from product |
 | GET    | `/api/admin/orders`          | List all orders     |
 | GET    | `/api/admin/orders/:id`      | Get order detail    |
 | GET    | `/api/admin/uploads/cos-sts` | Get temporary COS upload credentials |
+| POST   | `/api/admin/uploads/register-temp` | Register temp upload in DB |
 
 ## Environment Variables
 
@@ -228,6 +234,7 @@ pnpm dev:admin    # Admin     → http://localhost:3002
 | `TENCENT_COS_BUCKET` | —                                                   | COS bucket name (e.g. `my-bucket-1250000000`) |
 | `TENCENT_COS_REGION` | `ap-guangzhou`                                         | COS bucket region       |
 | `TENCENT_COS_PUBLIC_BASE_URL` | —                                          | Public URL prefix for uploaded images |
+| `UPLOAD_TEMP_EXPIRE_HOURS` | `24`                                            | Hours before unused temp uploads expire |
 
 ### Frontend (`apps/web/.env`)
 
@@ -309,6 +316,38 @@ In Tencent Cloud Console, configure your COS bucket CORS:
 6. The image uploads to COS and the URL auto-fills
 
 If COS is not configured, you can still paste image URLs manually.
+
+## Multi-Image Product Management
+
+Products support multiple images managed via the admin dashboard.
+
+### Image Lifecycle
+
+| Status | Meaning |
+| ------ | ------- |
+| TEMP | Uploaded to COS but not yet saved with a product |
+| USED | Attached to a product after save |
+| DELETED | Cleaned up from COS by the cleanup job |
+
+**Flow:**
+1. Admin uploads image → file goes to COS, registered as TEMP (expires in 24h)
+2. Admin saves product with image → backend marks UploadFile as USED
+3. If admin cancels/refreshes → TEMP file expires and cleanup job removes it
+
+**Why not delete on cancel?** Browser refreshes and navigation are unpredictable. The cleanup job safely handles orphaned uploads.
+
+### Primary Image
+
+Each product can have one primary image. `Product.imageUrl` is always kept in sync with the primary image URL. If the primary is deleted, the next image by sort order becomes primary.
+
+### Cleanup Job
+
+A cron job runs every hour to delete expired TEMP uploads from both COS and the database. Configure the expiry with `UPLOAD_TEMP_EXPIRE_HOURS` (default: 24).
+
+### Limitations
+
+- Removing a ProductImage relation does not immediately delete the COS object (handled by cleanup job)
+- No drag-and-drop reorder yet (use up/down buttons)
 
 ## Build
 

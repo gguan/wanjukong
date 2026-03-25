@@ -6,6 +6,12 @@ import { UpdateProductDto } from './dto/update-product.dto';
 
 const includeRelations = { brand: true, category: true };
 
+const includeRelationsWithImages = {
+  brand: true,
+  category: true,
+  images: { orderBy: { sortOrder: 'asc' as const } },
+};
+
 export interface ProductFilters {
   brand?: string;
   category?: string;
@@ -27,7 +33,7 @@ export class ProductsService {
   findOne(id: string) {
     return this.prisma.product.findUniqueOrThrow({
       where: { id },
-      include: includeRelations,
+      include: includeRelationsWithImages,
     });
   }
 
@@ -78,7 +84,7 @@ export class ProductsService {
   findBySlug(slug: string) {
     return this.prisma.product.findFirst({
       where: { slug, status: ProductStatus.ACTIVE },
-      include: includeRelations,
+      include: includeRelationsWithImages,
     });
   }
 }

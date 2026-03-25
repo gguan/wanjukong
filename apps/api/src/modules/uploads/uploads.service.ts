@@ -1,8 +1,12 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import * as STS from 'qcloud-cos-sts';
+import { PrismaService } from '../../prisma/prisma.service';
+import { RegisterTempUploadDto } from './dto/register-temp-upload.dto';
 
 @Injectable()
 export class UploadsService {
+  constructor(private readonly prisma: PrismaService) {}
+
   private get config() {
     return {
       secretId: process.env.TENCENT_COS_SECRET_ID || '',
@@ -73,5 +77,48 @@ export class UploadsService {
         'Failed to generate temporary COS credentials',
       );
     }
+  }
+
+  /**
+   * Register a temporarily uploaded file in the database.
+   * Expires after UPLOAD_TEMP_EXPIRE_HOURS (default 24h).
+   */
+  async registerTempUpload(dto: RegisterTempUploadDto) {
+    const { bucket, region } = this.config;
+    const expireHours = parseInt(
+      process.env.UPLOAD_TEMP_EXPIRE_HOURS || '24',
+      10,
+    );
+    const expiresAt = new Date(Date.now() + expireHours * 60 * 60 * 1000);
+
+    return this.prisma.uploadFile.create({
+      data: {
+        provider: 'tencent-cos',
+        bucket,
+        region,
+        objectKey: dto.objectKey,
+        fileUrl: dto.fileUrl,
+        originalFileName: dto.originalFileName,
+        mimeType: dto.mimeType,
+        sizeBytes: dto.sizeBytes,
+        status: 'TEMP',
+        expiresAt,
+      },
+    });
+  }
+
+  /**
+   * Mark an upload as USED and link it to an entity.
+   */
+  async markAsUsed(uploadFileId: string, entityType: string, entityId: string) {
+    return this.prisma.uploadFile.update({
+      where: { id: uploadFileId },
+      data: {
+        status: 'USED',
+        linkedEntityType: entityType,
+        linkedEntityId: entityId,
+        expiresAt: null,
+      },
+    });
   }
 }

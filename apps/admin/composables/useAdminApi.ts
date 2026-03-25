@@ -14,9 +14,13 @@ export function useAdminApi() {
     return $fetch<T>(`${baseUrl}${path}`, { method: 'PUT', body });
   }
 
+  async function patch<T>(path: string, body?: unknown): Promise<T> {
+    return $fetch<T>(`${baseUrl}${path}`, { method: 'PATCH', body });
+  }
+
   async function del<T>(path: string): Promise<T> {
     return $fetch<T>(`${baseUrl}${path}`, { method: 'DELETE' });
   }
 
-  return { get, post, put, del };
+  return { get, post, put, patch, del };
 }

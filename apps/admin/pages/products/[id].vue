@@ -162,6 +162,10 @@ async function save() {
           <NuxtLink to="/products" class="btn btn--secondary">Cancel</NuxtLink>
         </div>
       </form>
+
+      <div class="images-section">
+        <ProductImagesManager :product-id="(route.params.id as string)" />
+      </div>
     </template>
   </div>
 </template>
@@ -186,4 +190,5 @@ input, select, textarea {
 .btn:disabled { opacity: 0.6; }
 .btn--secondary { background: #888; }
 .btn--secondary:hover { background: #666; }
+.images-section { margin-top: 32px; max-width: 700px; }
 </style>

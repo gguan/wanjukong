@@ -8,6 +8,25 @@ const { data: product, error, status } = useAsyncData(
   () => fetchProductBySlug(slug),
 );
 
+const selectedImageUrl = ref<string | null>(null);
+
+const displayImage = computed(() => {
+  if (selectedImageUrl.value) return selectedImageUrl.value;
+  if (product.value?.images && product.value.images.length > 0) {
+    const primary = product.value.images.find((i) => i.isPrimary);
+    return primary?.imageUrl || product.value.images[0].imageUrl;
+  }
+  return product.value?.imageUrl || null;
+});
+
+const hasMultipleImages = computed(() => {
+  return (product.value?.images?.length ?? 0) > 1;
+});
+
+function selectImage(url: string) {
+  selectedImageUrl.value = url;
+}
+
 function formatPrice(price: number | string) {
   const num = typeof price === 'string' ? parseFloat(price) : price;
   return `$${num.toFixed(2)}`;
@@ -31,9 +50,23 @@ function availabilityLabel(a: string) {
     </div>
 
     <div v-else class="product-detail">
-      <div class="product-image">
-        <img v-if="product.imageUrl" :src="product.imageUrl" :alt="product.name" />
-        <div v-else class="placeholder">No Image</div>
+      <div class="product-gallery">
+        <div class="main-image">
+          <img v-if="displayImage" :src="displayImage" :alt="product.name" />
+          <div v-else class="placeholder">No Image</div>
+        </div>
+
+        <div v-if="hasMultipleImages" class="thumbnail-list">
+          <button
+            v-for="img in product.images"
+            :key="img.id"
+            class="thumbnail"
+            :class="{ active: displayImage === img.imageUrl }"
+            @click="selectImage(img.imageUrl)"
+          >
+            <img :src="img.imageUrl" :alt="img.altText || product.name" />
+          </button>
+        </div>
       </div>
 
       <div class="product-info">
@@ -91,7 +124,13 @@ function availabilityLabel(a: string) {
   }
 }
 
-.product-image {
+.product-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.main-image {
   aspect-ratio: 1;
   background: #f9fafb;
   border-radius: 8px;
@@ -99,7 +138,7 @@ function availabilityLabel(a: string) {
   border: 1px solid #e5e7eb;
 }
 
-.product-image img {
+.main-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -113,6 +152,37 @@ function availabilityLabel(a: string) {
   justify-content: center;
   color: #ccc;
   font-size: 1rem;
+}
+
+.thumbnail-list {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.thumbnail {
+  width: 64px;
+  height: 64px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  background: #f9fafb;
+}
+
+.thumbnail.active {
+  border-color: #111;
+}
+
+.thumbnail:hover:not(.active) {
+  border-color: #d1d5db;
+}
+
+.thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .brand-link {

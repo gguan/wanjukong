@@ -72,13 +72,61 @@ model Product {
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
-  brand      Brand       @relation(fields: [brandId], references: [id])
-  category   Category    @relation(fields: [categoryId], references: [id])
+  brand      Brand          @relation(fields: [brandId], references: [id])
+  category   Category       @relation(fields: [categoryId], references: [id])
   orderItems OrderItem[]
+  images     ProductImage[]
 
   @@index([brandId])
   @@index([categoryId])
   @@index([status])
+}
+
+// ─── Upload / Image Models ────────────────────────────────
+
+enum UploadFileStatus {
+  TEMP
+  USED
+  DELETED
+}
+
+model UploadFile {
+  id               String           @id @default(cuid())
+  provider         String           @default("tencent-cos")
+  bucket           String
+  region           String
+  objectKey        String           @unique
+  fileUrl          String
+  originalFileName String?
+  mimeType         String?
+  sizeBytes        Int?
+  status           UploadFileStatus @default(TEMP)
+  linkedEntityType String?
+  linkedEntityId   String?
+  expiresAt        DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  productImages ProductImage[]
+
+  @@index([status, expiresAt])
+}
+
+model ProductImage {
+  id           String      @id @default(cuid())
+  productId    String
+  uploadFileId String?
+  imageUrl     String
+  altText      String?
+  sortOrder    Int         @default(0)
+  isPrimary    Boolean     @default(false)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  uploadFile UploadFile? @relation(fields: [uploadFileId], references: [id])
+
+  @@index([productId, sortOrder])
 }
 
 // ─── Order Enums ──────────────────────────────────────────
