@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { ProductVariant } from '~/composables/useProducts';
+
 const route = useRoute();
 const slug = route.params.slug as string;
 const { fetchProductBySlug } = useProducts();
@@ -8,33 +10,84 @@ const { data: product, error, status } = useAsyncData(
   () => fetchProductBySlug(slug),
 );
 
+const selectedVariantId = ref<string | null>(null);
 const selectedImageUrl = ref<string | null>(null);
+
+// Select default variant once product loads
+watch(product, (p) => {
+  if (!p?.variants?.length) return;
+  const def = p.variants.find((v) => v.isDefault) || p.variants[0];
+  if (def && !selectedVariantId.value) {
+    selectedVariantId.value = def.id;
+  }
+});
+
+const selectedVariant = computed<ProductVariant | null>(() => {
+  if (!product.value?.variants?.length) return null;
+  return (
+    product.value.variants.find((v) => v.id === selectedVariantId.value) ||
+    product.value.variants[0]
+  );
+});
+
+const hasVariants = computed(() => (product.value?.variants?.length ?? 0) > 0);
 
 const displayImage = computed(() => {
   if (selectedImageUrl.value) return selectedImageUrl.value;
-  if (product.value?.images && product.value.images.length > 0) {
+  // Variant-specific cover image
+  if (selectedVariant.value?.coverImageUrl) return selectedVariant.value.coverImageUrl;
+  // Product primary image from images list
+  if (product.value?.images?.length) {
     const primary = product.value.images.find((i) => i.isPrimary);
     return primary?.imageUrl || product.value.images[0].imageUrl;
   }
   return product.value?.imageUrl || null;
 });
 
-const hasMultipleImages = computed(() => {
-  return (product.value?.images?.length ?? 0) > 1;
+const hasMultipleImages = computed(() => (product.value?.images?.length ?? 0) > 1);
+
+const displayPrice = computed(() => {
+  if (selectedVariant.value) {
+    return `$${(selectedVariant.value.priceCents / 100).toFixed(2)}`;
+  }
+  if (!product.value) return '$0.00';
+  const num = typeof product.value.price === 'string'
+    ? parseFloat(product.value.price)
+    : product.value.price;
+  return `$${num.toFixed(2)}`;
+});
+
+const displayAvailability = computed(() => {
+  if (selectedVariant.value) return selectedVariant.value.availabilityType;
+  return product.value?.availability || 'IN_STOCK';
 });
 
 function selectImage(url: string) {
   selectedImageUrl.value = url;
 }
 
-function formatPrice(price: number | string) {
-  const num = typeof price === 'string' ? parseFloat(price) : price;
-  return `$${num.toFixed(2)}`;
+function selectVariant(v: ProductVariant) {
+  selectedVariantId.value = v.id;
+  // If variant has its own cover, switch main image
+  if (v.coverImageUrl) {
+    selectedImageUrl.value = v.coverImageUrl;
+  } else {
+    selectedImageUrl.value = null;
+  }
 }
 
 function availabilityLabel(a: string) {
   return a === 'PREORDER' ? 'Pre-order' : 'In Stock';
 }
+
+// Build checkout URL with variant
+const checkoutUrl = computed(() => {
+  const base = `/checkout/${product.value?.slug}`;
+  if (selectedVariant.value) {
+    return `${base}?variant=${selectedVariant.value.id}`;
+  }
+  return base;
+});
 </script>
 
 <template>
@@ -55,7 +108,6 @@ function availabilityLabel(a: string) {
           <img v-if="displayImage" :src="displayImage" :alt="product.name" />
           <div v-else class="placeholder">No Image</div>
         </div>
-
         <div v-if="hasMultipleImages" class="thumbnail-list">
           <button
             v-for="img in product.images"
@@ -78,14 +130,38 @@ function availabilityLabel(a: string) {
         <div class="meta-row">
           <span class="meta-tag">{{ product.category.name }}</span>
           <span v-if="product.scale" class="meta-tag">{{ product.scale }}</span>
-          <span class="meta-tag" :class="product.availability === 'PREORDER' ? 'preorder' : 'instock'">
-            {{ availabilityLabel(product.availability) }}
+          <span class="meta-tag" :class="displayAvailability === 'PREORDER' ? 'preorder' : 'instock'">
+            {{ availabilityLabel(displayAvailability) }}
           </span>
         </div>
 
-        <p class="price">{{ formatPrice(product.price) }}</p>
+        <!-- Variant selector -->
+        <div v-if="hasVariants && product.variants!.length > 1" class="variant-selector">
+          <p class="variant-label">Edition</p>
+          <div class="variant-buttons">
+            <button
+              v-for="v in product.variants"
+              :key="v.id"
+              class="variant-btn"
+              :class="{ selected: v.id === selectedVariantId }"
+              @click="selectVariant(v)"
+            >
+              <span class="variant-btn-name">{{ v.name }}</span>
+              <span class="variant-btn-price">${{ (v.priceCents / 100).toFixed(2) }}</span>
+            </button>
+          </div>
+          <p v-if="selectedVariant?.subtitle" class="variant-subtitle">
+            {{ selectedVariant.subtitle }}
+          </p>
+        </div>
 
-        <NuxtLink :to="`/checkout/${product.slug}`" class="buy-now-btn">
+        <p class="price">{{ displayPrice }}</p>
+
+        <div v-if="selectedVariant && selectedVariant.stock <= 3 && selectedVariant.availabilityType === 'IN_STOCK'" class="stock-warning">
+          Only {{ selectedVariant.stock }} left in stock
+        </div>
+
+        <NuxtLink :to="checkoutUrl" class="buy-now-btn">
           Buy Now
         </NuxtLink>
 
@@ -99,169 +175,49 @@ function availabilityLabel(a: string) {
 </template>
 
 <style scoped>
-.back-link {
-  display: inline-block;
-  margin-bottom: 24px;
-  color: #666;
-  text-decoration: none;
-  font-size: 0.9rem;
-}
+.back-link { display: inline-block; margin-bottom: 24px; color: #666; text-decoration: none; font-size: 0.9rem; }
+.back-link:hover { color: #111; }
 
-.back-link:hover {
-  color: #111;
-}
+.product-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+@media (max-width: 768px) { .product-detail { grid-template-columns: 1fr; } }
 
-.product-detail {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 40px;
-  align-items: start;
-}
+.product-gallery { display: flex; flex-direction: column; gap: 12px; }
+.main-image { aspect-ratio: 1; background: #f9fafb; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb; }
+.main-image img { width: 100%; height: 100%; object-fit: cover; }
+.placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #ccc; font-size: 1rem; }
 
-@media (max-width: 768px) {
-  .product-detail {
-    grid-template-columns: 1fr;
-  }
-}
+.thumbnail-list { display: flex; gap: 8px; flex-wrap: wrap; }
+.thumbnail { width: 64px; height: 64px; border-radius: 6px; overflow: hidden; border: 2px solid transparent; cursor: pointer; padding: 0; background: #f9fafb; }
+.thumbnail.active { border-color: #111; }
+.thumbnail:hover:not(.active) { border-color: #d1d5db; }
+.thumbnail img { width: 100%; height: 100%; object-fit: cover; }
 
-.product-gallery {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
+.brand-link { display: inline-block; font-size: 0.8rem; color: #888; text-transform: uppercase; letter-spacing: 0.04em; text-decoration: none; margin-bottom: 8px; }
+.brand-link:hover { color: #111; }
+.product-name { font-size: 1.5rem; font-weight: 700; margin: 0 0 12px; line-height: 1.3; }
 
-.main-image {
-  aspect-ratio: 1;
-  background: #f9fafb;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid #e5e7eb;
-}
+.meta-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.meta-tag { font-size: 0.75rem; padding: 3px 8px; border-radius: 4px; background: #f3f4f6; color: #555; }
+.meta-tag.preorder { background: #fef3c7; color: #92400e; }
+.meta-tag.instock { background: #d1fae5; color: #065f46; }
 
-.main-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
+/* Variant selector */
+.variant-selector { margin-bottom: 16px; }
+.variant-label { font-size: 0.8rem; color: #555; font-weight: 600; margin: 0 0 8px; }
+.variant-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+.variant-btn { display: flex; flex-direction: column; align-items: center; padding: 10px 16px; border: 2px solid #e5e7eb; border-radius: 8px; background: #fff; cursor: pointer; min-width: 100px; }
+.variant-btn.selected { border-color: #111; background: #f9fafb; }
+.variant-btn:hover:not(.selected) { border-color: #d1d5db; }
+.variant-btn-name { font-size: 0.85rem; font-weight: 600; }
+.variant-btn-price { font-size: 0.75rem; color: #666; margin-top: 2px; }
+.variant-subtitle { font-size: 0.8rem; color: #666; margin: 8px 0 0; font-style: italic; }
 
-.placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #ccc;
-  font-size: 1rem;
-}
+.price { font-size: 1.5rem; font-weight: 700; margin: 0 0 12px; }
+.stock-warning { font-size: 0.8rem; color: #b91c1c; margin-bottom: 12px; }
 
-.thumbnail-list {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
+.buy-now-btn { display: inline-block; padding: 12px 32px; background: #111; color: #fff; border-radius: 8px; font-size: 1rem; font-weight: 600; text-decoration: none; margin-bottom: 24px; }
+.buy-now-btn:hover { background: #333; }
 
-.thumbnail {
-  width: 64px;
-  height: 64px;
-  border-radius: 6px;
-  overflow: hidden;
-  border: 2px solid transparent;
-  cursor: pointer;
-  padding: 0;
-  background: #f9fafb;
-}
-
-.thumbnail.active {
-  border-color: #111;
-}
-
-.thumbnail:hover:not(.active) {
-  border-color: #d1d5db;
-}
-
-.thumbnail img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.brand-link {
-  display: inline-block;
-  font-size: 0.8rem;
-  color: #888;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  text-decoration: none;
-  margin-bottom: 8px;
-}
-
-.brand-link:hover {
-  color: #111;
-}
-
-.product-name {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin: 0 0 12px;
-  line-height: 1.3;
-}
-
-.meta-row {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 16px;
-}
-
-.meta-tag {
-  font-size: 0.75rem;
-  padding: 3px 8px;
-  border-radius: 4px;
-  background: #f3f4f6;
-  color: #555;
-}
-
-.meta-tag.preorder {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.meta-tag.instock {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.price {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin: 0 0 16px;
-}
-
-.buy-now-btn {
-  display: inline-block;
-  padding: 12px 32px;
-  background: #111;
-  color: #fff;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  text-decoration: none;
-  margin-bottom: 24px;
-}
-
-.buy-now-btn:hover {
-  background: #333;
-}
-
-.description h3 {
-  font-size: 1rem;
-  margin: 0 0 8px;
-  color: #333;
-}
-
-.description p {
-  color: #555;
-  line-height: 1.6;
-  margin: 0;
-}
+.description h3 { font-size: 1rem; margin: 0 0 8px; color: #333; }
+.description p { color: #555; line-height: 1.6; margin: 0; }
 </style>

@@ -86,7 +86,9 @@ function paymentLabel(s: string) {
           <div class="item-info">
             <p class="item-brand" v-if="item.brandNameSnapshot">{{ item.brandNameSnapshot }}</p>
             <p class="item-name">{{ item.productNameSnapshot }}</p>
+            <p v-if="item.variantNameSnapshot" class="item-variant">{{ item.variantNameSnapshot }}</p>
             <div class="item-meta">
+              <span v-if="item.skuSnapshot">{{ item.skuSnapshot }}</span>
               <span v-if="item.categoryNameSnapshot">{{ item.categoryNameSnapshot }}</span>
               <span v-if="item.scaleSnapshot">{{ item.scaleSnapshot }}</span>
             </div>
@@ -262,6 +264,12 @@ function paymentLabel(s: string) {
 .item-name {
   font-size: 0.9rem;
   font-weight: 600;
+  margin: 0 0 2px;
+}
+
+.item-variant {
+  font-size: 0.8rem;
+  color: #555;
   margin: 0 0 4px;
 }
 

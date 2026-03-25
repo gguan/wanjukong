@@ -167,6 +167,117 @@ async function main() {
     });
   }
 
+  // Product Variants
+  const spiderman = await prisma.product.findUnique({ where: { slug: 'hot-toys-spider-man-nwh' } });
+  const batman = await prisma.product.findUnique({ where: { slug: 'hot-toys-the-batman' } });
+  const altair = await prisma.product.findUnique({ where: { slug: 'dam-assassins-creed-altair' } });
+  const tonyHead = await prisma.product.findUnique({ where: { slug: 'hot-toys-headsculpt-tony-stark-mk85' } });
+  const damBody = await prisma.product.findUnique({ where: { slug: 'dam-narrow-shoulder-body-2' } });
+
+  const variants = [
+    // Spider-Man: 2 variants
+    {
+      productId: spiderman!.id,
+      name: 'Standard Edition',
+      versionCode: 'standard',
+      sku: 'HT-MMS617-STD',
+      priceCents: 27500,
+      stock: 8,
+      availabilityType: AvailabilityType.IN_STOCK,
+      status: ProductStatus.ACTIVE,
+      isDefault: true,
+      sortOrder: 0,
+      subtitle: 'Standard figure with basic accessories',
+    },
+    {
+      productId: spiderman!.id,
+      name: 'Deluxe Edition',
+      versionCode: 'deluxe',
+      sku: 'HT-MMS617-DLX',
+      priceCents: 35000,
+      stock: 3,
+      availabilityType: AvailabilityType.IN_STOCK,
+      status: ProductStatus.ACTIVE,
+      isDefault: false,
+      sortOrder: 1,
+      subtitle: 'Includes extra hands, web effects, and display base',
+    },
+    // Batman: 2 variants
+    {
+      productId: batman!.id,
+      name: 'Standard Edition',
+      versionCode: 'standard',
+      sku: 'HT-MMS656-STD',
+      priceCents: 31000,
+      stock: 0,
+      availabilityType: AvailabilityType.PREORDER,
+      status: ProductStatus.ACTIVE,
+      isDefault: true,
+      sortOrder: 0,
+      subtitle: 'Standard figure with batarang',
+    },
+    {
+      productId: batman!.id,
+      name: 'Deluxe Edition',
+      versionCode: 'deluxe',
+      sku: 'HT-MMS656-DLX',
+      priceCents: 39500,
+      stock: 0,
+      availabilityType: AvailabilityType.PREORDER,
+      status: ProductStatus.ACTIVE,
+      isDefault: false,
+      sortOrder: 1,
+      subtitle: 'Includes Bat-Signal base and extra accessories',
+    },
+    // Altair: 1 variant
+    {
+      productId: altair!.id,
+      name: 'Standard Edition',
+      versionCode: 'standard',
+      sku: 'DAM-DMS032-STD',
+      priceCents: 23000,
+      stock: 5,
+      availabilityType: AvailabilityType.IN_STOCK,
+      status: ProductStatus.ACTIVE,
+      isDefault: true,
+      sortOrder: 0,
+    },
+    // Tony Head: 1 variant
+    {
+      productId: tonyHead!.id,
+      name: 'Standard',
+      versionCode: 'standard',
+      sku: 'HT-HS-TONY-MK85',
+      priceCents: 4500,
+      stock: 20,
+      availabilityType: AvailabilityType.IN_STOCK,
+      status: ProductStatus.ACTIVE,
+      isDefault: true,
+      sortOrder: 0,
+    },
+    // DAM Body: 1 variant
+    {
+      productId: damBody!.id,
+      name: 'Standard',
+      versionCode: 'standard',
+      sku: 'DAM-BODY-NS-2',
+      priceCents: 3800,
+      stock: 15,
+      availabilityType: AvailabilityType.IN_STOCK,
+      status: ProductStatus.ACTIVE,
+      isDefault: true,
+      sortOrder: 0,
+    },
+  ];
+
+  for (const v of variants) {
+    await prisma.productVariant.upsert({
+      where: { sku: v.sku },
+      update: { priceCents: v.priceCents, stock: v.stock },
+      create: v,
+    });
+  }
+
   console.log('Seed completed');
 }
 

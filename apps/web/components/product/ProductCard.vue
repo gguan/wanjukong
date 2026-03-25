@@ -1,9 +1,23 @@
 <script setup lang="ts">
 import type { Product } from '~/composables/useProducts';
 
-defineProps<{
+const props = defineProps<{
   product: Product;
 }>();
+
+// Derive display price from default variant, or fall back to product.price
+const displayPrice = computed(() => {
+  const variants = props.product.variants;
+  if (variants && variants.length > 0) {
+    const def = variants.find((v) => v.isDefault) || variants[0];
+    return def.priceCents / 100;
+  }
+  return typeof props.product.price === 'string'
+    ? parseFloat(props.product.price)
+    : props.product.price;
+});
+
+const hasMultipleVariants = computed(() => (props.product.variants?.length ?? 0) > 1);
 </script>
 
 <template>
@@ -31,7 +45,9 @@ defineProps<{
         <span class="category">{{ product.category.name }}</span>
         <span v-if="product.scale" class="scale">{{ product.scale }}</span>
       </div>
-      <ProductPrice :price="product.price" class="price" />
+      <span class="price">
+        <span v-if="hasMultipleVariants" class="from-label">From </span>${{ displayPrice.toFixed(2) }}
+      </span>
     </div>
   </NuxtLink>
 </template>
@@ -128,5 +144,12 @@ defineProps<{
 
 .price {
   font-size: 1rem;
+  font-weight: 700;
+}
+
+.from-label {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #888;
 }
 </style>

@@ -10,16 +10,20 @@ import {
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { ProductImagesService } from './product-images.service';
+import { ProductVariantsService } from './product-variants.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { AddProductImagesDto } from './dto/add-product-images.dto';
 import { ReorderProductImagesDto } from './dto/reorder-product-images.dto';
+import { CreateProductVariantDto } from './dto/create-product-variant.dto';
+import { UpdateProductVariantDto } from './dto/update-product-variant.dto';
 
 @Controller('admin/products')
 export class ProductsAdminController {
   constructor(
     private readonly productsService: ProductsService,
     private readonly productImagesService: ProductImagesService,
+    private readonly productVariantsService: ProductVariantsService,
   ) {}
 
   @Get()
@@ -81,5 +85,45 @@ export class ProductsAdminController {
     @Param('imageId') imageId: string,
   ) {
     return this.productImagesService.removeImage(id, imageId);
+  }
+
+  // ── Product Variants ────────────────────────────────────
+
+  @Get(':id/variants')
+  getVariants(@Param('id') id: string) {
+    return this.productVariantsService.findByProductId(id);
+  }
+
+  @Post(':id/variants')
+  createVariant(
+    @Param('id') id: string,
+    @Body() dto: CreateProductVariantDto,
+  ) {
+    return this.productVariantsService.create(id, dto);
+  }
+
+  @Get(':id/variants/:variantId')
+  getVariant(
+    @Param('id') id: string,
+    @Param('variantId') variantId: string,
+  ) {
+    return this.productVariantsService.findOne(id, variantId);
+  }
+
+  @Patch(':id/variants/:variantId')
+  updateVariant(
+    @Param('id') id: string,
+    @Param('variantId') variantId: string,
+    @Body() dto: UpdateProductVariantDto,
+  ) {
+    return this.productVariantsService.update(id, variantId, dto);
+  }
+
+  @Delete(':id/variants/:variantId')
+  removeVariant(
+    @Param('id') id: string,
+    @Param('variantId') variantId: string,
+  ) {
+    return this.productVariantsService.remove(id, variantId);
   }
 }

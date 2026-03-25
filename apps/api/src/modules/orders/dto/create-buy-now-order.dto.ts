@@ -10,6 +10,9 @@ export class CreateBuyNowOrderDto {
   @IsString()
   productId!: string;
 
+  @IsString()
+  variantId!: string;
+
   @IsInt()
   @Min(1)
   quantity!: number;

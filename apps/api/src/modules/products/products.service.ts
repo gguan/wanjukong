@@ -12,6 +12,13 @@ const includeRelationsWithImages = {
   images: { orderBy: { sortOrder: 'asc' as const } },
 };
 
+const includeRelationsFull = {
+  brand: true,
+  category: true,
+  images: { orderBy: { sortOrder: 'asc' as const } },
+  variants: { orderBy: { sortOrder: 'asc' as const } },
+};
+
 export interface ProductFilters {
   brand?: string;
   category?: string;
@@ -33,7 +40,7 @@ export class ProductsService {
   findOne(id: string) {
     return this.prisma.product.findUniqueOrThrow({
       where: { id },
-      include: includeRelationsWithImages,
+      include: includeRelationsFull,
     });
   }
 
@@ -76,7 +83,13 @@ export class ProductsService {
 
     return this.prisma.product.findMany({
       where,
-      include: includeRelations,
+      include: {
+        ...includeRelations,
+        variants: {
+          where: { status: ProductStatus.ACTIVE },
+          orderBy: { sortOrder: 'asc' },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -84,7 +97,14 @@ export class ProductsService {
   findBySlug(slug: string) {
     return this.prisma.product.findFirst({
       where: { slug, status: ProductStatus.ACTIVE },
-      include: includeRelationsWithImages,
+      include: {
+        ...includeRelationsFull,
+        // Only return ACTIVE variants for public
+        variants: {
+          where: { status: ProductStatus.ACTIVE },
+          orderBy: { sortOrder: 'asc' },
+        },
+      },
     });
   }
 }

@@ -6,6 +6,22 @@ export interface ProductImage {
   isPrimary: boolean;
 }
 
+export interface ProductVariant {
+  id: string;
+  name: string;
+  versionCode: string | null;
+  sku: string;
+  priceCents: number;
+  stock: number;
+  availabilityType: string;
+  status: string;
+  subtitle: string | null;
+  specSummary: string | null;
+  isDefault: boolean;
+  sortOrder: number;
+  coverImageUrl: string | null;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -23,6 +39,7 @@ export interface Product {
   brand: { id: string; name: string; slug: string; logo: string | null };
   category: { id: string; name: string; slug: string };
   images?: ProductImage[];
+  variants?: ProductVariant[];
 }
 
 export interface Category {

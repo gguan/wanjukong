@@ -166,6 +166,10 @@ async function save() {
       <div class="images-section">
         <ProductImagesManager :product-id="(route.params.id as string)" />
       </div>
+
+      <div class="variants-section">
+        <ProductVariantsManager :product-id="(route.params.id as string)" />
+      </div>
     </template>
   </div>
 </template>
@@ -191,4 +195,5 @@ input, select, textarea {
 .btn--secondary { background: #888; }
 .btn--secondary:hover { background: #666; }
 .images-section { margin-top: 32px; max-width: 700px; }
+.variants-section { margin-top: 24px; max-width: 700px; }
 </style>

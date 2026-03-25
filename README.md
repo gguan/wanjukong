@@ -215,6 +215,11 @@ pnpm dev:admin    # Admin     → http://localhost:3002
 | PATCH  | `/api/admin/products/:id/images/reorder` | Reorder images |
 | PATCH  | `/api/admin/products/:id/images/:imageId/primary` | Set primary image |
 | DELETE | `/api/admin/products/:id/images/:imageId` | Remove image from product |
+| GET    | `/api/admin/products/:id/variants` | List product variants |
+| POST   | `/api/admin/products/:id/variants` | Create variant |
+| GET    | `/api/admin/products/:id/variants/:variantId` | Get variant |
+| PATCH  | `/api/admin/products/:id/variants/:variantId` | Update variant |
+| DELETE | `/api/admin/products/:id/variants/:variantId` | Delete variant |
 | GET    | `/api/admin/orders`          | List all orders     |
 | GET    | `/api/admin/orders/:id`      | Get order detail    |
 | GET    | `/api/admin/uploads/cos-sts` | Get temporary COS upload credentials |
@@ -281,7 +286,20 @@ The storefront supports a single-product "Buy Now" checkout flow:
 | `/checkout/:slug` | Checkout page for a single product |
 | `/orders/:orderNo` | Order confirmation / detail page |
 
-Order numbers follow the format `WJK-YYYYMMDD-XXXXX`. Prices are calculated server-side; the frontend never sends price data.
+Order numbers follow the format `WJK-YYYYMMDD-XXXXX`. Prices are calculated server-side from the selected variant; the frontend never sends price data.
+
+## Product Variants
+
+Products support multiple sellable variants (e.g., Standard Edition, Deluxe Edition).
+
+- **Product** = shared info (name, brand, category, description, images)
+- **ProductVariant** = sellable unit (price, stock, SKU, availability, status)
+- Each variant has `priceCents` (integer), `stock`, `sku` (unique), `status`, `availabilityType`
+- One variant per product is marked `isDefault`
+- Admin manages variants on the product edit page
+- Storefront shows a variant selector on product detail
+- Buy Now requires selecting a variant; orders store variant snapshot info
+- Product listing cards show the default variant price (or "From $X" if multiple variants)
 
 ## Product Image Upload (Tencent COS)
 

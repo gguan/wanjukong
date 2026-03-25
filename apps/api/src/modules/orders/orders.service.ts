@@ -12,11 +12,11 @@ export class OrdersService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Create a single-product "Buy Now" order.
-   * Price is always computed server-side from the product record.
+   * Create a single-product "Buy Now" order using a specific variant.
+   * Price is always computed server-side from the variant record.
    */
   async createBuyNow(dto: CreateBuyNowOrderDto) {
-    // 1. Load product
+    // 1. Load product + brand/category
     const product = await this.prisma.product.findUnique({
       where: { id: dto.productId },
       include: { brand: true, category: true },
@@ -30,30 +30,43 @@ export class OrdersService {
       throw new BadRequestException('Product is not available for purchase');
     }
 
-    // 2. Stock check
+    // 2. Load variant
+    const variant = await this.prisma.productVariant.findFirst({
+      where: { id: dto.variantId, productId: dto.productId },
+    });
+
+    if (!variant) {
+      throw new NotFoundException('Variant not found for this product');
+    }
+
+    if (variant.status !== ProductStatus.ACTIVE) {
+      throw new BadRequestException('This variant is not available for purchase');
+    }
+
+    // 3. Stock check (using variant stock)
     if (
-      product.availability === AvailabilityType.IN_STOCK &&
-      product.stock < dto.quantity
+      variant.availabilityType === AvailabilityType.IN_STOCK &&
+      variant.stock < dto.quantity
     ) {
       throw new BadRequestException(
-        `Insufficient stock. Available: ${product.stock}`,
+        `Insufficient stock. Available: ${variant.stock}`,
       );
     }
 
-    // 3. Calculate pricing (convert Decimal price to cents)
-    const unitPriceCents = Math.round(Number(product.price) * 100);
+    // 4. Calculate pricing from variant
+    const unitPriceCents = variant.priceCents;
     const totalItemCents = unitPriceCents * dto.quantity;
     const currency = dto.currency || 'USD';
 
-    // 4. Generate order number
+    // 5. Generate order number
     const orderNo = this.generateOrderNo();
 
-    // 5. Create order + item in a transaction
+    // 6. Create order + item in a transaction
     const order = await this.prisma.$transaction(async (tx) => {
-      // Deduct stock for IN_STOCK items
-      if (product.availability === AvailabilityType.IN_STOCK) {
-        await tx.product.update({
-          where: { id: product.id },
+      // Deduct stock for IN_STOCK variants
+      if (variant.availabilityType === AvailabilityType.IN_STOCK) {
+        await tx.productVariant.update({
+          where: { id: variant.id },
           data: { stock: { decrement: dto.quantity } },
         });
       }
@@ -76,11 +89,15 @@ export class OrdersService {
           items: {
             create: {
               productId: product.id,
+              variantId: variant.id,
               productNameSnapshot: product.name,
               productSlugSnapshot: product.slug,
+              variantNameSnapshot: variant.name,
+              skuSnapshot: variant.sku,
               brandNameSnapshot: product.brand?.name,
               categoryNameSnapshot: product.category?.name,
-              coverImageUrlSnapshot: product.imageUrl,
+              coverImageUrlSnapshot:
+                variant.coverImageUrl || product.imageUrl,
               scaleSnapshot: product.scale,
               unitPriceCents,
               quantity: dto.quantity,

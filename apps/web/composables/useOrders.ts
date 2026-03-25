@@ -2,6 +2,8 @@ export interface OrderItem {
   id: string;
   productNameSnapshot: string;
   productSlugSnapshot: string;
+  variantNameSnapshot: string | null;
+  skuSnapshot: string | null;
   brandNameSnapshot: string | null;
   categoryNameSnapshot: string | null;
   coverImageUrlSnapshot: string | null;
@@ -34,6 +36,7 @@ export interface Order {
 
 export interface BuyNowPayload {
   productId: string;
+  variantId: string;
   quantity: number;
   fullName: string;
   email: string;
