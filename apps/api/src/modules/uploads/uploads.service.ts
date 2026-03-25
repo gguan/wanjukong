@@ -1,7 +1,5 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const STS = require('qcloud-cos-sts');
+import * as STS from 'qcloud-cos-sts';
 
 @Injectable()
 export class UploadsService {
