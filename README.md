@@ -300,28 +300,27 @@ Product visibility and selling state are separate concepts:
 | `ACTIVE` | Visible | Depends on availability |
 | `INACTIVE` | Hidden | No |
 
-**Availability** (selling state, only matters when status = ACTIVE):
+Storefront selling state is derived from shared product sale rules plus aggregate variant stock:
 
-| Availability | Visible | Purchasable |
+| Derived State | Visible | Purchasable |
 | ------------ | ------- | ----------- |
 | `IN_STOCK` | Yes | Yes |
-| `PREORDER` | Yes | Yes (preorder) |
-| `SOLD_OUT` | Yes | No (shows "Sold Out") |
-| `COMING_SOON` | Yes | No (shows "Coming Soon") |
+| `PREORDER` | Yes | Yes (only inside the preorder window) |
+| `SOLD_OUT` | Yes | No |
 
-The Buy Now API enforces these rules server-side. Only `IN_STOCK` and `PREORDER` variants can be ordered.
+The Buy Now API enforces these rules server-side. Variant stock is checked independently, but sale mode is shared at the product level.
 
 ## Product Variants
 
 Products support multiple sellable variants (e.g., Standard Edition, Deluxe Edition).
 
-- **Product** = shared info (name, brand, category, description, images, sale type)
-- **ProductVariant** = sellable unit (price, stock, SKU, availability, status, specifications)
-- Each variant has `priceCents` (integer), `stock`, `sku` (unique), `status`, `availabilityType`, `specifications` (text)
+- **Product** = shared info and shared sale rules (name, brand, category, description, images, sale type, preorder dates)
+- **ProductVariant** = sellable edition (price, stock, SKU, specifications)
+- Each variant has `priceCents` (integer), `stock`, `sku` (unique), and `specifications` (text)
 - One variant per product is marked `isDefault` — the default variant **cannot be deleted**
-- Creating a new product auto-creates a "Standard" default variant
+- Creating a new product creates a default variant in the same backend transaction
 - Admin manages variants on the product edit page
-- Storefront shows a variant selector on product detail; variant specifications display below description
+- Storefront shows a variant selector on product detail; sold-out variants stay visible but are not purchasable
 - Buy Now requires selecting a variant; orders store variant snapshot info
 - Product listing cards show the default variant price (or "From $X" if multiple variants)
 
@@ -332,9 +331,9 @@ Products have a `saleType` field:
 | Sale Type | Behavior |
 | --------- | -------- |
 | `IN_STOCK` | Normal sale, preorder dates are cleared |
-| `PREORDER` | Shows preorder date range and estimated ship date on storefront |
+| `PREORDER` | Shows preorder date range and estimated ship date on storefront; only purchasable inside the preorder window |
 
-Admin can set preorder start/end dates and estimated ship date on the product edit page. When sale type is "In Stock", the preorder date fields are hidden.
+Admin can set preorder start/end dates and estimated ship date on the product edit page. After the preorder window ends, operations manually switch the product to `IN_STOCK`.
 
 ## Product Image Upload (Tencent COS)
 

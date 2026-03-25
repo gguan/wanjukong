@@ -1,6 +1,8 @@
 import { BadRequestException } from '@nestjs/common';
 import { describe, expect, it, vi } from 'vitest';
 import { OrdersService } from './orders.service';
+import type { PrismaService } from '../../prisma/prisma.service';
+import type { CreateBuyNowOrderDto } from './dto/create-buy-now-order.dto';
 
 describe('OrdersService.createBuyNow', () => {
   it('rejects preorder purchases outside the preorder window', async () => {
@@ -42,7 +44,7 @@ describe('OrdersService.createBuyNow', () => {
       $transaction: vi.fn(async (callback: (innerTx: typeof tx) => Promise<unknown>) =>
         callback(tx),
       ),
-    } as any;
+    } as unknown as PrismaService;
 
     const service = new OrdersService(prisma);
 
@@ -56,7 +58,7 @@ describe('OrdersService.createBuyNow', () => {
         country: 'US',
         city: 'Shanghai',
         addressLine1: 'Road 1',
-      } as any),
+      } as CreateBuyNowOrderDto),
     ).rejects.toThrow(BadRequestException);
   });
 
@@ -99,7 +101,7 @@ describe('OrdersService.createBuyNow', () => {
       $transaction: vi.fn(async (callback: (innerTx: typeof tx) => Promise<unknown>) =>
         callback(tx),
       ),
-    } as any;
+    } as unknown as PrismaService;
 
     const service = new OrdersService(prisma);
 
@@ -112,7 +114,7 @@ describe('OrdersService.createBuyNow', () => {
       country: 'US',
       city: 'Shanghai',
       addressLine1: 'Road 1',
-    } as any);
+    } as CreateBuyNowOrderDto);
 
     expect(tx.productVariant.updateMany).toHaveBeenCalledWith({
       where: { id: 'variant-1', stock: { gte: 2 } },

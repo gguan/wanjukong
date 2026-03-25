@@ -3,14 +3,21 @@ import {
   deriveVariantPurchasability,
 } from '@wanjukong/shared';
 
-export function toPublicProductView<T extends { variants?: Array<{ stock: number }> }>(
-  product: T & {
-    status: 'DRAFT' | 'ACTIVE' | 'INACTIVE';
-    saleType: 'IN_STOCK' | 'PREORDER';
-    preorderStartAt: Date | null;
-    preorderEndAt: Date | null;
-    variants: Array<T['variants'] extends Array<infer U> ? U : { stock: number }>;
-  },
+type StorefrontVariant = { stock: number };
+
+type StorefrontProduct<TVariant extends StorefrontVariant> = {
+  status: 'DRAFT' | 'ACTIVE' | 'INACTIVE';
+  saleType: 'IN_STOCK' | 'PREORDER';
+  preorderStartAt: Date | null;
+  preorderEndAt: Date | null;
+  variants: TVariant[];
+};
+
+export function toPublicProductView<
+  TVariant extends StorefrontVariant,
+  TProduct extends StorefrontProduct<TVariant>,
+>(
+  product: TProduct,
   now = new Date(),
 ) {
   const variantStocks = product.variants.map((variant) => variant.stock);

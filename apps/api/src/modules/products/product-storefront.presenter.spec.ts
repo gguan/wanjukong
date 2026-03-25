@@ -3,10 +3,10 @@ import { toPublicProductView } from './product-storefront.presenter';
 
 describe('toPublicProductView', () => {
   it('marks a product as sold out when all variants have zero stock', () => {
-    const view = toPublicProductView({
+    const product = {
       id: 'p1',
-      status: 'ACTIVE',
-      saleType: 'IN_STOCK',
+      status: 'ACTIVE' as const,
+      saleType: 'IN_STOCK' as const,
       preorderStartAt: null,
       preorderEndAt: null,
       variants: [
@@ -18,7 +18,8 @@ describe('toPublicProductView', () => {
           priceCents: 12000,
         },
       ],
-    } as any);
+    };
+    const view = toPublicProductView(product);
 
     expect(view.displayAvailability).toBe('SOLD_OUT');
     expect(view.isPurchasable).toBe(false);
@@ -27,23 +28,24 @@ describe('toPublicProductView', () => {
   });
 
   it('marks an in-stock variant purchasable during the preorder window', () => {
+    const product = {
+      id: 'p2',
+      status: 'ACTIVE' as const,
+      saleType: 'PREORDER' as const,
+      preorderStartAt: new Date('2026-03-20T00:00:00Z'),
+      preorderEndAt: new Date('2026-03-30T00:00:00Z'),
+      variants: [
+        {
+          id: 'v1',
+          stock: 3,
+          sortOrder: 0,
+          name: 'Standard',
+          priceCents: 12000,
+        },
+      ],
+    };
     const view = toPublicProductView(
-      {
-        id: 'p2',
-        status: 'ACTIVE',
-        saleType: 'PREORDER',
-        preorderStartAt: new Date('2026-03-20T00:00:00Z'),
-        preorderEndAt: new Date('2026-03-30T00:00:00Z'),
-        variants: [
-          {
-            id: 'v1',
-            stock: 3,
-            sortOrder: 0,
-            name: 'Standard',
-            priceCents: 12000,
-          },
-        ],
-      } as any,
+      product,
       new Date('2026-03-25T12:00:00Z'),
     );
 

@@ -7,12 +7,6 @@ import { toPublicProductView } from './product-storefront.presenter';
 
 const includeRelations = { brand: true, category: true };
 
-const includeRelationsWithImages = {
-  brand: true,
-  category: true,
-  images: { orderBy: { sortOrder: 'asc' as const } },
-};
-
 const includeRelationsFull = {
   brand: true,
   category: true,
@@ -47,7 +41,7 @@ export class ProductsService {
 
   create(dto: CreateProductDto) {
     const { defaultVariant, ...rest } = dto;
-    const data: any = { ...rest };
+    const data: Prisma.ProductUncheckedCreateInput = { ...rest };
     // Convert date strings to Date objects
     if (dto.preorderStartAt) data.preorderStartAt = new Date(dto.preorderStartAt);
     if (dto.preorderEndAt) data.preorderEndAt = new Date(dto.preorderEndAt);
@@ -80,7 +74,7 @@ export class ProductsService {
   }
 
   update(id: string, dto: UpdateProductDto) {
-    const data: any = { ...dto };
+    const data: Prisma.ProductUncheckedUpdateInput = { ...dto };
     // Convert date strings to Date objects or null
     if (dto.preorderStartAt !== undefined) {
       data.preorderStartAt = dto.preorderStartAt ? new Date(dto.preorderStartAt) : null;

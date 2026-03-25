@@ -15,18 +15,20 @@ const form = ref({
   name: '',
   slug: '',
   description: '',
-  price: 0,
-  stock: 0,
   scale: '1/6',
   status: 'DRAFT',
-  availability: 'IN_STOCK',
-  imageUrl: '',
   brandId: '',
   categoryId: '',
   saleType: 'IN_STOCK',
   preorderStartAt: '',
   preorderEndAt: '',
   estimatedShipAt: '',
+  defaultVariant: {
+    name: 'Standard',
+    sku: '',
+    priceCents: 0,
+    stock: 0,
+  },
 });
 
 const isPreorder = computed(() => form.value.saleType === 'PREORDER');
@@ -41,6 +43,9 @@ function generateSlug() {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '');
+  if (!form.value.defaultVariant.sku) {
+    form.value.defaultVariant.sku = `${form.value.slug}-std`;
+  }
 }
 
 async function save() {
@@ -49,10 +54,12 @@ async function save() {
   try {
     const payload: Record<string, unknown> = {
       ...form.value,
-      price: Number(form.value.price),
-      stock: Number(form.value.stock),
-      imageUrl: form.value.imageUrl || undefined,
       description: form.value.description || undefined,
+      defaultVariant: {
+        ...form.value.defaultVariant,
+        priceCents: Number(form.value.defaultVariant.priceCents),
+        stock: Number(form.value.defaultVariant.stock),
+      },
     };
 
     // Handle preorder dates
@@ -62,20 +69,7 @@ async function save() {
     }
     payload.estimatedShipAt = form.value.estimatedShipAt ? new Date(form.value.estimatedShipAt).toISOString() : undefined;
 
-    // 1. Create product
     const product = await api.post<{ id: string }>('/api/admin/products', payload);
-
-    // 2. Auto-create standard variant
-    await api.post(`/api/admin/products/${product.id}/variants`, {
-      name: 'Standard',
-      sku: form.value.slug + '-std',
-      priceCents: Math.round(Number(form.value.price) * 100),
-      stock: Number(form.value.stock),
-      status: form.value.status,
-      availabilityType: form.value.availability,
-      isDefault: true,
-      sortOrder: 0,
-    });
 
     router.push(`/products/${product.id}`);
   } catch (e: unknown) {
@@ -121,18 +115,8 @@ async function save() {
         </label>
 
         <label>
-          Price *
-          <input v-model="form.price" type="number" step="0.01" min="0" required />
-        </label>
-
-        <label>
           Scale
           <input v-model="form.scale" placeholder="1/6" />
-        </label>
-
-        <label>
-          Stock
-          <input v-model="form.stock" type="number" min="0" />
         </label>
 
         <label>
@@ -143,17 +127,6 @@ async function save() {
             <option value="INACTIVE">Inactive</option>
           </select>
           <small class="field-help">Controls storefront visibility</small>
-        </label>
-
-        <label>
-          Availability
-          <select v-model="form.availability">
-            <option value="IN_STOCK">In Stock</option>
-            <option value="PREORDER">Preorder</option>
-            <option value="SOLD_OUT">Sold Out</option>
-            <option value="COMING_SOON">Coming Soon</option>
-          </select>
-          <small class="field-help">Controls whether customers can purchase</small>
         </label>
 
         <label>
@@ -181,20 +154,39 @@ async function save() {
           <input v-model="form.estimatedShipAt" type="datetime-local" />
         </label>
 
-        <div class="full-width">
-          <span class="field-label">Cover Image</span>
-          <ProductImageUploader v-model="form.imageUrl" />
-        </div>
-
         <label class="full-width">
           Description
           <textarea v-model="form.description" rows="4" />
         </label>
+
+        <div class="full-width variant-panel">
+          <h3>Default Variant</h3>
+          <div class="form-grid nested-grid">
+            <label>
+              Variant Name *
+              <input v-model="form.defaultVariant.name" required />
+            </label>
+
+            <label>
+              SKU *
+              <input v-model="form.defaultVariant.sku" required />
+            </label>
+
+            <label>
+              Price (cents) *
+              <input v-model.number="form.defaultVariant.priceCents" type="number" min="0" required />
+            </label>
+
+            <label>
+              Stock *
+              <input v-model.number="form.defaultVariant.stock" type="number" min="0" required />
+            </label>
+          </div>
+        </div>
       </div>
 
       <p class="create-note">
-        A default "Standard" variant will be created automatically with the price and stock entered above.
-        You can add more variants after saving.
+        The first variant is created in the same request as the product. Add images and more variants after saving.
       </p>
 
       <div class="form-actions">
@@ -212,7 +204,10 @@ h2 { margin: 0 0 20px; }
 .error-msg { background: #fef2f2; border: 1px solid #fca5a5; color: #b91c1c; padding: 10px; border-radius: 4px; margin-bottom: 16px; }
 .product-form { max-width: 700px; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.nested-grid { margin-top: 12px; }
 .full-width { grid-column: 1 / -1; }
+.variant-panel { border: 1px solid #e5e7eb; border-radius: 6px; padding: 16px; background: #f9fafb; }
+.variant-panel h3 { margin: 0; font-size: 1rem; color: #222; }
 label, .field-label { display: block; font-size: 0.875rem; color: #555; }
 .field-label { margin-bottom: 6px; }
 .field-help { display: block; font-size: 0.7rem; color: #999; margin-top: 2px; }

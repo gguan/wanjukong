@@ -5,16 +5,13 @@ const props = defineProps<{
   product: Product;
 }>();
 
-// Derive display price from default variant, or fall back to product.price
 const displayPrice = computed(() => {
   const variants = props.product.variants;
-  if (variants && variants.length > 0) {
+  if (variants?.length) {
     const def = variants.find((v) => v.isDefault) || variants[0];
     return def.priceCents / 100;
   }
-  return typeof props.product.price === 'string'
-    ? parseFloat(props.product.price)
-    : props.product.price;
+  return 0;
 });
 
 const hasMultipleVariants = computed(() => (props.product.variants?.length ?? 0) > 1);
@@ -31,9 +28,8 @@ const hasMultipleVariants = computed(() => (props.product.variants?.length ?? 0)
       <div v-else class="placeholder">
         <span>No Image</span>
       </div>
-      <span v-if="product.availability === 'PREORDER'" class="badge preorder">Pre-order</span>
-      <span v-else-if="product.availability === 'SOLD_OUT'" class="badge sold-out">Sold Out</span>
-      <span v-else-if="product.availability === 'COMING_SOON'" class="badge coming-soon">Coming Soon</span>
+      <span v-if="product.displayAvailability === 'PREORDER'" class="badge preorder">Pre-order</span>
+      <span v-else-if="product.displayAvailability === 'SOLD_OUT'" class="badge sold-out">Sold Out</span>
     </div>
     <div class="card-body">
       <p class="brand-name">{{ product.brand.name }}</p>
@@ -107,11 +103,6 @@ const hasMultipleVariants = computed(() => (props.product.variants?.length ?? 0)
 .badge.sold-out {
   background: #fee2e2;
   color: #991b1b;
-}
-
-.badge.coming-soon {
-  background: #ede9fe;
-  color: #5b21b6;
 }
 
 .card-body {

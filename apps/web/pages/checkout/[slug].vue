@@ -49,10 +49,7 @@ const form = reactive({
 
 const unitPrice = computed(() => {
   if (selectedVariant.value) return selectedVariant.value.priceCents / 100;
-  if (!product.value) return 0;
-  return typeof product.value.price === 'string'
-    ? parseFloat(product.value.price)
-    : product.value.price;
+  return 0;
 });
 
 const subtotal = computed(() => unitPrice.value * quantity.value);
@@ -66,6 +63,12 @@ async function handleSubmit() {
   if (!product.value) return;
   if (!selectedVariant.value) {
     submitError.value = 'Please select a variant';
+    return;
+  }
+  if (!product.value.isPurchasable || !selectedVariant.value.isPurchasable) {
+    submitError.value = selectedVariant.value.isSoldOut
+      ? 'This variant is sold out'
+      : 'This product is not currently available for purchase';
     return;
   }
   submitError.value = '';
@@ -138,7 +141,7 @@ async function handleSubmit() {
             v-for="v in product.variants"
             :key="v.id"
             class="variant-option"
-            :class="{ selected: v.id === selectedVariantId }"
+            :class="{ selected: v.id === selectedVariantId, soldout: v.isSoldOut }"
           >
             <input
               v-model="selectedVariantId"
@@ -146,9 +149,11 @@ async function handleSubmit() {
               :value="v.id"
               name="variant"
               class="radio-hidden"
+              :disabled="v.isSoldOut"
             />
             <span class="variant-option-name">{{ v.name }}</span>
             <span class="variant-option-price">${{ (v.priceCents / 100).toFixed(2) }}</span>
+            <span v-if="v.isSoldOut" class="variant-option-state">Sold Out</span>
           </label>
         </div>
       </fieldset>
@@ -233,7 +238,11 @@ async function handleSubmit() {
 
         <div v-if="submitError" class="form-error">{{ submitError }}</div>
 
-        <button type="submit" class="submit-btn" :disabled="submitting">
+        <button
+          type="submit"
+          class="submit-btn"
+          :disabled="submitting || !product.isPurchasable || !selectedVariant?.isPurchasable"
+        >
           {{ submitting ? 'Placing Order...' : 'Place Order' }}
         </button>
       </form>
@@ -258,6 +267,8 @@ async function handleSubmit() {
 .variant-option { display: flex; flex-direction: column; align-items: center; padding: 10px 16px; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer; min-width: 100px; }
 .variant-option.selected { border-color: #111; background: #f9fafb; }
 .variant-option:hover:not(.selected) { border-color: #d1d5db; }
+.variant-option.soldout { border-color: #fecaca; background: #fff5f5; opacity: 0.7; }
+.variant-option-state { font-size: 0.7rem; color: #b91c1c; margin-top: 4px; }
 .variant-option-name { font-size: 0.85rem; font-weight: 600; }
 .variant-option-price { font-size: 0.75rem; color: #666; margin-top: 2px; }
 .radio-hidden { display: none; }

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ProductsService } from './products.service';
+import type { PrismaService } from '../../prisma/prisma.service';
 
 describe('ProductsService.create', () => {
   it('creates the product and default variant in one transaction', async () => {
@@ -22,7 +23,7 @@ describe('ProductsService.create', () => {
       $transaction: vi.fn(async (callback: (innerTx: typeof tx) => Promise<unknown>) =>
         callback(tx),
       ),
-    } as any;
+    } as unknown as PrismaService;
 
     const service = new ProductsService(prisma);
 
@@ -38,7 +39,7 @@ describe('ProductsService.create', () => {
         priceCents: 12999,
         stock: 5,
       },
-    } as any);
+    } as never);
 
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     expect(tx.product.create).toHaveBeenCalledTimes(1);
