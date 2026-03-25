@@ -29,7 +29,6 @@ export class UploadsService {
     }
 
     const appId = bucket.split('-').pop() || '';
-    const shortBucketName = bucket.replace(`-${appId}`, '');
 
     const policy = {
       version: '2.0',
@@ -46,7 +45,7 @@ export class UploadsService {
           ],
           effect: 'allow',
           resource: [
-            `qcs::cos:${region}:uid/${appId}:${shortBucketName}-${appId}/products/*`,
+            `qcs::cos:${region}:uid/${appId}:${bucket}/products/*`,
           ],
         },
       ],

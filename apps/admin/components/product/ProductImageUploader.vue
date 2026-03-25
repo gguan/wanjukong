@@ -67,9 +67,9 @@ async function handleFileChange(event: Event) {
     const rand = Math.random().toString(36).substring(2, 8);
     const key = `${sts.keyPrefix}${timestamp}-${rand}.${ext}`;
 
-    // Upload to COS
+    // Upload to COS (simple put for files < 10MB)
     await new Promise<void>((resolve, reject) => {
-      cos.uploadFile(
+      cos.putObject(
         {
           Bucket: sts.bucket,
           Region: sts.region,
