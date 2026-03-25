@@ -1,4 +1,4 @@
-import { PrismaClient, ProductStatus, AvailabilityType, SaleType } from '@prisma/client';
+import { PrismaClient, ProductStatus, SaleType } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -71,17 +71,28 @@ async function main() {
   });
 
   // Products
-  const products = [
+  type SeedProduct = {
+    name: string;
+    slug: string;
+    description: string;
+    scale: string;
+    status: ProductStatus;
+    saleType?: SaleType;
+    preorderStartAt?: Date;
+    preorderEndAt?: Date;
+    estimatedShipAt?: Date;
+    brandId: string;
+    categoryId: string;
+  };
+
+  const products: SeedProduct[] = [
     {
       name: 'Hot Toys MMS617 Spider-Man No Way Home 1/6',
       slug: 'hot-toys-spider-man-nwh',
       description:
         'Spider-Man (Integrated Suit) 1/6th scale collectible figure',
-      price: 275.0,
-      stock: 10,
       scale: '1/6',
       status: ProductStatus.ACTIVE,
-      availability: AvailabilityType.IN_STOCK,
       brandId: hotToys.id,
       categoryId: figure.id,
     },
@@ -89,11 +100,8 @@ async function main() {
       name: 'Hot Toys MMS656 The Batman 1/6',
       slug: 'hot-toys-the-batman',
       description: 'The Batman 1/6th scale collectible figure',
-      price: 310.0,
-      stock: 0,
       scale: '1/6',
       status: ProductStatus.ACTIVE,
-      availability: AvailabilityType.PREORDER,
       saleType: SaleType.PREORDER,
       preorderStartAt: new Date('2026-04-01T00:00:00Z'),
       preorderEndAt: new Date('2026-06-01T00:00:00Z'),
@@ -105,11 +113,8 @@ async function main() {
       name: 'DAM DMS032 Assassins Creed Altair 1/6',
       slug: 'dam-assassins-creed-altair',
       description: "Altair the Mentor Assassin's Creed collectible figure",
-      price: 230.0,
-      stock: 5,
       scale: '1/6',
       status: ProductStatus.ACTIVE,
-      availability: AvailabilityType.IN_STOCK,
       brandId: dam.id,
       categoryId: figure.id,
     },
@@ -117,11 +122,8 @@ async function main() {
       name: 'Threezero Ultraman Suit 1/6',
       slug: 'threezero-ultraman-suit',
       description: 'Ultraman Suit anime edition 1/6th scale figure',
-      price: 199.0,
-      stock: 0,
       scale: '1/6',
       status: ProductStatus.DRAFT,
-      availability: AvailabilityType.PREORDER,
       brandId: threezero.id,
       categoryId: figure.id,
     },
@@ -129,11 +131,8 @@ async function main() {
       name: 'Hot Toys Headsculpt Tony Stark MK85',
       slug: 'hot-toys-headsculpt-tony-stark-mk85',
       description: 'Tony Stark battle damaged head sculpt for MK85',
-      price: 45.0,
-      stock: 20,
       scale: '1/6',
       status: ProductStatus.ACTIVE,
-      availability: AvailabilityType.IN_STOCK,
       brandId: hotToys.id,
       categoryId: headSculpt.id,
     },
@@ -141,11 +140,8 @@ async function main() {
       name: 'DAM Narrow Shoulder Body 2.0',
       slug: 'dam-narrow-shoulder-body-2',
       description: 'DAM narrow shoulder male body version 2.0',
-      price: 38.0,
-      stock: 15,
       scale: '1/6',
       status: ProductStatus.ACTIVE,
-      availability: AvailabilityType.IN_STOCK,
       brandId: dam.id,
       categoryId: body.id,
     },
@@ -153,27 +149,37 @@ async function main() {
       name: 'Hot Toys Tactical Suit Set MMS',
       slug: 'hot-toys-tactical-suit-set',
       description: 'Generic tactical clothing set for 1/6 figures',
-      price: 55.0,
-      stock: 8,
       scale: '1/6',
       status: ProductStatus.INACTIVE,
-      availability: AvailabilityType.IN_STOCK,
       brandId: hotToys.id,
       categoryId: clothing.id,
     },
   ];
 
   for (const p of products) {
+    const {
+      saleType,
+      preorderStartAt,
+      preorderEndAt,
+      estimatedShipAt,
+      ...baseProduct
+    } = p;
+
     await prisma.product.upsert({
       where: { slug: p.slug },
       update: {
-        stock: p.stock,
-        ...((p as any).saleType ? { saleType: (p as any).saleType } : {}),
-        ...((p as any).preorderStartAt ? { preorderStartAt: (p as any).preorderStartAt } : {}),
-        ...((p as any).preorderEndAt ? { preorderEndAt: (p as any).preorderEndAt } : {}),
-        ...((p as any).estimatedShipAt ? { estimatedShipAt: (p as any).estimatedShipAt } : {}),
+        ...(saleType ? { saleType } : {}),
+        ...(preorderStartAt ? { preorderStartAt } : {}),
+        ...(preorderEndAt ? { preorderEndAt } : {}),
+        ...(estimatedShipAt ? { estimatedShipAt } : {}),
       },
-      create: p,
+      create: {
+        ...baseProduct,
+        ...(saleType ? { saleType } : {}),
+        ...(preorderStartAt ? { preorderStartAt } : {}),
+        ...(preorderEndAt ? { preorderEndAt } : {}),
+        ...(estimatedShipAt ? { estimatedShipAt } : {}),
+      },
     });
   }
 
@@ -193,8 +199,6 @@ async function main() {
       sku: 'HT-MMS617-STD',
       priceCents: 27500,
       stock: 8,
-      availabilityType: AvailabilityType.IN_STOCK,
-      status: ProductStatus.ACTIVE,
       isDefault: true,
       sortOrder: 0,
       subtitle: 'Standard figure with basic accessories',
@@ -207,8 +211,6 @@ async function main() {
       sku: 'HT-MMS617-DLX',
       priceCents: 35000,
       stock: 3,
-      availabilityType: AvailabilityType.IN_STOCK,
-      status: ProductStatus.ACTIVE,
       isDefault: false,
       sortOrder: 1,
       subtitle: 'Includes extra hands, web effects, and display base',
@@ -222,8 +224,6 @@ async function main() {
       sku: 'HT-MMS656-STD',
       priceCents: 31000,
       stock: 0,
-      availabilityType: AvailabilityType.PREORDER,
-      status: ProductStatus.ACTIVE,
       isDefault: true,
       sortOrder: 0,
       subtitle: 'Standard figure with batarang',
@@ -235,8 +235,6 @@ async function main() {
       sku: 'HT-MMS656-DLX',
       priceCents: 39500,
       stock: 0,
-      availabilityType: AvailabilityType.PREORDER,
-      status: ProductStatus.ACTIVE,
       isDefault: false,
       sortOrder: 1,
       subtitle: 'Includes Bat-Signal base and extra accessories',
@@ -249,8 +247,6 @@ async function main() {
       sku: 'DAM-DMS032-STD',
       priceCents: 23000,
       stock: 5,
-      availabilityType: AvailabilityType.IN_STOCK,
-      status: ProductStatus.ACTIVE,
       isDefault: true,
       sortOrder: 0,
     },
@@ -262,8 +258,6 @@ async function main() {
       sku: 'HT-HS-TONY-MK85',
       priceCents: 4500,
       stock: 20,
-      availabilityType: AvailabilityType.IN_STOCK,
-      status: ProductStatus.ACTIVE,
       isDefault: true,
       sortOrder: 0,
     },
@@ -275,8 +269,6 @@ async function main() {
       sku: 'DAM-BODY-NS-2',
       priceCents: 3800,
       stock: 15,
-      availabilityType: AvailabilityType.IN_STOCK,
-      status: ProductStatus.ACTIVE,
       isDefault: true,
       sortOrder: 0,
     },
@@ -285,7 +277,11 @@ async function main() {
   for (const v of variants) {
     await prisma.productVariant.upsert({
       where: { sku: v.sku },
-      update: { priceCents: v.priceCents, stock: v.stock, specifications: (v as any).specifications ?? undefined },
+      update: {
+        priceCents: v.priceCents,
+        stock: v.stock,
+        specifications: 'specifications' in v ? v.specifications : undefined,
+      },
       create: v,
     });
   }

@@ -17,12 +17,8 @@ const form = ref({
   name: '',
   slug: '',
   description: '',
-  price: 0,
-  stock: 0,
   scale: '',
   status: 'DRAFT',
-  availability: 'IN_STOCK',
-  imageUrl: '',
   brandId: '',
   categoryId: '',
   saleType: 'IN_STOCK',
@@ -45,12 +41,8 @@ onMounted(async () => {
     name: product.name as string,
     slug: product.slug as string,
     description: (product.description as string) || '',
-    price: Number(product.price),
-    stock: Number(product.stock ?? 0),
     scale: (product.scale as string) || '',
     status: product.status as string,
-    availability: product.availability as string,
-    imageUrl: (product.imageUrl as string) || '',
     brandId: product.brandId as string,
     categoryId: product.categoryId as string,
     saleType: (product.saleType as string) || 'IN_STOCK',
@@ -78,9 +70,6 @@ async function save() {
   try {
     const payload: Record<string, unknown> = {
       ...form.value,
-      price: Number(form.value.price),
-      stock: Number(form.value.stock),
-      imageUrl: form.value.imageUrl || undefined,
       description: form.value.description || undefined,
     };
 
@@ -141,23 +130,13 @@ async function save() {
             </select>
           </label>
 
-          <label>
-            Price *
-            <input v-model="form.price" type="number" step="0.01" min="0" required />
-          </label>
+        <label>
+          Scale
+          <input v-model="form.scale" placeholder="1/6" />
+        </label>
 
-          <label>
-            Scale
-            <input v-model="form.scale" placeholder="1/6" />
-          </label>
-
-          <label>
-            Stock
-            <input v-model="form.stock" type="number" min="0" />
-          </label>
-
-          <label>
-            Product Status
+        <label>
+          Product Status
             <select v-model="form.status">
               <option value="DRAFT">Draft</option>
               <option value="ACTIVE">Active</option>
@@ -166,20 +145,9 @@ async function save() {
             <small class="field-help">Controls storefront visibility</small>
           </label>
 
-          <label>
-            Availability
-            <select v-model="form.availability">
-              <option value="IN_STOCK">In Stock</option>
-              <option value="PREORDER">Preorder</option>
-              <option value="SOLD_OUT">Sold Out</option>
-              <option value="COMING_SOON">Coming Soon</option>
-            </select>
-            <small class="field-help">Controls whether customers can purchase</small>
-          </label>
-
-          <label>
-            Sale Type *
-            <select v-model="form.saleType">
+        <label>
+          Sale Type *
+          <select v-model="form.saleType">
               <option value="IN_STOCK">In Stock</option>
               <option value="PREORDER">Preorder</option>
             </select>
@@ -201,11 +169,6 @@ async function save() {
             Estimated Ship Date
             <input v-model="form.estimatedShipAt" type="datetime-local" />
           </label>
-
-          <div class="full-width">
-            <span class="field-label">Cover Image</span>
-            <ProductImageUploader v-model="form.imageUrl" />
-          </div>
 
           <label class="full-width">
             Description

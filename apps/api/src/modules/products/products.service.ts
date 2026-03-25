@@ -3,14 +3,9 @@ import { Prisma, ProductStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { toPublicProductView } from './product-storefront.presenter';
 
 const includeRelations = { brand: true, category: true };
-
-const includeRelationsWithImages = {
-  brand: true,
-  category: true,
-  images: { orderBy: { sortOrder: 'asc' as const } },
-};
 
 const includeRelationsFull = {
   brand: true,
@@ -45,7 +40,8 @@ export class ProductsService {
   }
 
   create(dto: CreateProductDto) {
-    const data: any = { ...dto };
+    const { defaultVariant, ...rest } = dto;
+    const data: Prisma.ProductUncheckedCreateInput = { ...rest };
     // Convert date strings to Date objects
     if (dto.preorderStartAt) data.preorderStartAt = new Date(dto.preorderStartAt);
     if (dto.preorderEndAt) data.preorderEndAt = new Date(dto.preorderEndAt);
@@ -55,14 +51,30 @@ export class ProductsService {
       data.preorderStartAt = null;
       data.preorderEndAt = null;
     }
-    return this.prisma.product.create({
-      data,
-      include: includeRelations,
+    return this.prisma.$transaction(async (tx) => {
+      const product = await tx.product.create({
+        data,
+        include: includeRelations,
+      });
+
+      await tx.productVariant.create({
+        data: {
+          productId: product.id,
+          name: defaultVariant.name,
+          sku: defaultVariant.sku,
+          priceCents: defaultVariant.priceCents,
+          stock: defaultVariant.stock,
+          isDefault: true,
+          sortOrder: 0,
+        },
+      });
+
+      return product;
     });
   }
 
   update(id: string, dto: UpdateProductDto) {
-    const data: any = { ...dto };
+    const data: Prisma.ProductUncheckedUpdateInput = { ...dto };
     // Convert date strings to Date objects or null
     if (dto.preorderStartAt !== undefined) {
       data.preorderStartAt = dto.preorderStartAt ? new Date(dto.preorderStartAt) : null;
@@ -89,7 +101,7 @@ export class ProductsService {
     return this.prisma.product.delete({ where: { id } });
   }
 
-  findAllActive(filters: ProductFilters = {}) {
+  async findAllActive(filters: ProductFilters = {}) {
     const where: Prisma.ProductWhereInput = {
       status: ProductStatus.ACTIVE,
     };
@@ -103,34 +115,37 @@ export class ProductsService {
     if (filters.scale) {
       where.scale = filters.scale;
     }
-    if (filters.availability) {
-      where.availability = filters.availability as any;
-    }
-
-    return this.prisma.product.findMany({
+    const products = await this.prisma.product.findMany({
       where,
       include: {
         ...includeRelations,
         variants: {
-          where: { status: ProductStatus.ACTIVE },
           orderBy: { sortOrder: 'asc' },
         },
       },
       orderBy: { createdAt: 'desc' },
     });
+
+    const views = products.map((product) => toPublicProductView(product));
+    if (!filters.availability) {
+      return views;
+    }
+    return views.filter(
+      (product) => product.displayAvailability === filters.availability,
+    );
   }
 
-  findBySlug(slug: string) {
-    return this.prisma.product.findFirst({
+  async findBySlug(slug: string) {
+    const product = await this.prisma.product.findFirst({
       where: { slug, status: ProductStatus.ACTIVE },
       include: {
         ...includeRelationsFull,
-        // Only return ACTIVE variants for public
         variants: {
-          where: { status: ProductStatus.ACTIVE },
           orderBy: { sortOrder: 'asc' },
         },
       },
     });
+
+    return product ? toPublicProductView(product) : null;
   }
 }

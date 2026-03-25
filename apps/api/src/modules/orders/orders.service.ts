@@ -3,7 +3,8 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { AvailabilityType, ProductStatus } from '@prisma/client';
+import { ProductStatus } from '@prisma/client';
+import { deriveProductDisplayAvailability } from '@wanjukong/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateBuyNowOrderDto } from './dto/create-buy-now-order.dto';
 
@@ -39,25 +40,24 @@ export class OrdersService {
       throw new NotFoundException('Variant not found for this product');
     }
 
-    if (variant.status !== ProductStatus.ACTIVE) {
-      throw new BadRequestException('This variant is not available for purchase');
-    }
+    const displayAvailability = deriveProductDisplayAvailability({
+      productStatus: product.status,
+      saleType: product.saleType,
+      preorderStartAt: product.preorderStartAt,
+      preorderEndAt: product.preorderEndAt,
+      now: new Date(),
+      variantStocks: [variant.stock],
+    });
 
     // 3. Availability check — only IN_STOCK and PREORDER are purchasable
-    if (
-      variant.availabilityType !== AvailabilityType.IN_STOCK &&
-      variant.availabilityType !== AvailabilityType.PREORDER
-    ) {
+    if (displayAvailability !== 'IN_STOCK' && displayAvailability !== 'PREORDER') {
       throw new BadRequestException(
-        `This variant is ${variant.availabilityType.toLowerCase().replace('_', ' ')} and cannot be purchased`,
+        'Product is not currently available for purchase',
       );
     }
 
-    // 4. Stock check (using variant stock, only for IN_STOCK)
-    if (
-      variant.availabilityType === AvailabilityType.IN_STOCK &&
-      variant.stock < dto.quantity
-    ) {
+    // 4. Stock check (variant-level)
+    if (variant.stock < dto.quantity) {
       throw new BadRequestException(
         `Insufficient stock. Available: ${variant.stock}`,
       );
@@ -73,12 +73,13 @@ export class OrdersService {
 
     // 7. Create order + item in a transaction
     const order = await this.prisma.$transaction(async (tx) => {
-      // Deduct stock for IN_STOCK variants
-      if (variant.availabilityType === AvailabilityType.IN_STOCK) {
-        await tx.productVariant.update({
-          where: { id: variant.id },
-          data: { stock: { decrement: dto.quantity } },
-        });
+      const updated = await tx.productVariant.updateMany({
+        where: { id: variant.id, stock: { gte: dto.quantity } },
+        data: { stock: { decrement: dto.quantity } },
+      });
+
+      if (updated.count !== 1) {
+        throw new BadRequestException('Insufficient stock');
       }
 
       return tx.order.create({

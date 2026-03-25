@@ -28,13 +28,6 @@ enum ProductStatus {
   INACTIVE
 }
 
-enum AvailabilityType {
-  IN_STOCK
-  PREORDER
-  SOLD_OUT
-  COMING_SOON
-}
-
 enum SaleType {
   IN_STOCK
   PREORDER
@@ -63,30 +56,27 @@ model Category {
 }
 
 model Product {
-  id               String           @id @default(cuid())
+  id               String        @id @default(cuid())
   name             String
-  slug             String           @unique
-  description      String?          @db.Text
-  price            Decimal          @db.Decimal(10, 2)
-  stock            Int              @default(0)
+  slug             String        @unique
+  description      String?       @db.Text
   scale            String?
-  status           ProductStatus    @default(DRAFT)
-  availability     AvailabilityType @default(IN_STOCK)
+  status           ProductStatus @default(DRAFT)
   imageUrl         String?
   brandId          String
   categoryId       String
 
   // Sale type & preorder
-  saleType         SaleType         @default(IN_STOCK)
+  saleType         SaleType      @default(IN_STOCK)
   preorderStartAt  DateTime?
   preorderEndAt    DateTime?
   estimatedShipAt  DateTime?
 
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
-  brand      Brand             @relation(fields: [brandId], references: [id])
-  category   Category          @relation(fields: [categoryId], references: [id])
+  brand      Brand           @relation(fields: [brandId], references: [id])
+  category   Category        @relation(fields: [categoryId], references: [id])
   orderItems OrderItem[]
   images     ProductImage[]
   variants   ProductVariant[]
@@ -97,31 +87,27 @@ model Product {
 }
 
 model ProductVariant {
-  id               String           @id @default(cuid())
-  productId        String
-  name             String
-  versionCode      String?
-  sku              String           @unique
-  priceCents       Int
-  stock            Int              @default(0)
-  availabilityType AvailabilityType @default(IN_STOCK)
-  status           ProductStatus    @default(DRAFT)
-  subtitle         String?
-  specSummary      String?
-  specifications   String?          @db.Text
-  estimatedShipAt  DateTime?
-  weightGrams      Int?
-  isDefault        Boolean          @default(false)
-  sortOrder        Int              @default(0)
-  coverImageUrl    String?
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  id             String   @id @default(cuid())
+  productId      String
+  name           String
+  versionCode    String?
+  sku            String   @unique
+  priceCents     Int
+  stock          Int      @default(0)
+  subtitle       String?
+  specSummary    String?
+  specifications String?  @db.Text
+  weightGrams    Int?
+  isDefault      Boolean  @default(false)
+  sortOrder      Int      @default(0)
+  coverImageUrl  String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
   orderItems OrderItem[]
 
   @@index([productId, sortOrder])
-  @@index([productId, status])
 }
 
 // ─── Upload / Image Models ────────────────────────────────

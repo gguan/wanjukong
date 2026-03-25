@@ -47,19 +47,14 @@ const displayImage = computed(() => {
 const hasMultipleImages = computed(() => (product.value?.images?.length ?? 0) > 1);
 
 const displayPrice = computed(() => {
-  if (selectedVariant.value) {
+  if (selectedVariant.value?.priceCents !== undefined) {
     return `$${(selectedVariant.value.priceCents / 100).toFixed(2)}`;
   }
-  if (!product.value) return '$0.00';
-  const num = typeof product.value.price === 'string'
-    ? parseFloat(product.value.price)
-    : product.value.price;
-  return `$${num.toFixed(2)}`;
+  return '$0.00';
 });
 
 const displayAvailability = computed(() => {
-  if (selectedVariant.value) return selectedVariant.value.availabilityType;
-  return product.value?.availability || 'IN_STOCK';
+  return product.value?.displayAvailability;
 });
 
 function selectImage(url: string) {
@@ -81,14 +76,12 @@ function availabilityLabel(a: string) {
     IN_STOCK: 'In Stock',
     PREORDER: 'Pre-order',
     SOLD_OUT: 'Sold Out',
-    COMING_SOON: 'Coming Soon',
   };
-  return labels[a] || a;
+  return labels[a] || 'Unavailable';
 }
 
 const isPurchasable = computed(() => {
-  const avail = displayAvailability.value;
-  return avail === 'IN_STOCK' || avail === 'PREORDER';
+  return Boolean(product.value?.isPurchasable && selectedVariant.value?.isPurchasable);
 });
 
 function formatDate(iso: string | null | undefined) {
@@ -148,7 +141,7 @@ const checkoutUrl = computed(() => {
         <div class="meta-row">
           <span class="meta-tag">{{ product.category.name }}</span>
           <span v-if="product.scale" class="meta-tag">{{ product.scale }}</span>
-          <span class="meta-tag" :class="displayAvailability.toLowerCase().replace('_', '-')">
+          <span class="meta-tag" :class="(displayAvailability || 'unavailable').toLowerCase().replace('_', '-')">
             {{ availabilityLabel(displayAvailability) }}
           </span>
         </div>
@@ -161,11 +154,13 @@ const checkoutUrl = computed(() => {
               v-for="v in product.variants"
               :key="v.id"
               class="variant-btn"
-              :class="{ selected: v.id === selectedVariantId }"
+              :class="{ selected: v.id === selectedVariantId, soldout: v.isSoldOut }"
+              :disabled="v.isSoldOut"
               @click="selectVariant(v)"
             >
               <span class="variant-btn-name">{{ v.name }}</span>
               <span class="variant-btn-price">${{ (v.priceCents / 100).toFixed(2) }}</span>
+              <span v-if="v.isSoldOut" class="variant-btn-state">Sold Out</span>
             </button>
           </div>
           <p v-if="selectedVariant?.subtitle" class="variant-subtitle">
@@ -175,7 +170,7 @@ const checkoutUrl = computed(() => {
 
         <p class="price">{{ displayPrice }}</p>
 
-        <div v-if="selectedVariant && selectedVariant.stock <= 3 && selectedVariant.availabilityType === 'IN_STOCK'" class="stock-warning">
+        <div v-if="selectedVariant && selectedVariant.stock > 0 && selectedVariant.stock <= 3 && selectedVariant.isPurchasable" class="stock-warning">
           Only {{ selectedVariant.stock }} left in stock
         </div>
 
@@ -239,7 +234,6 @@ const checkoutUrl = computed(() => {
 .meta-tag.in-stock { background: #d1fae5; color: #065f46; }
 .meta-tag.preorder { background: #fef3c7; color: #92400e; }
 .meta-tag.sold-out { background: #fee2e2; color: #991b1b; }
-.meta-tag.coming-soon { background: #ede9fe; color: #5b21b6; }
 
 /* Variant selector */
 .variant-selector { margin-bottom: 16px; }
@@ -248,8 +242,11 @@ const checkoutUrl = computed(() => {
 .variant-btn { display: flex; flex-direction: column; align-items: center; padding: 10px 16px; border: 2px solid #e5e7eb; border-radius: 8px; background: #fff; cursor: pointer; min-width: 100px; }
 .variant-btn.selected { border-color: #111; background: #f9fafb; }
 .variant-btn:hover:not(.selected) { border-color: #d1d5db; }
+.variant-btn:disabled { cursor: not-allowed; opacity: 0.6; }
+.variant-btn.soldout { border-color: #fecaca; background: #fff5f5; }
 .variant-btn-name { font-size: 0.85rem; font-weight: 600; }
 .variant-btn-price { font-size: 0.75rem; color: #666; margin-top: 2px; }
+.variant-btn-state { font-size: 0.7rem; color: #b91c1c; margin-top: 4px; }
 .variant-subtitle { font-size: 0.8rem; color: #666; margin: 8px 0 0; font-style: italic; }
 
 .price { font-size: 1.5rem; font-weight: 700; margin: 0 0 12px; }

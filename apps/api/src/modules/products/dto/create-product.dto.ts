@@ -1,13 +1,30 @@
 import {
   IsString,
   IsOptional,
-  IsNumber,
-  IsInt,
   IsEnum,
   IsDateString,
+  IsInt,
   Min,
+  ValidateNested,
 } from 'class-validator';
-import { ProductStatus, AvailabilityType, SaleType } from '@prisma/client';
+import { Type } from 'class-transformer';
+import { ProductStatus, SaleType } from '@prisma/client';
+
+class DefaultVariantDto {
+  @IsString()
+  name!: string;
+
+  @IsString()
+  sku!: string;
+
+  @IsInt()
+  @Min(0)
+  priceCents!: number;
+
+  @IsInt()
+  @Min(0)
+  stock!: number;
+}
 
 export class CreateProductDto {
   @IsString()
@@ -20,15 +37,6 @@ export class CreateProductDto {
   @IsOptional()
   description?: string;
 
-  @IsNumber()
-  @Min(0)
-  price!: number;
-
-  @IsInt()
-  @Min(0)
-  @IsOptional()
-  stock?: number;
-
   @IsString()
   @IsOptional()
   scale?: string;
@@ -36,10 +44,6 @@ export class CreateProductDto {
   @IsEnum(ProductStatus)
   @IsOptional()
   status?: ProductStatus;
-
-  @IsEnum(AvailabilityType)
-  @IsOptional()
-  availability?: AvailabilityType;
 
   @IsString()
   @IsOptional()
@@ -66,4 +70,8 @@ export class CreateProductDto {
   @IsDateString()
   @IsOptional()
   estimatedShipAt?: string;
+
+  @ValidateNested()
+  @Type(() => DefaultVariantDto)
+  defaultVariant!: DefaultVariantDto;
 }

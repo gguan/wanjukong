@@ -13,14 +13,14 @@ export interface ProductVariant {
   sku: string;
   priceCents: number;
   stock: number;
-  availabilityType: string;
-  status: string;
   subtitle: string | null;
   specSummary: string | null;
   specifications: string | null;
   isDefault: boolean;
   sortOrder: number;
   coverImageUrl: string | null;
+  isPurchasable: boolean;
+  isSoldOut: boolean;
 }
 
 export interface Product {
@@ -28,10 +28,10 @@ export interface Product {
   name: string;
   slug: string;
   description: string | null;
-  price: number | string;
   scale: string | null;
   status: string;
-  availability: string;
+  displayAvailability: 'IN_STOCK' | 'PREORDER' | 'SOLD_OUT' | null;
+  isPurchasable: boolean;
   imageUrl: string | null;
   brandId: string;
   categoryId: string;

@@ -9,8 +9,6 @@ interface Variant {
   sku: string;
   priceCents: number;
   stock: number;
-  availabilityType: string;
-  status: string;
   subtitle: string | null;
   specSummary: string | null;
   specifications: string | null;
@@ -31,8 +29,6 @@ const form = reactive({
   sku: '',
   priceCents: 0,
   stock: 0,
-  availabilityType: 'IN_STOCK',
-  status: 'DRAFT',
   subtitle: '',
   specSummary: '',
   specifications: '',
@@ -47,8 +43,6 @@ function resetForm() {
   form.sku = '';
   form.priceCents = 0;
   form.stock = 0;
-  form.availabilityType = 'IN_STOCK';
-  form.status = 'DRAFT';
   form.subtitle = '';
   form.specSummary = '';
   form.specifications = '';
@@ -84,8 +78,6 @@ function startEdit(v: Variant) {
   form.sku = v.sku;
   form.priceCents = v.priceCents;
   form.stock = v.stock;
-  form.availabilityType = v.availabilityType;
-  form.status = v.status;
   form.subtitle = v.subtitle || '';
   form.specSummary = v.specSummary || '';
   form.specifications = v.specifications || '';
@@ -195,23 +187,6 @@ onMounted(loadVariants);
           Sort Order
           <input v-model.number="form.sortOrder" type="number" min="0" />
         </label>
-        <label>
-          Status
-          <select v-model="form.status">
-            <option value="DRAFT">Draft</option>
-            <option value="ACTIVE">Active</option>
-            <option value="INACTIVE">Inactive</option>
-          </select>
-        </label>
-        <label>
-          Availability
-          <select v-model="form.availabilityType">
-            <option value="IN_STOCK">In Stock</option>
-            <option value="PREORDER">Preorder</option>
-            <option value="SOLD_OUT">Sold Out</option>
-            <option value="COMING_SOON">Coming Soon</option>
-          </select>
-        </label>
         <label class="full-width">
           Subtitle
           <input v-model="form.subtitle" placeholder="Includes extra accessories..." />
@@ -257,10 +232,9 @@ onMounted(loadVariants);
           <div class="variant-name">
             {{ v.name }}
             <span v-if="v.isDefault" class="default-badge">Default</span>
-            <span class="status-badge" :class="v.status.toLowerCase()">{{ v.status }}</span>
           </div>
           <div class="variant-meta">
-            SKU: {{ v.sku }} · {{ formatPrice(v.priceCents) }} · Stock: {{ v.stock }} · {{ v.availabilityType === 'PREORDER' ? 'Pre-order' : 'In Stock' }}
+            SKU: {{ v.sku }} · {{ formatPrice(v.priceCents) }} · Stock: {{ v.stock }}
           </div>
           <div v-if="v.subtitle" class="variant-subtitle">{{ v.subtitle }}</div>
         </div>
