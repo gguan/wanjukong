@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { ProductStatus } from '@prisma/client';
-import { deriveProductDisplayAvailability } from '@wanjukong/shared';
+import { deriveProductDisplayAvailability } from '../../utils/product-sale-state';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateBuyNowOrderDto } from './dto/create-buy-now-order.dto';
 

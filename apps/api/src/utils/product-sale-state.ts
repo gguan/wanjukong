@@ -1,24 +1,29 @@
-export type ProductStatus = 'DRAFT' | 'ACTIVE' | 'INACTIVE';
-export type ProductSaleType = 'IN_STOCK' | 'PREORDER';
 export type ProductDisplayAvailability = 'IN_STOCK' | 'PREORDER' | 'SOLD_OUT';
 
-export interface ProductSaleStateInput {
-  productStatus: ProductStatus;
-  saleType: ProductSaleType;
+export interface ProductDisplayAvailabilityInput {
+  productStatus: string;
+  saleType: string;
   preorderStartAt: Date | null;
   preorderEndAt: Date | null;
   now: Date;
-}
-
-export interface VariantPurchasabilityInput extends ProductSaleStateInput {
-  variantStock: number;
-}
-
-export interface ProductDisplayAvailabilityInput extends ProductSaleStateInput {
   variantStocks: number[];
 }
 
-function isPreorderWindowActive(input: ProductSaleStateInput) {
+export interface VariantPurchasabilityInput {
+  productStatus: string;
+  saleType: string;
+  preorderStartAt: Date | null;
+  preorderEndAt: Date | null;
+  now: Date;
+  variantStock: number;
+}
+
+function isPreorderWindowActive(input: {
+  saleType: string;
+  preorderStartAt: Date | null;
+  preorderEndAt: Date | null;
+  now: Date;
+}) {
   return Boolean(
     input.saleType === 'PREORDER' &&
       input.preorderStartAt &&
@@ -32,7 +37,10 @@ export function deriveProductDisplayAvailability(
   input: ProductDisplayAvailabilityInput,
 ): ProductDisplayAvailability | null {
   if (input.productStatus !== 'ACTIVE') return null;
-  if (input.variantStocks.length > 0 && input.variantStocks.every((stock) => stock === 0)) {
+  if (
+    input.variantStocks.length > 0 &&
+    input.variantStocks.every((stock) => stock === 0)
+  ) {
     return 'SOLD_OUT';
   }
   if (isPreorderWindowActive(input)) return 'PREORDER';
@@ -53,7 +61,8 @@ export function deriveVariantPurchasability(input: VariantPurchasabilityInput) {
   return {
     isPurchasable:
       input.variantStock > 0 &&
-      (displayAvailability === 'IN_STOCK' || displayAvailability === 'PREORDER'),
+      (displayAvailability === 'IN_STOCK' ||
+        displayAvailability === 'PREORDER'),
     isSoldOut: input.variantStock === 0,
   };
 }

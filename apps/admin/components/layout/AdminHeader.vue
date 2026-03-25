@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { APP_NAME } from '@wanjukong/shared';
-
 const { email, logout } = useAdminAuth();
 </script>
 
 <template>
   <header class="admin-header">
-    <div class="admin-header__title">{{ APP_NAME }} Admin</div>
+    <div class="admin-header__title">wanjukong Admin</div>
     <div class="admin-header__user">
       <span>{{ email }}</span>
       <button @click="logout">Logout</button>

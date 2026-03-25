@@ -1,7 +1,7 @@
 import {
   deriveProductDisplayAvailability,
   deriveVariantPurchasability,
-} from '@wanjukong/shared';
+} from '../../utils/product-sale-state';
 
 type StorefrontVariant = { stock: number };
 

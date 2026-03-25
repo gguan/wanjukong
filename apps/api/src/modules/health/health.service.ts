@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { APP_NAME } from '@wanjukong/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -17,7 +16,7 @@ export class HealthService {
 
     return {
       ok: database === 'connected',
-      service: `${APP_NAME}-api`,
+      service: 'wanjukong-api',
       database,
     };
   }

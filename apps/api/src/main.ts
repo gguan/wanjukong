@@ -1,12 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
-import { API_PREFIX } from '@wanjukong/shared';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.setGlobalPrefix(API_PREFIX.replace(/^\//, ''));
+  app.setGlobalPrefix('api');
 
   app.useGlobalPipes(
     new ValidationPipe({ whitelist: true, transform: true }),
