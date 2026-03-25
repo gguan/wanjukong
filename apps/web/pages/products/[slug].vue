@@ -77,8 +77,26 @@ function selectVariant(v: ProductVariant) {
 }
 
 function availabilityLabel(a: string) {
-  return a === 'PREORDER' ? 'Pre-order' : 'In Stock';
+  const labels: Record<string, string> = {
+    IN_STOCK: 'In Stock',
+    PREORDER: 'Pre-order',
+    SOLD_OUT: 'Sold Out',
+    COMING_SOON: 'Coming Soon',
+  };
+  return labels[a] || a;
 }
+
+const isPurchasable = computed(() => {
+  const avail = displayAvailability.value;
+  return avail === 'IN_STOCK' || avail === 'PREORDER';
+});
+
+function formatDate(iso: string | null | undefined) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleDateString();
+}
+
+const isPreorder = computed(() => product.value?.saleType === 'PREORDER');
 
 // Build checkout URL with variant
 const checkoutUrl = computed(() => {
@@ -130,7 +148,7 @@ const checkoutUrl = computed(() => {
         <div class="meta-row">
           <span class="meta-tag">{{ product.category.name }}</span>
           <span v-if="product.scale" class="meta-tag">{{ product.scale }}</span>
-          <span class="meta-tag" :class="displayAvailability === 'PREORDER' ? 'preorder' : 'instock'">
+          <span class="meta-tag" :class="displayAvailability.toLowerCase().replace('_', '-')">
             {{ availabilityLabel(displayAvailability) }}
           </span>
         </div>
@@ -161,13 +179,33 @@ const checkoutUrl = computed(() => {
           Only {{ selectedVariant.stock }} left in stock
         </div>
 
-        <NuxtLink :to="checkoutUrl" class="buy-now-btn">
-          Buy Now
+        <!-- Preorder info -->
+        <div v-if="isPreorder" class="preorder-info">
+          <p v-if="product.preorderStartAt || product.preorderEndAt" class="preorder-dates">
+            <span v-if="product.preorderStartAt">Opens: {{ formatDate(product.preorderStartAt) }}</span>
+            <span v-if="product.preorderEndAt"> · Closes: {{ formatDate(product.preorderEndAt) }}</span>
+          </p>
+          <p v-if="product.estimatedShipAt" class="ship-estimate">
+            Estimated Ship: {{ formatDate(product.estimatedShipAt) }}
+          </p>
+        </div>
+
+        <NuxtLink v-if="isPurchasable" :to="checkoutUrl" class="buy-now-btn">
+          {{ displayAvailability === 'PREORDER' ? 'Pre-order Now' : 'Buy Now' }}
         </NuxtLink>
+        <button v-else class="buy-now-btn disabled-btn" disabled>
+          {{ availabilityLabel(displayAvailability) }}
+        </button>
 
         <div v-if="product.description" class="description">
           <h3>Description</h3>
           <p>{{ product.description }}</p>
+        </div>
+
+        <!-- Variant specifications -->
+        <div v-if="selectedVariant?.specifications" class="specifications">
+          <h3>Specifications — {{ selectedVariant.name }}</h3>
+          <p>{{ selectedVariant.specifications }}</p>
         </div>
       </div>
     </div>
@@ -198,8 +236,10 @@ const checkoutUrl = computed(() => {
 
 .meta-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
 .meta-tag { font-size: 0.75rem; padding: 3px 8px; border-radius: 4px; background: #f3f4f6; color: #555; }
+.meta-tag.in-stock { background: #d1fae5; color: #065f46; }
 .meta-tag.preorder { background: #fef3c7; color: #92400e; }
-.meta-tag.instock { background: #d1fae5; color: #065f46; }
+.meta-tag.sold-out { background: #fee2e2; color: #991b1b; }
+.meta-tag.coming-soon { background: #ede9fe; color: #5b21b6; }
 
 /* Variant selector */
 .variant-selector { margin-bottom: 16px; }
@@ -217,7 +257,17 @@ const checkoutUrl = computed(() => {
 
 .buy-now-btn { display: inline-block; padding: 12px 32px; background: #111; color: #fff; border-radius: 8px; font-size: 1rem; font-weight: 600; text-decoration: none; margin-bottom: 24px; }
 .buy-now-btn:hover { background: #333; }
+.disabled-btn { background: #9ca3af; cursor: not-allowed; border: none; font-size: 1rem; font-weight: 600; }
+.disabled-btn:hover { background: #9ca3af; }
+
+.preorder-info { background: #fef3c7; border: 1px solid #fde68a; border-radius: 6px; padding: 10px 14px; margin-bottom: 12px; font-size: 0.85rem; color: #92400e; }
+.preorder-dates { margin: 0; }
+.ship-estimate { margin: 4px 0 0; }
 
 .description h3 { font-size: 1rem; margin: 0 0 8px; color: #333; }
 .description p { color: #555; line-height: 1.6; margin: 0; }
+
+.specifications { margin-top: 20px; }
+.specifications h3 { font-size: 1rem; margin: 0 0 8px; color: #333; }
+.specifications p { color: #555; line-height: 1.6; margin: 0; white-space: pre-line; }
 </style>

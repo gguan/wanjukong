@@ -17,6 +17,7 @@ export interface ProductVariant {
   status: string;
   subtitle: string | null;
   specSummary: string | null;
+  specifications: string | null;
   isDefault: boolean;
   sortOrder: number;
   coverImageUrl: string | null;
@@ -38,6 +39,10 @@ export interface Product {
   updatedAt: string;
   brand: { id: string; name: string; slug: string; logo: string | null };
   category: { id: string; name: string; slug: string };
+  saleType?: string;
+  preorderStartAt?: string | null;
+  preorderEndAt?: string | null;
+  estimatedShipAt?: string | null;
   images?: ProductImage[];
   variants?: ProductVariant[];
 }

@@ -26,10 +26,16 @@ enum ProductStatus {
   DRAFT
   ACTIVE
   INACTIVE
-  SOLD_OUT
 }
 
 enum AvailabilityType {
+  IN_STOCK
+  PREORDER
+  SOLD_OUT
+  COMING_SOON
+}
+
+enum SaleType {
   IN_STOCK
   PREORDER
 }
@@ -60,7 +66,7 @@ model Product {
   id               String           @id @default(cuid())
   name             String
   slug             String           @unique
-  description      String?
+  description      String?          @db.Text
   price            Decimal          @db.Decimal(10, 2)
   stock            Int              @default(0)
   scale            String?
@@ -69,6 +75,13 @@ model Product {
   imageUrl         String?
   brandId          String
   categoryId       String
+
+  // Sale type & preorder
+  saleType         SaleType         @default(IN_STOCK)
+  preorderStartAt  DateTime?
+  preorderEndAt    DateTime?
+  estimatedShipAt  DateTime?
+
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
@@ -95,6 +108,7 @@ model ProductVariant {
   status           ProductStatus    @default(DRAFT)
   subtitle         String?
   specSummary      String?
+  specifications   String?          @db.Text
   estimatedShipAt  DateTime?
   weightGrams      Int?
   isDefault        Boolean          @default(false)

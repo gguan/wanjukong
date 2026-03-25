@@ -13,6 +13,7 @@ interface Variant {
   status: string;
   subtitle: string | null;
   specSummary: string | null;
+  specifications: string | null;
   isDefault: boolean;
   sortOrder: number;
   coverImageUrl: string | null;
@@ -34,6 +35,7 @@ const form = reactive({
   status: 'DRAFT',
   subtitle: '',
   specSummary: '',
+  specifications: '',
   isDefault: false,
   sortOrder: 0,
   coverImageUrl: '',
@@ -49,6 +51,7 @@ function resetForm() {
   form.status = 'DRAFT';
   form.subtitle = '';
   form.specSummary = '';
+  form.specifications = '';
   form.isDefault = false;
   form.sortOrder = 0;
   form.coverImageUrl = '';
@@ -85,6 +88,7 @@ function startEdit(v: Variant) {
   form.status = v.status;
   form.subtitle = v.subtitle || '';
   form.specSummary = v.specSummary || '';
+  form.specifications = v.specifications || '';
   form.isDefault = v.isDefault;
   form.sortOrder = v.sortOrder;
   form.coverImageUrl = v.coverImageUrl || '';
@@ -101,6 +105,7 @@ async function saveVariant() {
     versionCode: form.versionCode || undefined,
     subtitle: form.subtitle || undefined,
     specSummary: form.specSummary || undefined,
+    specifications: form.specifications || undefined,
     coverImageUrl: form.coverImageUrl || undefined,
   };
 
@@ -196,7 +201,6 @@ onMounted(loadVariants);
             <option value="DRAFT">Draft</option>
             <option value="ACTIVE">Active</option>
             <option value="INACTIVE">Inactive</option>
-            <option value="SOLD_OUT">Sold Out</option>
           </select>
         </label>
         <label>
@@ -204,11 +208,17 @@ onMounted(loadVariants);
           <select v-model="form.availabilityType">
             <option value="IN_STOCK">In Stock</option>
             <option value="PREORDER">Preorder</option>
+            <option value="SOLD_OUT">Sold Out</option>
+            <option value="COMING_SOON">Coming Soon</option>
           </select>
         </label>
         <label class="full-width">
           Subtitle
           <input v-model="form.subtitle" placeholder="Includes extra accessories..." />
+        </label>
+        <label class="full-width">
+          Specifications
+          <textarea v-model="form.specifications" rows="4" placeholder="Detailed specifications for this variant..." />
         </label>
         <label class="full-width">
           Cover Image URL
@@ -257,7 +267,7 @@ onMounted(loadVariants);
         <div class="variant-actions">
           <button v-if="!v.isDefault" class="action-btn" @click="setDefault(v.id)">★ Default</button>
           <button class="action-btn" @click="startEdit(v)">Edit</button>
-          <button class="action-btn danger" @click="deleteVariant(v.id)">Delete</button>
+          <button v-if="!v.isDefault" class="action-btn danger" @click="deleteVariant(v.id)">Delete</button>
         </div>
       </div>
     </div>
@@ -295,7 +305,7 @@ onMounted(loadVariants);
 .vform-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .vform-grid .full-width { grid-column: 1 / -1; }
 .vform-grid label { display: block; font-size: 0.8rem; color: #555; }
-.vform-grid input, .vform-grid select { display: block; width: 100%; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.85rem; margin-top: 3px; box-sizing: border-box; }
+.vform-grid input, .vform-grid select, .vform-grid textarea { display: block; width: 100%; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.85rem; margin-top: 3px; box-sizing: border-box; font-family: inherit; }
 .checkbox-label { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: #555; }
 .checkbox-label input[type="checkbox"] { width: auto; margin: 0; }
 .vform-actions { display: flex; gap: 8px; margin-top: 12px; }

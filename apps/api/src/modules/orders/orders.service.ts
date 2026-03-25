@@ -43,7 +43,17 @@ export class OrdersService {
       throw new BadRequestException('This variant is not available for purchase');
     }
 
-    // 3. Stock check (using variant stock)
+    // 3. Availability check — only IN_STOCK and PREORDER are purchasable
+    if (
+      variant.availabilityType !== AvailabilityType.IN_STOCK &&
+      variant.availabilityType !== AvailabilityType.PREORDER
+    ) {
+      throw new BadRequestException(
+        `This variant is ${variant.availabilityType.toLowerCase().replace('_', ' ')} and cannot be purchased`,
+      );
+    }
+
+    // 4. Stock check (using variant stock, only for IN_STOCK)
     if (
       variant.availabilityType === AvailabilityType.IN_STOCK &&
       variant.stock < dto.quantity
@@ -53,15 +63,15 @@ export class OrdersService {
       );
     }
 
-    // 4. Calculate pricing from variant
+    // 5. Calculate pricing from variant
     const unitPriceCents = variant.priceCents;
     const totalItemCents = unitPriceCents * dto.quantity;
     const currency = dto.currency || 'USD';
 
-    // 5. Generate order number
+    // 6. Generate order number
     const orderNo = this.generateOrderNo();
 
-    // 6. Create order + item in a transaction
+    // 7. Create order + item in a transaction
     const order = await this.prisma.$transaction(async (tx) => {
       // Deduct stock for IN_STOCK variants
       if (variant.availabilityType === AvailabilityType.IN_STOCK) {

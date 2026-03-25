@@ -45,16 +45,42 @@ export class ProductsService {
   }
 
   create(dto: CreateProductDto) {
+    const data: any = { ...dto };
+    // Convert date strings to Date objects
+    if (dto.preorderStartAt) data.preorderStartAt = new Date(dto.preorderStartAt);
+    if (dto.preorderEndAt) data.preorderEndAt = new Date(dto.preorderEndAt);
+    if (dto.estimatedShipAt) data.estimatedShipAt = new Date(dto.estimatedShipAt);
+    // Clear preorder dates if sale type is IN_STOCK
+    if (dto.saleType === 'IN_STOCK') {
+      data.preorderStartAt = null;
+      data.preorderEndAt = null;
+    }
     return this.prisma.product.create({
-      data: dto,
+      data,
       include: includeRelations,
     });
   }
 
   update(id: string, dto: UpdateProductDto) {
+    const data: any = { ...dto };
+    // Convert date strings to Date objects or null
+    if (dto.preorderStartAt !== undefined) {
+      data.preorderStartAt = dto.preorderStartAt ? new Date(dto.preorderStartAt) : null;
+    }
+    if (dto.preorderEndAt !== undefined) {
+      data.preorderEndAt = dto.preorderEndAt ? new Date(dto.preorderEndAt) : null;
+    }
+    if (dto.estimatedShipAt !== undefined) {
+      data.estimatedShipAt = dto.estimatedShipAt ? new Date(dto.estimatedShipAt) : null;
+    }
+    // Clear preorder dates if sale type is IN_STOCK
+    if (dto.saleType === 'IN_STOCK') {
+      data.preorderStartAt = null;
+      data.preorderEndAt = null;
+    }
     return this.prisma.product.update({
       where: { id },
-      data: dto,
+      data,
       include: includeRelations,
     });
   }

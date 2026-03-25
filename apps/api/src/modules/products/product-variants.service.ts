@@ -51,6 +51,7 @@ export class ProductVariantsService {
         estimatedShipAt: dto.estimatedShipAt
           ? new Date(dto.estimatedShipAt)
           : undefined,
+        specifications: dto.specifications ?? undefined,
       },
     });
   }
@@ -70,14 +71,15 @@ export class ProductVariantsService {
       await this.clearDefaults(productId);
     }
 
+    const data: any = { ...dto };
+    if (dto.estimatedShipAt !== undefined) {
+      data.estimatedShipAt = dto.estimatedShipAt
+        ? new Date(dto.estimatedShipAt)
+        : null;
+    }
     return this.prisma.productVariant.update({
       where: { id: variantId },
-      data: {
-        ...dto,
-        estimatedShipAt: dto.estimatedShipAt
-          ? new Date(dto.estimatedShipAt)
-          : undefined,
-      },
+      data,
     });
   }
 
@@ -87,21 +89,14 @@ export class ProductVariantsService {
     });
     if (!variant) throw new NotFoundException('Variant not found');
 
-    await this.prisma.productVariant.delete({ where: { id: variantId } });
-
-    // If deleted variant was default, assign another
+    // Protect default variant from deletion
     if (variant.isDefault) {
-      const next = await this.prisma.productVariant.findFirst({
-        where: { productId },
-        orderBy: { sortOrder: 'asc' },
-      });
-      if (next) {
-        await this.prisma.productVariant.update({
-          where: { id: next.id },
-          data: { isDefault: true },
-        });
-      }
+      throw new BadRequestException(
+        'Cannot delete the default variant. Set another variant as default first.',
+      );
     }
+
+    await this.prisma.productVariant.delete({ where: { id: variantId } });
 
     return { success: true };
   }

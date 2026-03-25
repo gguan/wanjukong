@@ -36,8 +36,25 @@ function statusClass(s: string) {
     ACTIVE: 'badge--green',
     DRAFT: 'badge--gray',
     INACTIVE: 'badge--yellow',
-    SOLD_OUT: 'badge--red',
   }[s] || '';
+}
+
+function availabilityClass(a: string) {
+  return {
+    IN_STOCK: 'badge--green',
+    PREORDER: 'badge--blue',
+    SOLD_OUT: 'badge--red',
+    COMING_SOON: 'badge--purple',
+  }[a] || '';
+}
+
+function availabilityLabel(a: string) {
+  return {
+    IN_STOCK: 'In Stock',
+    PREORDER: 'Preorder',
+    SOLD_OUT: 'Sold Out',
+    COMING_SOON: 'Coming Soon',
+  }[a] || a;
 }
 </script>
 
@@ -56,6 +73,7 @@ function statusClass(s: string) {
           <th>Category</th>
           <th>Price</th>
           <th>Status</th>
+          <th>Availability</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -66,6 +84,7 @@ function statusClass(s: string) {
           <td>{{ p.category.name }}</td>
           <td>${{ Number(p.price).toFixed(2) }}</td>
           <td><span class="badge" :class="statusClass(p.status)">{{ p.status }}</span></td>
+          <td><span class="badge" :class="availabilityClass(p.availability)">{{ availabilityLabel(p.availability) }}</span></td>
           <td class="actions">
             <NuxtLink :to="`/products/${p.id}`" class="btn-sm">Edit</NuxtLink>
             <button class="btn-sm btn-sm--danger" @click="remove(p.id)">Delete</button>
@@ -97,5 +116,7 @@ h2 { margin: 0; }
 .badge--gray { background: #f3f4f6; color: #6b7280; }
 .badge--yellow { background: #fef9c3; color: #854d0e; }
 .badge--red { background: #fee2e2; color: #991b1b; }
+.badge--blue { background: #dbeafe; color: #1e40af; }
+.badge--purple { background: #ede9fe; color: #5b21b6; }
 .empty { color: #999; }
 </style>

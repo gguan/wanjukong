@@ -25,6 +25,10 @@ const form = ref({
   imageUrl: '',
   brandId: '',
   categoryId: '',
+  saleType: 'IN_STOCK',
+  preorderStartAt: '',
+  preorderEndAt: '',
+  estimatedShipAt: '',
 });
 
 onMounted(async () => {
@@ -49,22 +53,48 @@ onMounted(async () => {
     imageUrl: (product.imageUrl as string) || '',
     brandId: product.brandId as string,
     categoryId: product.categoryId as string,
+    saleType: (product.saleType as string) || 'IN_STOCK',
+    preorderStartAt: product.preorderStartAt ? toLocalDatetime(product.preorderStartAt as string) : '',
+    preorderEndAt: product.preorderEndAt ? toLocalDatetime(product.preorderEndAt as string) : '',
+    estimatedShipAt: product.estimatedShipAt ? toLocalDatetime(product.estimatedShipAt as string) : '',
   };
 
   loadingData.value = false;
 });
 
+function toLocalDatetime(iso: string): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  // Format as YYYY-MM-DDTHH:mm for datetime-local input
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+const isPreorder = computed(() => form.value.saleType === 'PREORDER');
+
 async function save() {
   saving.value = true;
   error.value = null;
   try {
-    await api.put(`/api/admin/products/${route.params.id}`, {
+    const payload: Record<string, unknown> = {
       ...form.value,
       price: Number(form.value.price),
       stock: Number(form.value.stock),
       imageUrl: form.value.imageUrl || undefined,
       description: form.value.description || undefined,
-    });
+    };
+
+    // Handle preorder dates
+    if (form.value.saleType === 'PREORDER') {
+      payload.preorderStartAt = form.value.preorderStartAt ? new Date(form.value.preorderStartAt).toISOString() : null;
+      payload.preorderEndAt = form.value.preorderEndAt ? new Date(form.value.preorderEndAt).toISOString() : null;
+    } else {
+      payload.preorderStartAt = null;
+      payload.preorderEndAt = null;
+    }
+    payload.estimatedShipAt = form.value.estimatedShipAt ? new Date(form.value.estimatedShipAt).toISOString() : null;
+
+    await api.put(`/api/admin/products/${route.params.id}`, payload);
     router.push('/products');
   } catch (e: unknown) {
     error.value = e instanceof Error ? e.message : 'Failed to update product';
@@ -127,13 +157,13 @@ async function save() {
           </label>
 
           <label>
-            Status
+            Product Status
             <select v-model="form.status">
               <option value="DRAFT">Draft</option>
               <option value="ACTIVE">Active</option>
               <option value="INACTIVE">Inactive</option>
-              <option value="SOLD_OUT">Sold Out</option>
             </select>
+            <small class="field-help">Controls storefront visibility</small>
           </label>
 
           <label>
@@ -141,7 +171,35 @@ async function save() {
             <select v-model="form.availability">
               <option value="IN_STOCK">In Stock</option>
               <option value="PREORDER">Preorder</option>
+              <option value="SOLD_OUT">Sold Out</option>
+              <option value="COMING_SOON">Coming Soon</option>
             </select>
+            <small class="field-help">Controls whether customers can purchase</small>
+          </label>
+
+          <label>
+            Sale Type *
+            <select v-model="form.saleType">
+              <option value="IN_STOCK">In Stock</option>
+              <option value="PREORDER">Preorder</option>
+            </select>
+          </label>
+
+          <template v-if="isPreorder">
+            <label>
+              Preorder Start
+              <input v-model="form.preorderStartAt" type="datetime-local" />
+            </label>
+
+            <label>
+              Preorder End
+              <input v-model="form.preorderEndAt" type="datetime-local" />
+            </label>
+          </template>
+
+          <label>
+            Estimated Ship Date
+            <input v-model="form.estimatedShipAt" type="datetime-local" />
           </label>
 
           <div class="full-width">
@@ -151,7 +209,7 @@ async function save() {
 
           <label class="full-width">
             Description
-            <textarea v-model="form.description" rows="3" />
+            <textarea v-model="form.description" rows="4" />
           </label>
         </div>
 
@@ -183,6 +241,7 @@ h2 { margin: 0 0 20px; }
 .full-width { grid-column: 1 / -1; }
 label, .field-label { display: block; font-size: 0.875rem; color: #555; }
 .field-label { margin-bottom: 6px; }
+.field-help { display: block; font-size: 0.7rem; color: #999; margin-top: 2px; }
 input, select, textarea {
   display: block; width: 100%; margin-top: 4px; padding: 8px 10px;
   border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem;

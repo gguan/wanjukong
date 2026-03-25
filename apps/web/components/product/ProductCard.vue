@@ -31,12 +31,9 @@ const hasMultipleVariants = computed(() => (props.product.variants?.length ?? 0)
       <div v-else class="placeholder">
         <span>No Image</span>
       </div>
-      <span
-        v-if="product.availability === 'PREORDER'"
-        class="badge preorder"
-      >
-        Pre-order
-      </span>
+      <span v-if="product.availability === 'PREORDER'" class="badge preorder">Pre-order</span>
+      <span v-else-if="product.availability === 'SOLD_OUT'" class="badge sold-out">Sold Out</span>
+      <span v-else-if="product.availability === 'COMING_SOON'" class="badge coming-soon">Coming Soon</span>
     </div>
     <div class="card-body">
       <p class="brand-name">{{ product.brand.name }}</p>
@@ -105,6 +102,16 @@ const hasMultipleVariants = computed(() => (props.product.variants?.length ?? 0)
 .badge.preorder {
   background: #fef3c7;
   color: #92400e;
+}
+
+.badge.sold-out {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.badge.coming-soon {
+  background: #ede9fe;
+  color: #5b21b6;
 }
 
 .card-body {

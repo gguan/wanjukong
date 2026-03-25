@@ -48,6 +48,10 @@ export class UpdateProductVariantDto {
   @IsOptional()
   specSummary?: string;
 
+  @IsString()
+  @IsOptional()
+  specifications?: string;
+
   @IsDateString()
   @IsOptional()
   estimatedShipAt?: string;

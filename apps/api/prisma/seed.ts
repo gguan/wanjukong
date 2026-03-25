@@ -1,4 +1,4 @@
-import { PrismaClient, ProductStatus, AvailabilityType } from '@prisma/client';
+import { PrismaClient, ProductStatus, AvailabilityType, SaleType } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -94,6 +94,10 @@ async function main() {
       scale: '1/6',
       status: ProductStatus.ACTIVE,
       availability: AvailabilityType.PREORDER,
+      saleType: SaleType.PREORDER,
+      preorderStartAt: new Date('2026-04-01T00:00:00Z'),
+      preorderEndAt: new Date('2026-06-01T00:00:00Z'),
+      estimatedShipAt: new Date('2026-10-01T00:00:00Z'),
       brandId: hotToys.id,
       categoryId: figure.id,
     },
@@ -162,7 +166,13 @@ async function main() {
   for (const p of products) {
     await prisma.product.upsert({
       where: { slug: p.slug },
-      update: { stock: p.stock },
+      update: {
+        stock: p.stock,
+        ...((p as any).saleType ? { saleType: (p as any).saleType } : {}),
+        ...((p as any).preorderStartAt ? { preorderStartAt: (p as any).preorderStartAt } : {}),
+        ...((p as any).preorderEndAt ? { preorderEndAt: (p as any).preorderEndAt } : {}),
+        ...((p as any).estimatedShipAt ? { estimatedShipAt: (p as any).estimatedShipAt } : {}),
+      },
       create: p,
     });
   }
@@ -188,6 +198,7 @@ async function main() {
       isDefault: true,
       sortOrder: 0,
       subtitle: 'Standard figure with basic accessories',
+      specifications: 'Height: ~29cm\nPoints of articulation: 30+\nAccessories: 4 pairs of hands, web-shooting effect',
     },
     {
       productId: spiderman!.id,
@@ -201,6 +212,7 @@ async function main() {
       isDefault: false,
       sortOrder: 1,
       subtitle: 'Includes extra hands, web effects, and display base',
+      specifications: 'Height: ~29cm\nPoints of articulation: 30+\nAccessories: 8 pairs of hands, web effects, dynamic base, Mysterio drone',
     },
     // Batman: 2 variants
     {
@@ -273,7 +285,7 @@ async function main() {
   for (const v of variants) {
     await prisma.productVariant.upsert({
       where: { sku: v.sku },
-      update: { priceCents: v.priceCents, stock: v.stock },
+      update: { priceCents: v.priceCents, stock: v.stock, specifications: (v as any).specifications ?? undefined },
       create: v,
     });
   }
