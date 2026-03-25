@@ -48,9 +48,6 @@ export class ProductVariantsService {
         ...dto,
         productId,
         isDefault: dto.isDefault ?? count === 0,
-        estimatedShipAt: dto.estimatedShipAt
-          ? new Date(dto.estimatedShipAt)
-          : undefined,
         specifications: dto.specifications ?? undefined,
       },
     });
@@ -71,15 +68,12 @@ export class ProductVariantsService {
       await this.clearDefaults(productId);
     }
 
-    const data: any = { ...dto };
-    if (dto.estimatedShipAt !== undefined) {
-      data.estimatedShipAt = dto.estimatedShipAt
-        ? new Date(dto.estimatedShipAt)
-        : null;
-    }
     return this.prisma.productVariant.update({
       where: { id: variantId },
-      data,
+      data: {
+        ...dto,
+        specifications: dto.specifications ?? undefined,
+      },
     });
   }
 

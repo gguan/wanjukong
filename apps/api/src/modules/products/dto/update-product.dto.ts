@@ -1,13 +1,10 @@
 import {
   IsString,
   IsOptional,
-  IsNumber,
-  IsInt,
   IsEnum,
   IsDateString,
-  Min,
 } from 'class-validator';
-import { ProductStatus, AvailabilityType, SaleType } from '@prisma/client';
+import { ProductStatus, SaleType } from '@prisma/client';
 
 export class UpdateProductDto {
   @IsString()
@@ -22,16 +19,6 @@ export class UpdateProductDto {
   @IsOptional()
   description?: string;
 
-  @IsNumber()
-  @Min(0)
-  @IsOptional()
-  price?: number;
-
-  @IsInt()
-  @Min(0)
-  @IsOptional()
-  stock?: number;
-
   @IsString()
   @IsOptional()
   scale?: string;
@@ -39,10 +26,6 @@ export class UpdateProductDto {
   @IsEnum(ProductStatus)
   @IsOptional()
   status?: ProductStatus;
-
-  @IsEnum(AvailabilityType)
-  @IsOptional()
-  availability?: AvailabilityType;
 
   @IsString()
   @IsOptional()

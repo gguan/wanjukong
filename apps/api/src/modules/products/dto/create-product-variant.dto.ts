@@ -2,12 +2,9 @@ import {
   IsString,
   IsOptional,
   IsInt,
-  IsEnum,
   IsBoolean,
-  IsDateString,
   Min,
 } from 'class-validator';
-import { ProductStatus, AvailabilityType } from '@prisma/client';
 
 export class CreateProductVariantDto {
   @IsString()
@@ -29,14 +26,6 @@ export class CreateProductVariantDto {
   @IsOptional()
   stock?: number;
 
-  @IsEnum(AvailabilityType)
-  @IsOptional()
-  availabilityType?: AvailabilityType;
-
-  @IsEnum(ProductStatus)
-  @IsOptional()
-  status?: ProductStatus;
-
   @IsString()
   @IsOptional()
   subtitle?: string;
@@ -48,10 +37,6 @@ export class CreateProductVariantDto {
   @IsString()
   @IsOptional()
   specifications?: string;
-
-  @IsDateString()
-  @IsOptional()
-  estimatedShipAt?: string;
 
   @IsInt()
   @Min(0)
