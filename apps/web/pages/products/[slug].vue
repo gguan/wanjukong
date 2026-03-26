@@ -129,16 +129,6 @@ const checkoutUrl = computed(() => {
   return qs ? `${base}?${qs}` : base;
 });
 
-// ─── Specs Visibility ────────────────────────────────────
-const hasSpecs = computed(() => {
-  return Boolean(
-    selectedVariant.value?.specifications ||
-    selectedVariant.value?.specSummary ||
-    product.value?.scale ||
-    selectedVariant.value?.weightGrams,
-  );
-});
-
 // ─── Related Products ────────────────────────────────────
 const relatedProducts = ref<Product[]>([]);
 
@@ -307,70 +297,9 @@ function formatDate(iso: string | null | undefined) {
               <!-- ─── Divider ─── -->
               <hr class="panel-divider" />
 
-              <!-- ─── Overview (inline in panel) ─── -->
-              <div v-if="product.description" class="panel-section">
-                <h3 class="panel-section-title">Description</h3>
-                <div class="panel-section-body">
-                  <p>{{ product.description }}</p>
-                </div>
-              </div>
-
-              <!-- ─── Specifications (inline in panel) ─── -->
-              <div v-if="hasSpecs" class="panel-section">
-                <h3 class="panel-section-title">Specifications</h3>
-                <div class="panel-section-body">
-                  <table class="spec-table">
-                    <tbody>
-                      <tr v-if="product.scale">
-                        <td class="spec-label">Scale</td>
-                        <td class="spec-value">{{ product.scale }}</td>
-                      </tr>
-                      <tr v-if="selectedVariant">
-                        <td class="spec-label">Edition</td>
-                        <td class="spec-value">{{ selectedVariant.name }}</td>
-                      </tr>
-                      <tr v-if="selectedVariant?.sku">
-                        <td class="spec-label">SKU</td>
-                        <td class="spec-value">{{ selectedVariant.sku }}</td>
-                      </tr>
-                      <tr v-if="selectedVariant?.manufacturerSku">
-                        <td class="spec-label">Manufacturer SKU</td>
-                        <td class="spec-value">{{ selectedVariant.manufacturerSku }}</td>
-                      </tr>
-                      <tr v-if="selectedVariant?.weightGrams">
-                        <td class="spec-label">Weight</td>
-                        <td class="spec-value">{{ selectedVariant.weightGrams }}g</td>
-                      </tr>
-                      <tr>
-                        <td class="spec-label">Brand</td>
-                        <td class="spec-value">{{ product.brand.name }}</td>
-                      </tr>
-                      <tr>
-                        <td class="spec-label">Category</td>
-                        <td class="spec-value">{{ product.category.name }}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                  <p v-if="selectedVariant?.specSummary" class="spec-extra">
-                    {{ selectedVariant.specSummary }}
-                  </p>
-                  <p v-if="selectedVariant?.specifications" class="spec-extra spec-detail">
-                    {{ selectedVariant.specifications }}
-                  </p>
-                </div>
-              </div>
-
-              <!-- ─── Notices (inline in panel) ─── -->
-              <div class="panel-section">
-                <h3 class="panel-section-title">Notice</h3>
-                <div class="panel-section-body panel-notice">
-                  <p>Not a toy. Recommended for ages 15 and up.</p>
-                  <p>Prototype shown. Final production may differ.</p>
-                  <p v-if="isPreorder && shipQuarter">
-                    Pre-order item. Estimated shipping: {{ shipQuarter }}.
-                  </p>
-                </div>
-              </div>
+              <!-- ─── Specifications (rich text) ─── -->
+              <!-- eslint-disable-next-line vue/no-v-html -->
+              <div v-if="selectedVariant?.specifications" class="panel-description" v-html="selectedVariant.specifications" />
             </div>
           </div>
         </div>
@@ -444,6 +373,17 @@ function formatDate(iso: string | null | undefined) {
   margin: 0 auto;
   padding-top: 32px;
 }
+
+@media (min-width: 1024px) {
+  .pdp-hero {
+    padding-left: 160px;
+    padding-right: 160px;
+  }
+  .pdp-section {
+    padding-left: 160px;
+    padding-right: 160px;
+  }
+}
 .hero-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -468,7 +408,6 @@ function formatDate(iso: string | null | undefined) {
   width: 100%;
   display: block;
   object-fit: contain;
-  aspect-ratio: 3 / 2;
 }
 .placeholder {
   aspect-ratio: 3 / 2;
@@ -773,74 +712,38 @@ function formatDate(iso: string | null | undefined) {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   PANEL SECTIONS (Description, Specs, Notice — inside panel)
+   PANEL DESCRIPTION (rich text)
    ═══════════════════════════════════════════════════════════ */
-.panel-section {
-  margin-bottom: 24px;
-}
-.panel-section-title {
-  font-family: 'Jost', sans-serif;
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #222;
-  margin: 0 0 12px;
-}
-.panel-section-body p {
+.panel-description {
   font-family: 'Source Serif 4', Georgia, serif;
   font-size: 0.9rem;
   line-height: 1.7;
   color: #1d1d1d;
-  margin: 0 0 8px;
 }
-.panel-section-body p:last-child {
+.panel-description :deep(p) {
+  margin: 0 0 12px;
+}
+.panel-description :deep(p:last-child) {
   margin-bottom: 0;
 }
-
-/* Spec table */
-.spec-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 12px;
+.panel-description :deep(ul),
+.panel-description :deep(ol) {
+  padding-left: 20px;
+  margin: 0 0 12px;
 }
-.spec-table td {
-  padding: 8px 0;
-  border-bottom: 1px solid #f0f0f0;
-  font-size: 0.8rem;
-  vertical-align: top;
+.panel-description :deep(li) {
+  margin-bottom: 4px;
 }
-.spec-table tr:last-child td {
-  border-bottom: none;
+.panel-description :deep(strong) {
+  font-weight: 600;
+  color: #111;
 }
-.spec-label {
-  font-family: 'Jost', sans-serif;
-  color: #999;
-  width: 40%;
+.panel-description :deep(em) {
+  font-style: italic;
 }
-.spec-value {
-  font-family: 'Jost', sans-serif;
+.panel-description :deep(a) {
   color: #222;
-  font-weight: 400;
-}
-.spec-extra {
-  font-family: 'Source Serif 4', Georgia, serif;
-  font-size: 0.85rem;
-  line-height: 1.7;
-  color: #1d1d1d;
-  margin: 0 0 8px;
-}
-.spec-extra:last-child { margin-bottom: 0; }
-.spec-detail {
-  white-space: pre-line;
-}
-
-/* Notice */
-.panel-notice p {
-  font-family: 'Source Serif 4', Georgia, serif;
-  font-size: 0.8rem;
-  color: #999;
-  line-height: 1.6;
+  text-decoration: underline;
 }
 
 /* ═══════════════════════════════════════════════════════════

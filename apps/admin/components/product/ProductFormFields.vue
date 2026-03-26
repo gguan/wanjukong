@@ -5,7 +5,6 @@ const props = defineProps<{
   form: {
     name: string;
     slug: string;
-    description: string;
     scale: string;
     status: string;
     brandId: string;
@@ -43,9 +42,5 @@ const isPreorder = computed(() => local.value.saleType === 'PREORDER');
       <div class="field-hint">Used in the product URL on the storefront</div>
     </ElFormItem>
 
-    <ElFormItem label="Description">
-      <ElInput v-model="local.description" type="textarea" :rows="6" placeholder="Customer-facing product description..." />
-      <div class="field-hint">This is the main product content shown on the storefront</div>
-    </ElFormItem>
   </ElForm>
 </template>

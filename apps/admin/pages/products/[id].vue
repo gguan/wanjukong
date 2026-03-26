@@ -16,7 +16,6 @@ const error = ref<string | null>(null);
 const form = ref({
   name: '',
   slug: '',
-  description: '',
   scale: '',
   status: 'DRAFT',
   brandId: '',
@@ -42,7 +41,6 @@ onMounted(async () => {
   form.value = {
     name: product.name as string,
     slug: product.slug as string,
-    description: (product.description as string) || '',
     scale: (product.scale as string) || '',
     status: product.status as string,
     brandId: product.brandId as string,
@@ -73,19 +71,17 @@ async function save() {
   saving.value = true;
   error.value = null;
   try {
-    const payload: Record<string, unknown> = {
-      ...form.value,
-      description: form.value.description || undefined,
-    };
+    const payload: Record<string, unknown> = { ...form.value };
 
     if (form.value.saleType === 'PREORDER') {
       payload.preorderStartAt = form.value.preorderStartAt ? new Date(form.value.preorderStartAt).toISOString() : null;
       payload.preorderEndAt = form.value.preorderEndAt ? new Date(form.value.preorderEndAt).toISOString() : null;
+      payload.estimatedShipAt = form.value.estimatedShipAt ? new Date(form.value.estimatedShipAt).toISOString() : null;
     } else {
       payload.preorderStartAt = null;
       payload.preorderEndAt = null;
+      payload.estimatedShipAt = null;
     }
-    payload.estimatedShipAt = form.value.estimatedShipAt ? new Date(form.value.estimatedShipAt).toISOString() : null;
 
     await api.put(`/api/admin/products/${route.params.id}`, payload);
     ElMessage.success('Product updated');
@@ -218,11 +214,10 @@ async function save() {
               <ElFormItem label="Preorder End">
                 <ElInput v-model="form.preorderEndAt" type="datetime-local" />
               </ElFormItem>
+              <ElFormItem label="Estimated Ship Date">
+                <ElInput v-model="form.estimatedShipAt" type="datetime-local" />
+              </ElFormItem>
             </template>
-
-            <ElFormItem label="Estimated Ship Date">
-              <ElInput v-model="form.estimatedShipAt" type="datetime-local" />
-            </ElFormItem>
           </ElForm>
         </AdminSidebarCard>
 

@@ -14,7 +14,6 @@ const error = ref<string | null>(null);
 const form = ref({
   name: '',
   slug: '',
-  description: '',
   scale: '1/6',
   status: 'DRAFT',
   brandId: '',
@@ -55,7 +54,6 @@ async function save() {
   try {
     const payload: Record<string, unknown> = {
       ...form.value,
-      description: form.value.description || undefined,
       defaultVariant: {
         ...defaultVariant.value,
         sku: defaultVariant.value.sku || undefined,
@@ -68,8 +66,8 @@ async function save() {
     if (form.value.saleType === 'PREORDER') {
       payload.preorderStartAt = form.value.preorderStartAt ? new Date(form.value.preorderStartAt).toISOString() : undefined;
       payload.preorderEndAt = form.value.preorderEndAt ? new Date(form.value.preorderEndAt).toISOString() : undefined;
+      payload.estimatedShipAt = form.value.estimatedShipAt ? new Date(form.value.estimatedShipAt).toISOString() : undefined;
     }
-    payload.estimatedShipAt = form.value.estimatedShipAt ? new Date(form.value.estimatedShipAt).toISOString() : undefined;
 
     const product = await api.post<{ id: string }>('/api/admin/products', payload);
     ElMessage.success('Product created');
@@ -210,11 +208,10 @@ async function save() {
               <ElFormItem label="Preorder End">
                 <ElInput v-model="form.preorderEndAt" type="datetime-local" />
               </ElFormItem>
+              <ElFormItem label="Estimated Ship Date" style="margin-bottom: 0">
+                <ElInput v-model="form.estimatedShipAt" type="datetime-local" />
+              </ElFormItem>
             </template>
-
-            <ElFormItem label="Estimated Ship Date" style="margin-bottom: 0">
-              <ElInput v-model="form.estimatedShipAt" type="datetime-local" />
-            </ElFormItem>
           </ElForm>
         </AdminSidebarCard>
 

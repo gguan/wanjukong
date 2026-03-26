@@ -154,7 +154,7 @@ async function handleSave() {
         </ElFormItem>
 
         <ElFormItem label="Specifications">
-          <ElInput v-model="editing.specifications" type="textarea" :rows="4" placeholder="Detailed specifications..." />
+          <ProductRichTextEditor v-model="editing.specifications" />
         </ElFormItem>
 
         <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px">
