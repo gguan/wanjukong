@@ -19,10 +19,11 @@ interface Variant {
 const variants = ref<Variant[]>([]);
 const loading = ref(false);
 const error = ref('');
-const drawerVisible = ref(false);
-const editingId = ref<string | null>(null);
+const expandedIds = ref<Set<string>>(new Set());
 
-const form = reactive({
+// New variant creation
+const showNewForm = ref(false);
+const newForm = reactive({
   name: '',
   sku: '',
   manufacturerSku: '',
@@ -30,23 +31,21 @@ const form = reactive({
   stock: 0,
   subtitle: '',
   specifications: '',
-  isDefault: false,
   sortOrder: 0,
   coverImageUrl: '',
 });
+const creatingNew = ref(false);
 
-function resetForm() {
-  form.name = '';
-  form.sku = '';
-  form.manufacturerSku = '';
-  form.priceCents = 0;
-  form.stock = 0;
-  form.subtitle = '';
-  form.specifications = '';
-  form.isDefault = false;
-  form.sortOrder = 0;
-  form.coverImageUrl = '';
-  editingId.value = null;
+function resetNewForm() {
+  newForm.name = '';
+  newForm.sku = '';
+  newForm.manufacturerSku = '';
+  newForm.priceCents = 0;
+  newForm.stock = 0;
+  newForm.subtitle = '';
+  newForm.specifications = '';
+  newForm.sortOrder = variants.value.length;
+  newForm.coverImageUrl = '';
 }
 
 async function loadVariants() {
@@ -55,6 +54,11 @@ async function loadVariants() {
     variants.value = await api.get<Variant[]>(
       `/api/admin/products/${props.productId}/variants`,
     );
+    // Auto-expand default variant
+    const defaultV = variants.value.find((v) => v.isDefault);
+    if (defaultV && expandedIds.value.size === 0) {
+      expandedIds.value.add(defaultV.id);
+    }
   } catch {
     error.value = 'Failed to load variants';
   } finally {
@@ -62,60 +66,59 @@ async function loadVariants() {
   }
 }
 
-function startCreate() {
-  resetForm();
-  form.sortOrder = variants.value.length;
-  drawerVisible.value = true;
+function toggleExpand(id: string) {
+  if (expandedIds.value.has(id)) {
+    expandedIds.value.delete(id);
+  } else {
+    expandedIds.value.add(id);
+  }
 }
 
-function startEdit(v: Variant) {
-  editingId.value = v.id;
-  form.name = v.name;
-  form.sku = v.sku;
-  form.manufacturerSku = v.manufacturerSku || '';
-  form.priceCents = v.priceCents;
-  form.stock = v.stock;
-  form.subtitle = v.subtitle || '';
-  form.specifications = v.specifications || '';
-  form.isDefault = v.isDefault;
-  form.sortOrder = v.sortOrder;
-  form.coverImageUrl = v.coverImageUrl || '';
-  drawerVisible.value = true;
-}
-
-async function saveVariant() {
+async function saveVariant(id: string, data: Partial<Variant>) {
   error.value = '';
-  const payload = {
-    ...form,
-    priceCents: Number(form.priceCents),
-    stock: Number(form.stock),
-    sortOrder: Number(form.sortOrder),
-    sku: form.sku || undefined,
-    manufacturerSku: form.manufacturerSku || undefined,
-    subtitle: form.subtitle || undefined,
-    specifications: form.specifications || undefined,
-    coverImageUrl: form.coverImageUrl || undefined,
-  };
-
   try {
-    if (editingId.value) {
-      await api.patch(
-        `/api/admin/products/${props.productId}/variants/${editingId.value}`,
-        payload,
-      );
-      ElMessage.success('Variant updated');
-    } else {
-      await api.post(
-        `/api/admin/products/${props.productId}/variants`,
-        payload,
-      );
-      ElMessage.success('Variant created');
-    }
-    drawerVisible.value = false;
-    resetForm();
+    await api.patch(
+      `/api/admin/products/${props.productId}/variants/${id}`,
+      data,
+    );
+    ElMessage.success('Variant updated');
     await loadVariants();
   } catch (e: any) {
     error.value = e?.data?.message || e?.message || 'Failed to save variant';
+  }
+}
+
+async function createVariant() {
+  error.value = '';
+  creatingNew.value = true;
+  try {
+    const payload = {
+      ...newForm,
+      priceCents: Number(newForm.priceCents),
+      stock: Number(newForm.stock),
+      sortOrder: Number(newForm.sortOrder),
+      sku: newForm.sku || undefined,
+      manufacturerSku: newForm.manufacturerSku || undefined,
+      subtitle: newForm.subtitle || undefined,
+      specifications: newForm.specifications || undefined,
+      coverImageUrl: newForm.coverImageUrl || undefined,
+    };
+    const created = await api.post<Variant>(
+      `/api/admin/products/${props.productId}/variants`,
+      payload,
+    );
+    ElMessage.success('Variant created');
+    showNewForm.value = false;
+    resetNewForm();
+    await loadVariants();
+    // Auto-expand new variant
+    if (created?.id) {
+      expandedIds.value.add(created.id);
+    }
+  } catch (e: any) {
+    error.value = e?.data?.message || e?.message || 'Failed to create variant';
+  } finally {
+    creatingNew.value = false;
   }
 }
 
@@ -124,6 +127,7 @@ async function deleteVariant(id: string) {
     await ElMessageBox.confirm('Delete this variant?', 'Confirm', { type: 'warning' });
     await api.del(`/api/admin/products/${props.productId}/variants/${id}`);
     ElMessage.success('Variant deleted');
+    expandedIds.value.delete(id);
     await loadVariants();
   } catch (e: any) {
     if (e !== 'cancel') {
@@ -145,8 +149,9 @@ async function setDefault(id: string) {
   }
 }
 
-function formatPrice(cents: number) {
-  return `$${(cents / 100).toFixed(2)}`;
+function startCreate() {
+  resetNewForm();
+  showNewForm.value = true;
 }
 
 onMounted(loadVariants);
@@ -154,105 +159,85 @@ onMounted(loadVariants);
 
 <template>
   <div>
-    <div style="display: flex; justify-content: flex-end; margin-bottom: 12px">
-      <ElButton type="primary" size="small" @click="startCreate">+ Add Variant</ElButton>
-    </div>
-
     <ElAlert v-if="error" :title="error" type="error" closable style="margin-bottom: 12px" @close="error = ''" />
 
-    <!-- Variant drawer form -->
-    <ElDrawer
-      v-model="drawerVisible"
-      :title="editingId ? 'Edit Variant' : 'New Variant'"
-      size="480px"
-      destroy-on-close
-    >
-      <ElForm label-position="top">
-        <ElFormItem label="Name" required>
-          <ElInput v-model="form.name" />
-        </ElFormItem>
-        <ElRow :gutter="16">
-          <ElCol :span="12">
-            <ElFormItem label="SKU">
-              <ElInput v-model="form.sku" :placeholder="editingId ? '' : 'Auto-generated if blank'" />
-              <div v-if="!editingId" style="font-size: 12px; color: #909399">Leave blank to auto-generate</div>
-            </ElFormItem>
-          </ElCol>
-          <ElCol :span="12">
-            <ElFormItem label="Manufacturer SKU">
-              <ElInput v-model="form.manufacturerSku" placeholder="e.g. MMS617" />
-            </ElFormItem>
-          </ElCol>
-        </ElRow>
-        <ElRow :gutter="16">
-          <ElCol :span="12">
-            <ElFormItem label="Price (cents)" required>
-              <ElInputNumber v-model="form.priceCents" :min="0" style="width: 100%" />
-            </ElFormItem>
-          </ElCol>
-          <ElCol :span="12">
-            <ElFormItem label="Stock">
-              <ElInputNumber v-model="form.stock" :min="0" style="width: 100%" />
-            </ElFormItem>
-          </ElCol>
-        </ElRow>
-        <ElFormItem label="Sort Order">
-          <ElInputNumber v-model="form.sortOrder" :min="0" style="width: 100%" />
-        </ElFormItem>
-        <ElFormItem label="Subtitle">
-          <ElInput v-model="form.subtitle" placeholder="Includes extra accessories..." />
-        </ElFormItem>
-        <ElFormItem label="Specifications">
-          <ElInput v-model="form.specifications" type="textarea" :rows="4" placeholder="Detailed specifications..." />
-        </ElFormItem>
-        <ElFormItem label="Cover Image URL">
-          <ElInput v-model="form.coverImageUrl" placeholder="Optional variant-specific image" />
-        </ElFormItem>
-        <ElFormItem>
-          <ElSwitch v-model="form.isDefault" active-text="Default variant" />
-        </ElFormItem>
-      </ElForm>
-      <template #footer>
-        <ElButton @click="drawerVisible = false">Cancel</ElButton>
-        <ElButton type="primary" @click="saveVariant">
-          {{ editingId ? 'Update' : 'Create' }}
-        </ElButton>
-      </template>
-    </ElDrawer>
-
-    <!-- Variant list -->
     <div v-if="loading" v-loading="true" style="height: 100px" />
 
-    <ElEmpty v-else-if="variants.length === 0" description="No variants yet. Add one above." />
+    <template v-else>
+      <!-- Variant cards -->
+      <div v-if="variants.length > 0" style="display: flex; flex-direction: column; gap: 12px">
+        <ProductVariantEditorCard
+          v-for="v in variants"
+          :key="v.id"
+          :variant="v"
+          :expanded="expandedIds.has(v.id)"
+          @toggle="toggleExpand(v.id)"
+          @save="(data) => saveVariant(v.id, data)"
+          @delete="deleteVariant(v.id)"
+          @set-default="setDefault(v.id)"
+        />
+      </div>
 
-    <div v-else style="display: flex; flex-direction: column; gap: 8px">
-      <div
-        v-for="v in variants"
-        :key="v.id"
-        style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border: 1px solid var(--wk-admin-border); border-radius: 6px"
-        :style="v.isDefault ? { borderColor: '#409EFF', background: '#ecf5ff' } : {}"
-      >
-        <div>
-          <div style="font-weight: 600; font-size: 0.9rem; display: flex; align-items: center; gap: 6px">
-            {{ v.name }}
-            <ElTag v-if="v.isDefault" type="primary" size="small">Default</ElTag>
+      <ElEmpty v-else-if="!showNewForm" description="No variants yet." />
+
+      <!-- New variant inline form -->
+      <div v-if="showNewForm" class="variant-card" style="margin-top: 12px">
+        <div class="variant-card__header" style="cursor: default">
+          <div class="variant-card__header-left">
+            <span class="variant-card__name">New Version</span>
           </div>
-          <div style="font-size: 0.8rem; color: #909399; margin-top: 4px">
-            SKU: {{ v.sku }}
-            <span v-if="v.manufacturerSku"> · Mfr: {{ v.manufacturerSku }}</span>
-            · {{ formatPrice(v.priceCents) }}
-            · Stock: {{ v.stock }}
-          </div>
-          <div v-if="v.subtitle" style="font-size: 0.8rem; color: #b1b3b8; margin-top: 2px; font-style: italic">
-            {{ v.subtitle }}
+          <div class="variant-card__actions">
+            <ElButton size="small" text @click="showNewForm = false">Cancel</ElButton>
           </div>
         </div>
-        <ElSpace>
-          <ElButton v-if="!v.isDefault" size="small" @click="setDefault(v.id)">★ Default</ElButton>
-          <ElButton size="small" @click="startEdit(v)">Edit</ElButton>
-          <ElButton v-if="!v.isDefault" size="small" type="danger" @click="deleteVariant(v.id)">Delete</ElButton>
-        </ElSpace>
+        <div class="variant-card__body">
+          <ElForm label-position="top">
+            <div class="form-grid form-grid--2">
+              <ElFormItem label="Version Name" required>
+                <ElInput v-model="newForm.name" placeholder="e.g. Deluxe, Exclusive" />
+              </ElFormItem>
+              <ElFormItem label="Sort Order">
+                <ElInputNumber v-model="newForm.sortOrder" :min="0" style="width: 100%" />
+              </ElFormItem>
+            </div>
+            <div class="form-grid form-grid--2">
+              <ElFormItem label="SKU">
+                <ElInput v-model="newForm.sku" placeholder="Auto-generated if blank" />
+                <div class="field-hint">Leave blank to auto-generate</div>
+              </ElFormItem>
+              <ElFormItem label="Manufacturer SKU">
+                <ElInput v-model="newForm.manufacturerSku" placeholder="e.g. MMS617" />
+              </ElFormItem>
+            </div>
+            <div class="form-grid form-grid--2">
+              <ElFormItem label="Price (cents)" required>
+                <ElInputNumber v-model="newForm.priceCents" :min="0" style="width: 100%" />
+              </ElFormItem>
+              <ElFormItem label="Stock">
+                <ElInputNumber v-model="newForm.stock" :min="0" style="width: 100%" />
+              </ElFormItem>
+            </div>
+            <ElFormItem label="Subtitle">
+              <ElInput v-model="newForm.subtitle" placeholder="e.g. Includes extra accessories..." />
+            </ElFormItem>
+            <ElFormItem label="Cover Image URL">
+              <ElInput v-model="newForm.coverImageUrl" placeholder="Optional variant-specific image" />
+            </ElFormItem>
+            <ElFormItem label="Specifications">
+              <ElInput v-model="newForm.specifications" type="textarea" :rows="4" placeholder="Detailed specifications..." />
+            </ElFormItem>
+            <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px">
+              <ElButton @click="showNewForm = false">Cancel</ElButton>
+              <ElButton type="primary" :loading="creatingNew" @click="createVariant">Create Version</ElButton>
+            </div>
+          </ElForm>
+        </div>
       </div>
-    </div>
+
+      <!-- Add version button -->
+      <div v-if="!showNewForm" style="margin-top: 12px">
+        <ElButton @click="startCreate">+ Add Version</ElButton>
+      </div>
+    </template>
   </div>
 </template>

@@ -21,6 +21,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:form', value: typeof props.form): void;
+  (e: 'blur-name'): void;
 }>();
 
 const local = computed({
@@ -33,95 +34,18 @@ const isPreorder = computed(() => local.value.saleType === 'PREORDER');
 
 <template>
   <ElForm label-position="top">
-    <ElRow :gutter="20">
-      <ElCol :span="12">
-        <ElFormItem label="Name" required>
-          <ElInput v-model="local.name" />
-        </ElFormItem>
-      </ElCol>
-      <ElCol :span="12">
-        <ElFormItem label="Slug" required>
-          <ElInput v-model="local.slug" />
-        </ElFormItem>
-      </ElCol>
-    </ElRow>
+    <ElFormItem label="Product Name" required>
+      <ElInput v-model="local.name" placeholder="e.g. Iron Man Mark XLVII" @blur="emit('blur-name')" />
+    </ElFormItem>
 
-    <ElRow :gutter="20">
-      <ElCol :span="12">
-        <ElFormItem label="Brand" required>
-          <ElSelect v-model="local.brandId" placeholder="Select brand" style="width: 100%">
-            <ElOption
-              v-for="b in brands"
-              :key="b.id"
-              :label="b.name"
-              :value="b.id"
-            />
-          </ElSelect>
-        </ElFormItem>
-      </ElCol>
-      <ElCol :span="12">
-        <ElFormItem label="Category" required>
-          <ElSelect v-model="local.categoryId" placeholder="Select category" style="width: 100%">
-            <ElOption
-              v-for="c in categories"
-              :key="c.id"
-              :label="c.name"
-              :value="c.id"
-            />
-          </ElSelect>
-        </ElFormItem>
-      </ElCol>
-    </ElRow>
-
-    <ElRow :gutter="20">
-      <ElCol :span="8">
-        <ElFormItem label="Scale">
-          <ElInput v-model="local.scale" placeholder="1/6" />
-        </ElFormItem>
-      </ElCol>
-      <ElCol :span="8">
-        <ElFormItem label="Product Status">
-          <ElSelect v-model="local.status" style="width: 100%">
-            <ElOption label="Draft" value="DRAFT" />
-            <ElOption label="Active" value="ACTIVE" />
-            <ElOption label="Inactive" value="INACTIVE" />
-          </ElSelect>
-          <div style="font-size: 12px; color: #909399; margin-top: 4px">Controls storefront visibility</div>
-        </ElFormItem>
-      </ElCol>
-      <ElCol :span="8">
-        <ElFormItem label="Sale Type">
-          <ElSelect v-model="local.saleType" style="width: 100%">
-            <ElOption label="In Stock" value="IN_STOCK" />
-            <ElOption label="Preorder" value="PREORDER" />
-          </ElSelect>
-        </ElFormItem>
-      </ElCol>
-    </ElRow>
-
-    <ElRow v-if="isPreorder" :gutter="20">
-      <ElCol :span="12">
-        <ElFormItem label="Preorder Start">
-          <ElInput v-model="local.preorderStartAt" type="datetime-local" />
-        </ElFormItem>
-      </ElCol>
-      <ElCol :span="12">
-        <ElFormItem label="Preorder End">
-          <ElInput v-model="local.preorderEndAt" type="datetime-local" />
-        </ElFormItem>
-      </ElCol>
-    </ElRow>
-
-    <ElRow :gutter="20">
-      <ElCol :span="12">
-        <ElFormItem label="Estimated Ship Date">
-          <ElInput v-model="local.estimatedShipAt" type="datetime-local" />
-        </ElFormItem>
-      </ElCol>
-    </ElRow>
+    <ElFormItem label="Slug" required>
+      <ElInput v-model="local.slug" placeholder="iron-man-mark-xlvii" />
+      <div class="field-hint">Used in the product URL on the storefront</div>
+    </ElFormItem>
 
     <ElFormItem label="Description">
-      <ElInput v-model="local.description" type="textarea" :rows="4" />
+      <ElInput v-model="local.description" type="textarea" :rows="6" placeholder="Customer-facing product description..." />
+      <div class="field-hint">This is the main product content shown on the storefront</div>
     </ElFormItem>
   </ElForm>
 </template>

@@ -27,6 +27,8 @@ const form = ref({
   estimatedShipAt: '',
 });
 
+const updatedAt = ref('');
+
 onMounted(async () => {
   const [product, brandList, categoryList] = await Promise.all([
     api.get<Record<string, unknown>>(`/api/admin/products/${route.params.id}`),
@@ -51,6 +53,10 @@ onMounted(async () => {
     estimatedShipAt: product.estimatedShipAt ? toLocalDatetime(product.estimatedShipAt as string) : '',
   };
 
+  if (product.updatedAt) {
+    updatedAt.value = new Date(product.updatedAt as string).toLocaleString();
+  }
+
   loadingData.value = false;
 });
 
@@ -60,6 +66,8 @@ function toLocalDatetime(iso: string): string {
   const pad = (n: number) => n.toString().padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
+
+const isPreorder = computed(() => form.value.saleType === 'PREORDER');
 
 async function save() {
   saving.value = true;
@@ -92,43 +100,165 @@ async function save() {
 
 <template>
   <div>
-    <AdminPageHeader title="Edit Product" />
+    <!-- Editor Header -->
+    <div class="editor-header">
+      <div class="editor-header__left">
+        <NuxtLink to="/products" class="editor-header__back">
+          &larr; Products
+        </NuxtLink>
+        <h2 class="editor-header__title">Edit Product</h2>
+      </div>
+      <div class="editor-header__actions">
+        <NuxtLink to="/products">
+          <ElButton>Cancel</ElButton>
+        </NuxtLink>
+        <ElButton type="primary" :loading="saving" @click="save">Save</ElButton>
+      </div>
+    </div>
 
+    <!-- Loading -->
     <div v-if="loadingData" v-loading="true" style="height: 200px" />
 
-    <div v-else class="admin-stack" style="max-width: 860px">
-      <ElAlert v-if="error" :title="error" type="error" show-icon closable style="margin-bottom: 4px" />
+    <!-- Editor Body -->
+    <div v-else class="product-editor">
+      <!-- ═══ Main Column ═══ -->
+      <div class="product-editor__main">
+        <ElAlert v-if="error" :title="error" type="error" show-icon closable @close="error = null" />
 
-      <ElCard shadow="never">
-        <template #header>
-          <span style="font-weight: 600">Product Info</span>
-        </template>
-        <ProductFormFields
-          v-model:form="form"
-          :brands="brands"
-          :categories="categories"
-        />
-        <div class="admin-actions" style="margin-top: 20px">
-          <ElButton type="primary" :loading="saving" @click="save">Update Product</ElButton>
-          <NuxtLink to="/products">
-            <ElButton>Cancel</ElButton>
-          </NuxtLink>
-        </div>
-      </ElCard>
+        <!-- Basic Information -->
+        <AdminProductEditorSection title="Basic information" description="Core product content shown on the storefront.">
+          <ProductFormFields
+            v-model:form="form"
+            :brands="brands"
+            :categories="categories"
+          />
+        </AdminProductEditorSection>
 
-      <ElCard shadow="never">
-        <template #header>
-          <span style="font-weight: 600">Images</span>
-        </template>
-        <ProductImagesManager :product-id="(route.params.id as string)" />
-      </ElCard>
+        <!-- Media -->
+        <AdminProductEditorSection title="Media" description="Product images visible to customers.">
+          <ProductImagesManager :product-id="(route.params.id as string)" />
+        </AdminProductEditorSection>
 
-      <ElCard shadow="never">
-        <template #header>
-          <span style="font-weight: 600">Variants</span>
-        </template>
-        <ProductVariantsManager :product-id="(route.params.id as string)" />
-      </ElCard>
+        <!-- Versions -->
+        <AdminProductEditorSection title="Versions" description="Manage sellable versions like Standard, Deluxe, and Exclusive.">
+          <ProductVariantsManager :product-id="(route.params.id as string)" />
+        </AdminProductEditorSection>
+
+        <!-- Product Details -->
+        <AdminProductEditorSection title="Product details">
+          <ElForm label-position="top">
+            <div class="form-grid form-grid--2">
+              <ElFormItem label="Brand" required>
+                <ElSelect v-model="form.brandId" placeholder="Select brand" style="width: 100%">
+                  <ElOption
+                    v-for="b in brands"
+                    :key="b.id"
+                    :label="b.name"
+                    :value="b.id"
+                  />
+                </ElSelect>
+              </ElFormItem>
+              <ElFormItem label="Category" required>
+                <ElSelect v-model="form.categoryId" placeholder="Select category" style="width: 100%">
+                  <ElOption
+                    v-for="c in categories"
+                    :key="c.id"
+                    :label="c.name"
+                    :value="c.id"
+                  />
+                </ElSelect>
+              </ElFormItem>
+            </div>
+            <div class="form-grid form-grid--2">
+              <ElFormItem label="Scale">
+                <ElInput v-model="form.scale" placeholder="e.g. 1/6" />
+              </ElFormItem>
+            </div>
+          </ElForm>
+        </AdminProductEditorSection>
+      </div>
+
+      <!-- ═══ Sidebar ═══ -->
+      <aside class="product-editor__sidebar">
+        <!-- Status / Publishing -->
+        <AdminSidebarCard title="Status">
+          <ElForm label-position="top">
+            <ElFormItem label="Product Status">
+              <ElSelect v-model="form.status" style="width: 100%">
+                <ElOption label="Draft" value="DRAFT" />
+                <ElOption label="Active" value="ACTIVE" />
+                <ElOption label="Inactive" value="INACTIVE" />
+              </ElSelect>
+              <div class="field-hint">Controls storefront visibility</div>
+            </ElFormItem>
+          </ElForm>
+          <AdminStatusBadge :value="form.status" />
+          <template #footer>
+            <div v-if="updatedAt" style="font-size: 12px; color: var(--el-text-color-secondary)">
+              Last updated {{ updatedAt }}
+            </div>
+          </template>
+        </AdminSidebarCard>
+
+        <!-- Sales / Availability -->
+        <AdminSidebarCard title="Sales">
+          <ElForm label-position="top">
+            <ElFormItem label="Sale Type">
+              <ElSelect v-model="form.saleType" style="width: 100%">
+                <ElOption label="In Stock" value="IN_STOCK" />
+                <ElOption label="Preorder" value="PREORDER" />
+              </ElSelect>
+              <div class="field-hint">Controls whether customers can purchase</div>
+            </ElFormItem>
+
+            <template v-if="isPreorder">
+              <ElFormItem label="Preorder Start">
+                <ElInput v-model="form.preorderStartAt" type="datetime-local" />
+              </ElFormItem>
+              <ElFormItem label="Preorder End">
+                <ElInput v-model="form.preorderEndAt" type="datetime-local" />
+              </ElFormItem>
+            </template>
+
+            <ElFormItem label="Estimated Ship Date">
+              <ElInput v-model="form.estimatedShipAt" type="datetime-local" />
+            </ElFormItem>
+          </ElForm>
+        </AdminSidebarCard>
+
+        <!-- Organization -->
+        <AdminSidebarCard title="Organization">
+          <ElForm label-position="top">
+            <ElFormItem label="Brand">
+              <ElSelect v-model="form.brandId" placeholder="Select brand" style="width: 100%">
+                <ElOption
+                  v-for="b in brands"
+                  :key="b.id"
+                  :label="b.name"
+                  :value="b.id"
+                />
+              </ElSelect>
+            </ElFormItem>
+            <ElFormItem label="Category" style="margin-bottom: 0">
+              <ElSelect v-model="form.categoryId" placeholder="Select category" style="width: 100%">
+                <ElOption
+                  v-for="c in categories"
+                  :key="c.id"
+                  :label="c.name"
+                  :value="c.id"
+                />
+              </ElSelect>
+            </ElFormItem>
+          </ElForm>
+        </AdminSidebarCard>
+
+        <!-- Preview -->
+        <AdminSidebarCard title="Storefront">
+          <div style="font-size: 13px; color: var(--el-text-color-secondary); word-break: break-all">
+            /products/{{ form.slug || '...' }}
+          </div>
+        </AdminSidebarCard>
+      </aside>
     </div>
   </div>
 </template>

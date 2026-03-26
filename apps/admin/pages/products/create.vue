@@ -33,6 +33,8 @@ const defaultVariant = ref({
   stock: 0,
 });
 
+const isPreorder = computed(() => form.value.saleType === 'PREORDER');
+
 onMounted(async () => {
   brands.value = await api.get('/api/admin/brands');
   categories.value = await api.get('/api/admin/categories');
@@ -82,63 +84,173 @@ async function save() {
 
 <template>
   <div>
-    <AdminPageHeader title="New Product" />
-
-    <ElAlert v-if="error" :title="error" type="error" show-icon closable style="margin-bottom: 16px" />
-
-    <ElCard shadow="never" style="max-width: 800px">
-      <ProductFormFields
-        v-model:form="form"
-        :brands="brands"
-        :categories="categories"
-        @blur-name="generateSlug"
-      />
-
-      <ElDivider>Default Variant</ElDivider>
-
-      <ElForm label-position="top">
-        <ElRow :gutter="20">
-          <ElCol :span="12">
-            <ElFormItem label="Variant Name" required>
-              <ElInput v-model="defaultVariant.name" />
-            </ElFormItem>
-          </ElCol>
-          <ElCol :span="12">
-            <ElFormItem label="SKU">
-              <ElInput v-model="defaultVariant.sku" placeholder="Auto-generated if blank" />
-              <div style="font-size: 12px; color: #909399; margin-top: 4px">Leave blank to auto-generate</div>
-            </ElFormItem>
-          </ElCol>
-        </ElRow>
-        <ElRow :gutter="20">
-          <ElCol :span="8">
-            <ElFormItem label="Manufacturer SKU">
-              <ElInput v-model="defaultVariant.manufacturerSku" placeholder="e.g. MMS617" />
-            </ElFormItem>
-          </ElCol>
-          <ElCol :span="8">
-            <ElFormItem label="Price (cents)" required>
-              <ElInputNumber v-model="defaultVariant.priceCents" :min="0" style="width: 100%" />
-            </ElFormItem>
-          </ElCol>
-          <ElCol :span="8">
-            <ElFormItem label="Stock" required>
-              <ElInputNumber v-model="defaultVariant.stock" :min="0" style="width: 100%" />
-            </ElFormItem>
-          </ElCol>
-        </ElRow>
-      </ElForm>
-
-      <div style="font-size: 13px; color: #909399; margin-bottom: 16px; font-style: italic">
-        The first variant is created with the product. Add images and more variants after saving.
+    <!-- Editor Header -->
+    <div class="editor-header">
+      <div class="editor-header__left">
+        <NuxtLink to="/products" class="editor-header__back">
+          &larr; Products
+        </NuxtLink>
+        <h2 class="editor-header__title">Create Product</h2>
       </div>
-
-      <ElSpace>
-        <ElButton type="primary" :loading="saving" @click="save">Create Product</ElButton>
+      <div class="editor-header__actions">
         <NuxtLink to="/products">
           <ElButton>Cancel</ElButton>
         </NuxtLink>
-      </ElSpace>
-    </ElCard>
+        <ElButton type="primary" :loading="saving" @click="save">Create Product</ElButton>
+      </div>
+    </div>
+
+    <ElAlert v-if="error" :title="error" type="error" show-icon closable style="margin-bottom: 16px" @close="error = null" />
+
+    <div class="product-editor">
+      <!-- ═══ Main Column ═══ -->
+      <div class="product-editor__main">
+        <!-- Basic Information -->
+        <AdminProductEditorSection title="Basic information" description="Core product content shown on the storefront.">
+          <ProductFormFields
+            v-model:form="form"
+            :brands="brands"
+            :categories="categories"
+            @blur-name="generateSlug"
+          />
+        </AdminProductEditorSection>
+
+        <!-- Default Variant -->
+        <AdminProductEditorSection title="Default version" description="The Standard version is created with the product. Add more versions after saving.">
+          <ElForm label-position="top">
+            <div class="form-grid form-grid--2">
+              <ElFormItem label="Version Name" required>
+                <ElInput v-model="defaultVariant.name" />
+              </ElFormItem>
+              <ElFormItem label="SKU">
+                <ElInput v-model="defaultVariant.sku" placeholder="Auto-generated if blank" />
+                <div class="field-hint">Leave blank to auto-generate</div>
+              </ElFormItem>
+            </div>
+            <div class="form-grid form-grid--3">
+              <ElFormItem label="Manufacturer SKU">
+                <ElInput v-model="defaultVariant.manufacturerSku" placeholder="e.g. MMS617" />
+              </ElFormItem>
+              <ElFormItem label="Price (cents)" required>
+                <ElInputNumber v-model="defaultVariant.priceCents" :min="0" style="width: 100%" />
+              </ElFormItem>
+              <ElFormItem label="Stock" required>
+                <ElInputNumber v-model="defaultVariant.stock" :min="0" style="width: 100%" />
+              </ElFormItem>
+            </div>
+          </ElForm>
+        </AdminProductEditorSection>
+
+        <!-- Product Details -->
+        <AdminProductEditorSection title="Product details">
+          <ElForm label-position="top">
+            <div class="form-grid form-grid--2">
+              <ElFormItem label="Brand" required>
+                <ElSelect v-model="form.brandId" placeholder="Select brand" style="width: 100%">
+                  <ElOption
+                    v-for="b in brands"
+                    :key="b.id"
+                    :label="b.name"
+                    :value="b.id"
+                  />
+                </ElSelect>
+              </ElFormItem>
+              <ElFormItem label="Category" required>
+                <ElSelect v-model="form.categoryId" placeholder="Select category" style="width: 100%">
+                  <ElOption
+                    v-for="c in categories"
+                    :key="c.id"
+                    :label="c.name"
+                    :value="c.id"
+                  />
+                </ElSelect>
+              </ElFormItem>
+            </div>
+            <div class="form-grid form-grid--2">
+              <ElFormItem label="Scale">
+                <ElInput v-model="form.scale" placeholder="e.g. 1/6" />
+              </ElFormItem>
+            </div>
+          </ElForm>
+        </AdminProductEditorSection>
+      </div>
+
+      <!-- ═══ Sidebar ═══ -->
+      <aside class="product-editor__sidebar">
+        <!-- Status -->
+        <AdminSidebarCard title="Status">
+          <ElForm label-position="top">
+            <ElFormItem label="Product Status">
+              <ElSelect v-model="form.status" style="width: 100%">
+                <ElOption label="Draft" value="DRAFT" />
+                <ElOption label="Active" value="ACTIVE" />
+                <ElOption label="Inactive" value="INACTIVE" />
+              </ElSelect>
+              <div class="field-hint">Controls storefront visibility</div>
+            </ElFormItem>
+          </ElForm>
+          <AdminStatusBadge :value="form.status" />
+        </AdminSidebarCard>
+
+        <!-- Sales -->
+        <AdminSidebarCard title="Sales">
+          <ElForm label-position="top">
+            <ElFormItem label="Sale Type">
+              <ElSelect v-model="form.saleType" style="width: 100%">
+                <ElOption label="In Stock" value="IN_STOCK" />
+                <ElOption label="Preorder" value="PREORDER" />
+              </ElSelect>
+              <div class="field-hint">Controls whether customers can purchase</div>
+            </ElFormItem>
+
+            <template v-if="isPreorder">
+              <ElFormItem label="Preorder Start">
+                <ElInput v-model="form.preorderStartAt" type="datetime-local" />
+              </ElFormItem>
+              <ElFormItem label="Preorder End">
+                <ElInput v-model="form.preorderEndAt" type="datetime-local" />
+              </ElFormItem>
+            </template>
+
+            <ElFormItem label="Estimated Ship Date" style="margin-bottom: 0">
+              <ElInput v-model="form.estimatedShipAt" type="datetime-local" />
+            </ElFormItem>
+          </ElForm>
+        </AdminSidebarCard>
+
+        <!-- Organization -->
+        <AdminSidebarCard title="Organization">
+          <ElForm label-position="top">
+            <ElFormItem label="Brand">
+              <ElSelect v-model="form.brandId" placeholder="Select brand" style="width: 100%">
+                <ElOption
+                  v-for="b in brands"
+                  :key="b.id"
+                  :label="b.name"
+                  :value="b.id"
+                />
+              </ElSelect>
+            </ElFormItem>
+            <ElFormItem label="Category" style="margin-bottom: 0">
+              <ElSelect v-model="form.categoryId" placeholder="Select category" style="width: 100%">
+                <ElOption
+                  v-for="c in categories"
+                  :key="c.id"
+                  :label="c.name"
+                  :value="c.id"
+                />
+              </ElSelect>
+            </ElFormItem>
+          </ElForm>
+        </AdminSidebarCard>
+
+        <!-- Storefront Preview -->
+        <AdminSidebarCard title="Storefront">
+          <div style="font-size: 13px; color: var(--el-text-color-secondary); word-break: break-all">
+            /products/{{ form.slug || '...' }}
+          </div>
+        </AdminSidebarCard>
+      </aside>
+    </div>
   </div>
 </template>
