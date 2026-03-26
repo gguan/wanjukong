@@ -22,7 +22,9 @@ export const useAdminAuthStore = defineStore('admin-auth', {
 
   actions: {
     setUser(user: AdminUser) {
-      this.user = user;
+      // Spread into a plain object to ensure SSR hydration compatibility
+      // ($fetch responses may lack Object.prototype methods that devalue expects)
+      this.user = { ...user };
     },
     clear() {
       this.user = null;
