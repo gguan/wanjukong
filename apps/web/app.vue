@@ -17,10 +17,11 @@
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  color: #111;
+  font-family: 'Jost', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: #222;
   background: #fff;
   -webkit-font-smoothing: antialiased;
+  font-weight: 400;
 }
 
 a {
@@ -41,6 +42,12 @@ a {
   max-width: 1100px;
   margin: 0 auto;
   padding: 32px 20px;
+}
+
+.page-container-wide {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 40px 24px;
 }
 
 .page-title {

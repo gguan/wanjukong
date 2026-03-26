@@ -16,6 +16,8 @@ export interface ProductVariant {
   subtitle: string | null;
   specSummary: string | null;
   specifications: string | null;
+  manufacturerSku: string | null;
+  weightGrams: number | null;
   isDefault: boolean;
   sortOrder: number;
   coverImageUrl: string | null;
