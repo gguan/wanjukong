@@ -15,7 +15,12 @@ export class CreateProductVariantDto {
   versionCode?: string;
 
   @IsString()
-  sku!: string;
+  @IsOptional()
+  sku?: string; // auto-generated if blank
+
+  @IsString()
+  @IsOptional()
+  manufacturerSku?: string;
 
   @IsInt()
   @Min(0)

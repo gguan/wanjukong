@@ -19,6 +19,10 @@ export class UpdateProductVariantDto {
   @IsOptional()
   sku?: string;
 
+  @IsString()
+  @IsOptional()
+  manufacturerSku?: string;
+
   @IsInt()
   @Min(0)
   @IsOptional()

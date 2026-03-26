@@ -26,6 +26,7 @@ const form = ref({
   defaultVariant: {
     name: 'Standard',
     sku: '',
+    manufacturerSku: '',
     priceCents: 0,
     stock: 0,
   },
@@ -43,9 +44,6 @@ function generateSlug() {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '');
-  if (!form.value.defaultVariant.sku) {
-    form.value.defaultVariant.sku = `${form.value.slug}-std`;
-  }
 }
 
 async function save() {
@@ -57,6 +55,8 @@ async function save() {
       description: form.value.description || undefined,
       defaultVariant: {
         ...form.value.defaultVariant,
+        sku: form.value.defaultVariant.sku || undefined, // blank = auto-generate
+        manufacturerSku: form.value.defaultVariant.manufacturerSku || undefined,
         priceCents: Number(form.value.defaultVariant.priceCents),
         stock: Number(form.value.defaultVariant.stock),
       },
@@ -168,8 +168,14 @@ async function save() {
             </label>
 
             <label>
-              SKU *
-              <input v-model="form.defaultVariant.sku" required />
+              SKU
+              <input v-model="form.defaultVariant.sku" placeholder="Auto-generated if blank" />
+              <small class="field-hint">Leave blank to auto-generate from brand and product name</small>
+            </label>
+
+            <label>
+              Manufacturer SKU
+              <input v-model="form.defaultVariant.manufacturerSku" placeholder="e.g. MMS617" />
             </label>
 
             <label>
@@ -211,6 +217,7 @@ h2 { margin: 0 0 20px; }
 label, .field-label { display: block; font-size: 0.875rem; color: #555; }
 .field-label { margin-bottom: 6px; }
 .field-help { display: block; font-size: 0.7rem; color: #999; margin-top: 2px; }
+.field-hint { display: block; font-size: 0.65rem; color: #999; margin-top: 2px; }
 input, select, textarea {
   display: block; width: 100%; margin-top: 4px; padding: 8px 10px;
   border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem;

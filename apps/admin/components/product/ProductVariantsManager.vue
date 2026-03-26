@@ -7,6 +7,7 @@ interface Variant {
   name: string;
   versionCode: string | null;
   sku: string;
+  manufacturerSku: string | null;
   priceCents: number;
   stock: number;
   subtitle: string | null;
@@ -27,6 +28,7 @@ const form = reactive({
   name: '',
   versionCode: '',
   sku: '',
+  manufacturerSku: '',
   priceCents: 0,
   stock: 0,
   subtitle: '',
@@ -41,6 +43,7 @@ function resetForm() {
   form.name = '';
   form.versionCode = '';
   form.sku = '';
+  form.manufacturerSku = '';
   form.priceCents = 0;
   form.stock = 0;
   form.subtitle = '';
@@ -76,6 +79,7 @@ function startEdit(v: Variant) {
   form.name = v.name;
   form.versionCode = v.versionCode || '';
   form.sku = v.sku;
+  form.manufacturerSku = v.manufacturerSku || '';
   form.priceCents = v.priceCents;
   form.stock = v.stock;
   form.subtitle = v.subtitle || '';
@@ -94,6 +98,8 @@ async function saveVariant() {
     priceCents: Number(form.priceCents),
     stock: Number(form.stock),
     sortOrder: Number(form.sortOrder),
+    sku: form.sku || undefined, // blank = auto-generate on create
+    manufacturerSku: form.manufacturerSku || undefined,
     versionCode: form.versionCode || undefined,
     subtitle: form.subtitle || undefined,
     specSummary: form.specSummary || undefined,
@@ -168,12 +174,13 @@ onMounted(loadVariants);
           <input v-model="form.name" required />
         </label>
         <label>
-          SKU *
-          <input v-model="form.sku" required />
+          SKU
+          <input v-model="form.sku" :placeholder="editingId ? '' : 'Auto-generated if blank'" />
+          <small v-if="!editingId" class="field-hint">Leave blank to auto-generate</small>
         </label>
         <label>
-          Version Code
-          <input v-model="form.versionCode" placeholder="standard, deluxe..." />
+          Manufacturer SKU
+          <input v-model="form.manufacturerSku" placeholder="e.g. MMS617" />
         </label>
         <label>
           Price (cents) *
@@ -234,7 +241,7 @@ onMounted(loadVariants);
             <span v-if="v.isDefault" class="default-badge">Default</span>
           </div>
           <div class="variant-meta">
-            SKU: {{ v.sku }} · {{ formatPrice(v.priceCents) }} · Stock: {{ v.stock }}
+            SKU: {{ v.sku }}<span v-if="v.manufacturerSku"> · Mfr: {{ v.manufacturerSku }}</span> · {{ formatPrice(v.priceCents) }} · Stock: {{ v.stock }}
           </div>
           <div v-if="v.subtitle" class="variant-subtitle">{{ v.subtitle }}</div>
         </div>
@@ -280,6 +287,7 @@ onMounted(loadVariants);
 .vform-grid .full-width { grid-column: 1 / -1; }
 .vform-grid label { display: block; font-size: 0.8rem; color: #555; }
 .vform-grid input, .vform-grid select, .vform-grid textarea { display: block; width: 100%; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.85rem; margin-top: 3px; box-sizing: border-box; font-family: inherit; }
+.field-hint { display: block; font-size: 0.65rem; color: #999; margin-top: 2px; }
 .checkbox-label { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: #555; }
 .checkbox-label input[type="checkbox"] { width: auto; margin: 0; }
 .vform-actions { display: flex; gap: 8px; margin-top: 12px; }

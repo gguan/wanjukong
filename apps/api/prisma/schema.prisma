@@ -37,6 +37,7 @@ model Brand {
   id        String   @id @default(cuid())
   name      String   @unique
   slug      String   @unique
+  code      String?
   logo      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -87,22 +88,23 @@ model Product {
 }
 
 model ProductVariant {
-  id             String   @id @default(cuid())
-  productId      String
-  name           String
-  versionCode    String?
-  sku            String   @unique
-  priceCents     Int
-  stock          Int      @default(0)
-  subtitle       String?
-  specSummary    String?
-  specifications String?  @db.Text
-  weightGrams    Int?
-  isDefault      Boolean  @default(false)
-  sortOrder      Int      @default(0)
-  coverImageUrl  String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id              String   @id @default(cuid())
+  productId       String
+  name            String
+  versionCode     String?
+  sku             String   @unique
+  manufacturerSku String?
+  priceCents      Int
+  stock           Int      @default(0)
+  subtitle        String?
+  specSummary     String?
+  specifications  String?  @db.Text
+  weightGrams     Int?
+  isDefault       Boolean  @default(false)
+  sortOrder       Int      @default(0)
+  coverImageUrl   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
   orderItems OrderItem[]

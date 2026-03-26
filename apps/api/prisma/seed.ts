@@ -13,20 +13,20 @@ async function main() {
   // Brands
   const hotToys = await prisma.brand.upsert({
     where: { slug: 'hot-toys' },
-    update: {},
-    create: { name: 'Hot Toys', slug: 'hot-toys' },
+    update: { code: 'HT' },
+    create: { name: 'Hot Toys', slug: 'hot-toys', code: 'HT' },
   });
 
   const dam = await prisma.brand.upsert({
     where: { slug: 'dam' },
-    update: {},
-    create: { name: 'DAM', slug: 'dam' },
+    update: { code: 'DAM' },
+    create: { name: 'DAM', slug: 'dam', code: 'DAM' },
   });
 
   const threezero = await prisma.brand.upsert({
     where: { slug: 'threezero' },
-    update: {},
-    create: { name: 'Threezero', slug: 'threezero' },
+    update: { code: 'TZ' },
+    create: { name: 'Threezero', slug: 'threezero', code: 'TZ' },
   });
 
   // Categories
@@ -197,6 +197,7 @@ async function main() {
       name: 'Standard Edition',
       versionCode: 'standard',
       sku: 'HT-MMS617-STD',
+      manufacturerSku: 'MMS617',
       priceCents: 27500,
       stock: 8,
       isDefault: true,
@@ -209,6 +210,7 @@ async function main() {
       name: 'Deluxe Edition',
       versionCode: 'deluxe',
       sku: 'HT-MMS617-DLX',
+      manufacturerSku: 'MMS617',
       priceCents: 35000,
       stock: 3,
       isDefault: false,
@@ -222,6 +224,7 @@ async function main() {
       name: 'Standard Edition',
       versionCode: 'standard',
       sku: 'HT-MMS656-STD',
+      manufacturerSku: 'MMS656',
       priceCents: 31000,
       stock: 0,
       isDefault: true,
@@ -233,6 +236,7 @@ async function main() {
       name: 'Deluxe Edition',
       versionCode: 'deluxe',
       sku: 'HT-MMS656-DLX',
+      manufacturerSku: 'MMS656',
       priceCents: 39500,
       stock: 0,
       isDefault: false,
@@ -245,6 +249,7 @@ async function main() {
       name: 'Standard Edition',
       versionCode: 'standard',
       sku: 'DAM-DMS032-STD',
+      manufacturerSku: 'DMS032',
       priceCents: 23000,
       stock: 5,
       isDefault: true,
@@ -280,7 +285,8 @@ async function main() {
       update: {
         priceCents: v.priceCents,
         stock: v.stock,
-        specifications: 'specifications' in v ? v.specifications : undefined,
+        specifications: 'specifications' in v ? (v as any).specifications : undefined,
+        manufacturerSku: 'manufacturerSku' in v ? (v as any).manufacturerSku : undefined,
       },
       create: v,
     });

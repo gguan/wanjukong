@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { APP_NAME } from '@wanjukong/shared';
+const APP_NAME = 'wanjukong';
 </script>
 
 <template>

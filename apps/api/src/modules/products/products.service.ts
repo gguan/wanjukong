@@ -4,6 +4,11 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { toPublicProductView } from './product-storefront.presenter';
+import {
+  generateSkuCandidate,
+  normalizeSku,
+  ensureUniqueSku,
+} from '../../utils/sku-generator';
 
 const includeRelations = { brand: true, category: true };
 
@@ -39,7 +44,7 @@ export class ProductsService {
     });
   }
 
-  create(dto: CreateProductDto) {
+  async create(dto: CreateProductDto) {
     const { defaultVariant, ...rest } = dto;
     const data: Prisma.ProductUncheckedCreateInput = { ...rest };
     // Convert date strings to Date objects
@@ -51,6 +56,25 @@ export class ProductsService {
       data.preorderStartAt = null;
       data.preorderEndAt = null;
     }
+    // Resolve SKU for default variant before transaction
+    const brand = await this.prisma.brand.findUnique({ where: { id: dto.brandId } });
+    let variantSku: string;
+    if (defaultVariant.sku && defaultVariant.sku.trim()) {
+      variantSku = normalizeSku(defaultVariant.sku);
+    } else {
+      const candidate = generateSkuCandidate({
+        brandName: brand?.name || 'BRAND',
+        brandCode: brand?.code,
+        manufacturerSku: defaultVariant.manufacturerSku,
+        productName: dto.name,
+        slug: dto.slug,
+        variantName: defaultVariant.name,
+      });
+      const allSkus = await this.prisma.productVariant.findMany({ select: { sku: true } });
+      const skuSet = new Set(allSkus.map((v) => v.sku.toUpperCase()));
+      variantSku = ensureUniqueSku(candidate, skuSet);
+    }
+
     return this.prisma.$transaction(async (tx) => {
       const product = await tx.product.create({
         data,
@@ -61,7 +85,8 @@ export class ProductsService {
         data: {
           productId: product.id,
           name: defaultVariant.name,
-          sku: defaultVariant.sku,
+          sku: variantSku,
+          manufacturerSku: defaultVariant.manufacturerSku || undefined,
           priceCents: defaultVariant.priceCents,
           stock: defaultVariant.stock,
           isDefault: true,
