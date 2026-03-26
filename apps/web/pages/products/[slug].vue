@@ -523,7 +523,7 @@ function formatDate(iso: string | null | undefined) {
 
 /* Subtitle — serif body font */
 .panel-subtitle {
-  font-family: 'Source Serif 4', Georgia, serif;
+  font-family: 'Jost', sans-serif;
   font-size: 0.9rem;
   color: #1d1d1d;
   margin: -12px 0 20px;
@@ -715,7 +715,7 @@ function formatDate(iso: string | null | undefined) {
    PANEL DESCRIPTION (rich text)
    ═══════════════════════════════════════════════════════════ */
 .panel-description {
-  font-family: 'Source Serif 4', Georgia, serif;
+  font-family: 'Jost', sans-serif;
   font-size: 0.9rem;
   line-height: 1.7;
   color: #1d1d1d;

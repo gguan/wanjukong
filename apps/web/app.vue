@@ -17,7 +17,7 @@
 
 body {
   margin: 0;
-  font-family: 'Jost', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Jost', sans-serif;
   color: #222;
   background: #fff;
   -webkit-font-smoothing: antialiased;
