@@ -1,7 +1,14 @@
 export default defineNuxtConfig({
   devtools: { enabled: true },
 
-  modules: ['@pinia/nuxt'],
+  modules: ['@pinia/nuxt', '@element-plus/nuxt'],
+
+  css: ['~/assets/admin-theme.css'],
+
+  elementPlus: {
+    importStyle: 'css',
+    icon: 'ElIcon',
+  },
 
   runtimeConfig: {
     public: {

@@ -8,4 +8,4 @@ dist
 coverage
 .turbo
 *.tsbuildinfo
-.claude/worktrees/
+.claude/

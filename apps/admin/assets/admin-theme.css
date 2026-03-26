@@ -1,0 +1,18 @@
+:root {
+  --wk-admin-shell-bg: #f5f7fa;
+  --wk-admin-panel-bg: #ffffff;
+  --wk-admin-border: #dcdfe6;
+  --wk-admin-sidebar-width: 220px;
+  --wk-admin-content-max-width: 1200px;
+}
+
+html,
+body,
+#__nuxt {
+  min-height: 100%;
+  background: var(--wk-admin-shell-bg);
+}
+
+.wk-admin-page {
+  max-width: var(--wk-admin-content-max-width);
+}

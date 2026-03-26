@@ -93,7 +93,6 @@ async function handleUpload(event: Event) {
         ? `${sts.publicBaseUrl.replace(/\/$/, '')}/${key}`
         : `https://${sts.bucket}.cos.${sts.region}.myqcloud.com/${key}`;
 
-      // Register temp upload
       const uploadRecord = await api.post<{ id: string }>(
         '/api/admin/uploads/register-temp',
         {
@@ -115,10 +114,12 @@ async function handleUpload(event: Event) {
       await api.post(`/api/admin/products/${props.productId}/images`, {
         images: newImages,
       });
+      ElMessage.success(`${newImages.length} image(s) uploaded`);
       await loadImages();
     }
   } catch (err: any) {
     error.value = err?.message || 'Upload failed';
+    ElMessage.error('Upload failed');
   } finally {
     uploading.value = false;
     uploadProgress.value = 0;
@@ -131,6 +132,7 @@ async function setPrimary(imageId: string) {
     await api.patch(
       `/api/admin/products/${props.productId}/images/${imageId}/primary`,
     );
+    ElMessage.success('Primary image updated');
     await loadImages();
   } catch {
     error.value = 'Failed to set primary image';
@@ -159,234 +161,73 @@ async function moveImage(imageId: string, direction: 'up' | 'down') {
 }
 
 async function removeImage(imageId: string) {
-  if (!confirm('Remove this image from the product?')) return;
   try {
-    await api.del(
-      `/api/admin/products/${props.productId}/images/${imageId}`,
-    );
+    await ElMessageBox.confirm('Remove this image from the product?', 'Confirm', { type: 'warning' });
+    await api.del(`/api/admin/products/${props.productId}/images/${imageId}`);
+    ElMessage.success('Image removed');
     await loadImages();
-  } catch {
-    error.value = 'Failed to remove image';
-  }
+  } catch {}
 }
 
 onMounted(loadImages);
 </script>
 
 <template>
-  <div class="images-manager">
-    <div class="manager-header">
-      <h3>Product Images</h3>
-      <label class="upload-btn" :class="{ disabled: uploading }">
-        {{ uploading ? `Uploading ${uploadProgress}%` : '+ Upload Images' }}
+  <div>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px">
+      <label class="upload-label" :class="{ disabled: uploading }">
+        <ElButton :loading="uploading" type="primary" size="small">
+          {{ uploading ? `Uploading ${uploadProgress}%` : '+ Upload Images' }}
+        </ElButton>
         <input
           type="file"
           accept="image/*"
           multiple
           :disabled="uploading"
-          class="file-input"
+          style="display: none"
           @change="handleUpload"
         />
       </label>
     </div>
 
-    <div v-if="error" class="error-msg">{{ error }}</div>
+    <ElProgress v-if="uploading" :percentage="uploadProgress" :stroke-width="4" style="margin-bottom: 12px" />
 
-    <div v-if="loading" class="loading-msg">Loading images...</div>
+    <ElAlert v-if="error" :title="error" type="error" closable style="margin-bottom: 12px" @close="error = ''" />
 
-    <div v-else-if="images.length === 0" class="empty-msg">
-      No images yet. Upload some above.
-    </div>
+    <div v-if="loading" v-loading="true" style="height: 100px" />
 
-    <div v-else class="image-list">
+    <ElEmpty v-else-if="images.length === 0" description="No images yet. Upload some above." />
+
+    <div v-else style="display: flex; flex-direction: column; gap: 8px">
       <div
         v-for="(img, idx) in images"
         :key="img.id"
-        class="image-item"
-        :class="{ primary: img.isPrimary }"
+        style="display: flex; align-items: center; gap: 12px; padding: 8px; border: 1px solid var(--wk-admin-border); border-radius: 6px"
+        :style="img.isPrimary ? { borderColor: '#409EFF', background: '#ecf5ff' } : {}"
       >
-        <div class="image-thumb">
-          <img :src="img.imageUrl" :alt="img.altText || 'Product image'" />
-          <span v-if="img.isPrimary" class="primary-badge">Primary</span>
+        <div style="position: relative; width: 72px; height: 72px; flex-shrink: 0; border-radius: 4px; overflow: hidden; background: #f5f7fa">
+          <img :src="img.imageUrl" :alt="img.altText || 'Product image'" style="width: 100%; height: 100%; object-fit: cover" />
+          <ElTag v-if="img.isPrimary" type="primary" size="small" style="position: absolute; bottom: 0; left: 0; right: 0; text-align: center; border-radius: 0">
+            Primary
+          </ElTag>
         </div>
-        <div class="image-actions">
-          <button
-            v-if="!img.isPrimary"
-            class="action-btn"
-            title="Set as primary"
-            @click="setPrimary(img.id)"
-          >
-            ★ Primary
-          </button>
-          <button
-            class="action-btn"
-            :disabled="idx === 0"
-            title="Move up"
-            @click="moveImage(img.id, 'up')"
-          >
-            ↑
-          </button>
-          <button
-            class="action-btn"
-            :disabled="idx === images.length - 1"
-            title="Move down"
-            @click="moveImage(img.id, 'down')"
-          >
-            ↓
-          </button>
-          <button
-            class="action-btn danger"
-            title="Remove"
-            @click="removeImage(img.id)"
-          >
-            ✕
-          </button>
-        </div>
+        <ElSpace wrap>
+          <ElButton v-if="!img.isPrimary" size="small" @click="setPrimary(img.id)">★ Primary</ElButton>
+          <ElButton size="small" :disabled="idx === 0" @click="moveImage(img.id, 'up')">↑</ElButton>
+          <ElButton size="small" :disabled="idx === images.length - 1" @click="moveImage(img.id, 'down')">↓</ElButton>
+          <ElButton size="small" type="danger" @click="removeImage(img.id)">✕</ElButton>
+        </ElSpace>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.images-manager {
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 16px;
-}
-
-.manager-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.manager-header h3 {
-  margin: 0;
-  font-size: 0.95rem;
-}
-
-.upload-btn {
+.upload-label {
   display: inline-block;
-  padding: 6px 14px;
-  background: #1a1a2e;
-  color: #fff;
-  border-radius: 4px;
   cursor: pointer;
-  font-size: 0.8rem;
 }
-
-.upload-btn:hover:not(.disabled) {
-  background: #2d2d4e;
-}
-
-.upload-btn.disabled {
-  opacity: 0.6;
+.upload-label.disabled {
   cursor: not-allowed;
-}
-
-.file-input {
-  display: none;
-}
-
-.error-msg {
-  background: #fef2f2;
-  border: 1px solid #fca5a5;
-  color: #b91c1c;
-  padding: 8px 12px;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  margin-bottom: 12px;
-}
-
-.loading-msg,
-.empty-msg {
-  color: #999;
-  font-size: 0.85rem;
-  text-align: center;
-  padding: 20px 0;
-}
-
-.image-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.image-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  background: #fff;
-}
-
-.image-item.primary {
-  border-color: #3b82f6;
-  background: #eff6ff;
-}
-
-.image-thumb {
-  position: relative;
-  width: 72px;
-  height: 72px;
-  flex-shrink: 0;
-  border-radius: 4px;
-  overflow: hidden;
-  background: #f9fafb;
-}
-
-.image-thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.primary-badge {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: rgba(59, 130, 246, 0.9);
-  color: #fff;
-  font-size: 0.65rem;
-  text-align: center;
-  padding: 1px 0;
-}
-
-.image-actions {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-
-.action-btn {
-  padding: 4px 8px;
-  font-size: 0.75rem;
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
-  border-radius: 3px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.action-btn:hover:not(:disabled) {
-  background: #e5e7eb;
-}
-
-.action-btn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.action-btn.danger {
-  color: #b91c1c;
-  border-color: #fca5a5;
-}
-
-.action-btn.danger:hover {
-  background: #fef2f2;
 }
 </style>

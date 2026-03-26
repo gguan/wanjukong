@@ -1,30 +1,13 @@
 <template>
-  <div class="admin-layout">
+  <ElContainer direction="vertical" style="min-height: 100vh">
     <LayoutAdminHeader />
-    <div class="admin-layout__body">
+    <ElContainer>
       <LayoutAdminSidebar />
-      <main class="admin-layout__content">
-        <slot />
-      </main>
-    </div>
-  </div>
+      <ElMain style="background: var(--wk-admin-shell-bg); padding: 24px 32px">
+        <div class="wk-admin-page">
+          <slot />
+        </div>
+      </ElMain>
+    </ElContainer>
+  </ElContainer>
 </template>
-
-<style scoped>
-.admin-layout {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  font-family: system-ui, -apple-system, sans-serif;
-}
-
-.admin-layout__body {
-  display: flex;
-  flex: 1;
-}
-
-.admin-layout__content {
-  flex: 1;
-  padding: 24px 32px;
-}
-</style>

@@ -13,7 +13,7 @@ interface Category {
 const categories = ref<Category[]>([]);
 const loading = ref(true);
 
-const showForm = ref(false);
+const dialogVisible = ref(false);
 const editing = ref<Category | null>(null);
 const form = ref({ name: '', slug: '', sortOrder: 0 });
 
@@ -26,13 +26,13 @@ async function load() {
 function openCreate() {
   editing.value = null;
   form.value = { name: '', slug: '', sortOrder: 0 };
-  showForm.value = true;
+  dialogVisible.value = true;
 }
 
 function openEdit(c: Category) {
   editing.value = c;
   form.value = { name: c.name, slug: c.slug, sortOrder: c.sortOrder };
-  showForm.value = true;
+  dialogVisible.value = true;
 }
 
 async function save() {
@@ -42,14 +42,16 @@ async function save() {
   } else {
     await api.post('/api/admin/categories', payload);
   }
-  showForm.value = false;
+  dialogVisible.value = false;
   await load();
 }
 
 async function remove(id: string) {
-  if (!confirm('Delete this category?')) return;
-  await api.del(`/api/admin/categories/${id}`);
-  await load();
+  try {
+    await ElMessageBox.confirm('Delete this category?', 'Confirm', { type: 'warning' });
+    await api.del(`/api/admin/categories/${id}`);
+    await load();
+  } catch {}
 }
 
 onMounted(load);
@@ -57,66 +59,47 @@ onMounted(load);
 
 <template>
   <div>
-    <div class="page-header">
-      <h2>Categories</h2>
-      <button class="btn" @click="openCreate">+ New Category</button>
-    </div>
+    <AdminPageHeader title="Categories">
+      <template #actions>
+        <ElButton type="primary" @click="openCreate">+ New Category</ElButton>
+      </template>
+    </AdminPageHeader>
 
-    <div v-if="showForm" class="form-card">
-      <h3>{{ editing ? 'Edit Category' : 'New Category' }}</h3>
-      <form @submit.prevent="save">
-        <label>Name <input v-model="form.name" required /></label>
-        <label>Slug <input v-model="form.slug" required /></label>
-        <label>Sort Order <input v-model="form.sortOrder" type="number" /></label>
-        <div class="form-actions">
-          <button type="submit" class="btn">Save</button>
-          <button type="button" class="btn btn--secondary" @click="showForm = false">Cancel</button>
-        </div>
-      </form>
-    </div>
+    <ElDialog v-model="dialogVisible" :title="editing ? 'Edit Category' : 'New Category'" width="480px" destroy-on-close>
+      <ElForm label-position="top" @submit.prevent="save">
+        <ElFormItem label="Name">
+          <ElInput v-model="form.name" />
+        </ElFormItem>
+        <ElFormItem label="Slug">
+          <ElInput v-model="form.slug" />
+        </ElFormItem>
+        <ElFormItem label="Sort Order">
+          <ElInputNumber v-model="form.sortOrder" :min="0" />
+        </ElFormItem>
+      </ElForm>
+      <template #footer>
+        <ElButton @click="dialogVisible = false">Cancel</ElButton>
+        <ElButton type="primary" @click="save">Save</ElButton>
+      </template>
+    </ElDialog>
 
-    <table v-if="!loading && categories.length" class="data-table">
-      <thead>
-        <tr><th>Name</th><th>Slug</th><th>Sort</th><th>Actions</th></tr>
-      </thead>
-      <tbody>
-        <tr v-for="c in categories" :key="c.id">
-          <td>{{ c.name }}</td>
-          <td><code>{{ c.slug }}</code></td>
-          <td>{{ c.sortOrder }}</td>
-          <td class="actions">
-            <button class="btn-sm" @click="openEdit(c)">Edit</button>
-            <button class="btn-sm btn-sm--danger" @click="remove(c.id)">Delete</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-
-    <p v-if="!loading && !categories.length" class="empty">No categories yet.</p>
-    <p v-if="loading" class="empty">Loading...</p>
+    <ElTable v-loading="loading" :data="categories" stripe>
+      <ElTableColumn prop="name" label="Name" />
+      <ElTableColumn prop="slug" label="Slug">
+        <template #default="{ row }">
+          <ElTag size="small" type="info" disable-transitions>{{ row.slug }}</ElTag>
+        </template>
+      </ElTableColumn>
+      <ElTableColumn prop="sortOrder" label="Sort" width="80" />
+      <ElTableColumn label="Actions" width="160" align="right">
+        <template #default="{ row }">
+          <ElButton size="small" @click="openEdit(row)">Edit</ElButton>
+          <ElButton size="small" type="danger" @click="remove(row.id)">Delete</ElButton>
+        </template>
+      </ElTableColumn>
+      <template #empty>
+        <ElEmpty description="No categories yet" />
+      </template>
+    </ElTable>
   </div>
 </template>
-
-<style scoped>
-.page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-h2 { margin: 0; }
-.form-card { background: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 6px; padding: 20px; margin-bottom: 20px; max-width: 500px; }
-.form-card h3 { margin: 0 0 16px; }
-.form-card label { display: block; margin-bottom: 12px; font-size: 0.875rem; color: #555; }
-.form-card input { display: block; width: 100%; margin-top: 4px; padding: 8px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; box-sizing: border-box; }
-.form-actions { display: flex; gap: 8px; margin-top: 16px; }
-.btn { padding: 8px 16px; background: #1a1a2e; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 0.875rem; }
-.btn:hover { background: #2d2d4e; }
-.btn--secondary { background: #888; }
-.btn--secondary:hover { background: #666; }
-.data-table { width: 100%; border-collapse: collapse; }
-.data-table th, .data-table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #eee; }
-.data-table th { background: #f5f5f5; font-size: 0.8rem; text-transform: uppercase; color: #888; }
-.actions { display: flex; gap: 6px; }
-.btn-sm { padding: 4px 10px; font-size: 0.8rem; border: 1px solid #ccc; background: #fff; border-radius: 3px; cursor: pointer; }
-.btn-sm:hover { background: #f0f0f0; }
-.btn-sm--danger { color: #b91c1c; border-color: #fca5a5; }
-.btn-sm--danger:hover { background: #fef2f2; }
-code { background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 0.85rem; }
-.empty { color: #999; }
-</style>
