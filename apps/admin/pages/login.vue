@@ -1,14 +1,23 @@
 <script setup lang="ts">
-definePageMeta({ layout: false });
+definePageMeta({ layout: false, middleware: 'auth' });
 
 const { login } = useAdminAuth();
 
-const email = ref('admin@wanjukong.com');
+const email = ref('');
 const password = ref('');
+const loading = ref(false);
+const error = ref('');
 
-function handleLogin() {
-  if (email.value) {
-    login(email.value);
+async function handleLogin() {
+  if (!email.value || !password.value) return;
+  loading.value = true;
+  error.value = '';
+  try {
+    await login(email.value, password.value);
+  } catch (e: any) {
+    error.value = e?.data?.message || e?.message || 'Login failed';
+  } finally {
+    loading.value = false;
   }
 }
 </script>
@@ -18,19 +27,21 @@ function handleLogin() {
     <form class="login-form" @submit.prevent="handleLogin">
       <h1>Admin Login</h1>
 
+      <div v-if="error" class="login-form__error">{{ error }}</div>
+
       <label>
         Email
-        <input v-model="email" type="email" placeholder="admin@wanjukong.com" required />
+        <input v-model="email" type="email" placeholder="admin@example.com" required autocomplete="email" />
       </label>
 
       <label>
         Password
-        <input v-model="password" type="password" placeholder="any password" />
+        <input v-model="password" type="password" placeholder="Enter password" required autocomplete="current-password" />
       </label>
 
-      <button type="submit">Login</button>
-
-      <p class="login-form__hint">Any email/password works (fake auth)</p>
+      <button type="submit" :disabled="loading">
+        {{ loading ? 'Signing in...' : 'Login' }}
+      </button>
     </form>
   </div>
 </template>
@@ -48,8 +59,8 @@ function handleLogin() {
 .login-form {
   background: #fff;
   padding: 40px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
   width: 100%;
   max-width: 380px;
 }
@@ -58,6 +69,7 @@ function handleLogin() {
   margin: 0 0 24px;
   font-size: 1.5rem;
   text-align: center;
+  font-weight: 700;
 }
 
 .login-form label {
@@ -65,38 +77,56 @@ function handleLogin() {
   margin-bottom: 16px;
   font-size: 0.875rem;
   color: #555;
+  font-weight: 500;
 }
 
 .login-form input {
   display: block;
   width: 100%;
-  margin-top: 4px;
+  margin-top: 6px;
   padding: 10px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
   font-size: 0.95rem;
   box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.login-form input:focus {
+  outline: none;
+  border-color: #111;
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.08);
 }
 
 .login-form button {
   width: 100%;
-  padding: 10px;
-  background: #1a1a2e;
+  padding: 11px;
+  background: #111;
   color: #fff;
   border: none;
-  border-radius: 4px;
-  font-size: 1rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
   cursor: pointer;
+  transition: background 0.15s;
 }
 
-.login-form button:hover {
-  background: #2d2d4e;
+.login-form button:hover:not(:disabled) {
+  background: #333;
 }
 
-.login-form__hint {
-  margin-top: 16px;
-  text-align: center;
-  font-size: 0.75rem;
-  color: #999;
+.login-form button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.login-form__error {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  margin-bottom: 16px;
 }
 </style>

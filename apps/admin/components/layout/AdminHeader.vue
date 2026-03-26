@@ -1,12 +1,14 @@
 <script setup lang="ts">
-const { email, logout } = useAdminAuth();
+const { user, email, logout } = useAdminAuth();
 </script>
 
 <template>
   <ElHeader class="admin-header">
     <span class="admin-header__logo">wanjukong</span>
     <ElSpace>
-      <span class="admin-header__email">{{ email }}</span>
+      <span v-if="user" class="admin-header__user">
+        {{ user.name || email }}
+      </span>
       <ElButton size="small" text bg style="color: rgba(255,255,255,0.85)" @click="logout">Logout</ElButton>
     </ElSpace>
   </ElHeader>
@@ -30,7 +32,7 @@ const { email, logout } = useAdminAuth();
   letter-spacing: -0.02em;
 }
 
-.admin-header__email {
+.admin-header__user {
   font-size: 0.8rem;
   opacity: 0.7;
 }

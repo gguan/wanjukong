@@ -1,20 +1,34 @@
 import { defineStore } from 'pinia';
 
+interface AdminUser {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  lastLoginAt?: string | null;
+}
+
 export const useAdminAuthStore = defineStore('admin-auth', {
   state: () => ({
-    isLoggedIn: false,
-    email: null as string | null,
+    user: null as AdminUser | null,
+    initialized: false,
   }),
 
-  actions: {
-    login(email: string) {
-      this.isLoggedIn = true;
-      this.email = email;
-    },
+  getters: {
+    isLoggedIn: (state) => !!state.user,
+    email: (state) => state.user?.email ?? null,
+    role: (state) => state.user?.role ?? null,
+  },
 
-    logout() {
-      this.isLoggedIn = false;
-      this.email = null;
+  actions: {
+    setUser(user: AdminUser) {
+      this.user = user;
+    },
+    clear() {
+      this.user = null;
+    },
+    markInitialized() {
+      this.initialized = true;
     },
   },
 });

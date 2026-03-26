@@ -1,8 +1,23 @@
 import { PrismaClient, ProductStatus, SaleType } from '@prisma/client';
+import * as argon2 from 'argon2';
 
 const prisma = new PrismaClient();
 
 async function main() {
+  // ─── Dev-only: Seed initial super admin ───────────────────
+  const adminPassword = await argon2.hash('admin123456');
+  await prisma.adminUser.upsert({
+    where: { email: 'admin@wanjukong.com' },
+    update: {},
+    create: {
+      email: 'admin@wanjukong.com',
+      passwordHash: adminPassword,
+      name: 'Super Admin',
+      role: 'SUPER_ADMIN',
+    },
+  });
+  console.log('Admin user seeded: admin@wanjukong.com / admin123456');
+
   // App config
   await prisma.appConfig.upsert({
     where: { key: 'site_name' },
