@@ -4,11 +4,11 @@ const navItems = useAdminNav();
 </script>
 
 <template>
-  <ElAside width="var(--wk-admin-sidebar-width)" style="background: #fff; border-right: 1px solid var(--wk-admin-border)">
+  <ElAside width="var(--wk-admin-sidebar-width)" class="admin-sidebar">
     <ElMenu
       :default-active="route.path"
       router
-      style="border-right: none; padding-top: 8px"
+      class="admin-sidebar__menu"
     >
       <ElMenuItem
         v-for="item in navItems"
@@ -20,3 +20,15 @@ const navItems = useAdminNav();
     </ElMenu>
   </ElAside>
 </template>
+
+<style scoped>
+.admin-sidebar {
+  background: #fff;
+  border-right: 1px solid var(--wk-admin-border);
+}
+
+.admin-sidebar__menu {
+  border-right: none;
+  padding: 12px 0;
+}
+</style>

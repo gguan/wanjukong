@@ -96,10 +96,10 @@ async function save() {
 
     <div v-if="loadingData" v-loading="true" style="height: 200px" />
 
-    <template v-else>
-      <ElAlert v-if="error" :title="error" type="error" show-icon closable style="margin-bottom: 16px" />
+    <div v-else class="admin-stack" style="max-width: 860px">
+      <ElAlert v-if="error" :title="error" type="error" show-icon closable style="margin-bottom: 4px" />
 
-      <ElCard shadow="never" style="max-width: 800px; margin-bottom: 24px">
+      <ElCard shadow="never">
         <template #header>
           <span style="font-weight: 600">Product Info</span>
         </template>
@@ -108,27 +108,27 @@ async function save() {
           :brands="brands"
           :categories="categories"
         />
-        <ElSpace style="margin-top: 16px">
+        <div class="admin-actions" style="margin-top: 20px">
           <ElButton type="primary" :loading="saving" @click="save">Update Product</ElButton>
           <NuxtLink to="/products">
             <ElButton>Cancel</ElButton>
           </NuxtLink>
-        </ElSpace>
+        </div>
       </ElCard>
 
-      <ElCard shadow="never" style="max-width: 800px; margin-bottom: 24px">
+      <ElCard shadow="never">
         <template #header>
           <span style="font-weight: 600">Images</span>
         </template>
         <ProductImagesManager :product-id="(route.params.id as string)" />
       </ElCard>
 
-      <ElCard shadow="never" style="max-width: 800px; margin-bottom: 24px">
+      <ElCard shadow="never">
         <template #header>
           <span style="font-weight: 600">Variants</span>
         </template>
         <ProductVariantsManager :product-id="(route.params.id as string)" />
       </ElCard>
-    </template>
+    </div>
   </div>
 </template>

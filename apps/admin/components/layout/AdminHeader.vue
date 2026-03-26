@@ -3,11 +3,35 @@ const { email, logout } = useAdminAuth();
 </script>
 
 <template>
-  <ElHeader style="background: #1a1a2e; color: #fff; display: flex; align-items: center; justify-content: space-between; height: 56px; padding: 0 24px">
-    <span style="font-size: 1.1rem; font-weight: 600">wanjukong Admin</span>
+  <ElHeader class="admin-header">
+    <span class="admin-header__logo">wanjukong</span>
     <ElSpace>
-      <span style="font-size: 0.85rem; opacity: 0.8">{{ email }}</span>
-      <ElButton size="small" text bg style="color: #fff" @click="logout">Logout</ElButton>
+      <span class="admin-header__email">{{ email }}</span>
+      <ElButton size="small" text bg style="color: rgba(255,255,255,0.85)" @click="logout">Logout</ElButton>
     </ElSpace>
   </ElHeader>
 </template>
+
+<style scoped>
+.admin-header {
+  background: var(--wk-admin-header-bg, #111111);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+  padding: 0 24px;
+  border-bottom: none;
+}
+
+.admin-header__logo {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.admin-header__email {
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+</style>

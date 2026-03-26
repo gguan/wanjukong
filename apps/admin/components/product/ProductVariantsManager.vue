@@ -5,13 +5,11 @@ const api = useAdminApi();
 interface Variant {
   id: string;
   name: string;
-  versionCode: string | null;
   sku: string;
   manufacturerSku: string | null;
   priceCents: number;
   stock: number;
   subtitle: string | null;
-  specSummary: string | null;
   specifications: string | null;
   isDefault: boolean;
   sortOrder: number;

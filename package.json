@@ -4,6 +4,8 @@
   "private": true,
   "description": "Wanjukong monorepo - Nuxt 3 + NestJS",
   "scripts": {
+    "clean": "rm -rf apps/web/.nuxt apps/admin/.nuxt apps/api/dist",
+    "dev:clean": "pnpm clean && pnpm dev",
     "dev": "pnpm --parallel -r run dev",
     "dev:web": "pnpm --filter @wanjukong/web dev",
     "dev:api": "pnpm --filter @wanjukong/api dev",

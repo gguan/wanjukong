@@ -3,7 +3,10 @@ export default defineNuxtConfig({
 
   modules: ['@pinia/nuxt', '@element-plus/nuxt'],
 
-  css: ['~/assets/admin-theme.css'],
+  css: [
+    '~/assets/element-theme.css',
+    '~/assets/admin-theme.css',
+  ],
 
   elementPlus: {
     importStyle: 'css',

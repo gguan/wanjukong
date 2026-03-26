@@ -5,9 +5,9 @@ defineProps<{
 </script>
 
 <template>
-  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px">
-    <h2 style="margin: 0; font-size: 1.25rem">{{ title }}</h2>
-    <div>
+  <div class="admin-page__header">
+    <h2>{{ title }}</h2>
+    <div class="admin-actions">
       <slot name="actions" />
     </div>
   </div>

@@ -1,9 +1,12 @@
+/* ─── Admin Layout Theme ──────────────────────────────────── */
+
 :root {
-  --wk-admin-shell-bg: #f5f7fa;
+  --wk-admin-shell-bg: #f7f7f8;
   --wk-admin-panel-bg: #ffffff;
-  --wk-admin-border: #dcdfe6;
+  --wk-admin-border: #e5e7eb;
   --wk-admin-sidebar-width: 220px;
-  --wk-admin-content-max-width: 1200px;
+  --wk-admin-content-max-width: 1400px;
+  --wk-admin-header-bg: #111111;
 }
 
 html,
@@ -11,8 +14,43 @@ body,
 #__nuxt {
   min-height: 100%;
   background: var(--wk-admin-shell-bg);
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
+
+/* ─── Page Container ──────────────────────────────────────── */
 
 .wk-admin-page {
   max-width: var(--wk-admin-content-max-width);
+}
+
+.admin-page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.admin-page__header h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #111;
+  letter-spacing: -0.01em;
+}
+
+/* ─── Stack ───────────────────────────────────────────────── */
+
+.admin-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ─── Action Row ──────────────────────────────────────────── */
+
+.admin-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
