@@ -31,6 +31,11 @@ const loading = ref(false);
 const uploading = ref(false);
 const uploadProgress = ref(0);
 const error = ref('');
+const fileInputRef = ref<HTMLInputElement | null>(null);
+
+function triggerUpload() {
+  fileInputRef.value?.click();
+}
 
 async function loadImages() {
   loading.value = true;
@@ -175,19 +180,18 @@ onMounted(loadImages);
 <template>
   <div>
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px">
-      <label class="upload-label" :class="{ disabled: uploading }">
-        <ElButton :loading="uploading" type="primary" size="small">
-          {{ uploading ? `Uploading ${uploadProgress}%` : '+ Upload Images' }}
-        </ElButton>
-        <input
-          type="file"
-          accept="image/*"
-          multiple
-          :disabled="uploading"
-          style="display: none"
-          @change="handleUpload"
-        />
-      </label>
+      <ElButton :loading="uploading" type="primary" size="small" @click="triggerUpload">
+        {{ uploading ? `Uploading ${uploadProgress}%` : '+ Upload Images' }}
+      </ElButton>
+      <input
+        ref="fileInputRef"
+        type="file"
+        accept="image/*"
+        multiple
+        :disabled="uploading"
+        style="display: none"
+        @change="handleUpload"
+      />
     </div>
 
     <ElProgress v-if="uploading" :percentage="uploadProgress" :stroke-width="4" style="margin-bottom: 12px" />
@@ -222,12 +226,3 @@ onMounted(loadImages);
   </div>
 </template>
 
-<style scoped>
-.upload-label {
-  display: inline-block;
-  cursor: pointer;
-}
-.upload-label.disabled {
-  cursor: not-allowed;
-}
-</style>
