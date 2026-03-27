@@ -401,6 +401,116 @@ A cron job runs every hour to delete expired TEMP uploads from both COS and the 
 - Removing a ProductImage relation does not immediately delete the COS object (handled by cleanup job)
 - No drag-and-drop reorder yet (use up/down buttons)
 
+## Production Deployment
+
+### Prerequisites
+
+- Linux server (Debian/Ubuntu, 2 cores / 4 GB RAM minimum)
+- Domain with DNS A records pointing to server IP
+- GitHub SSH key on server for private repo access
+
+### Architecture
+
+```
+Internet
+   |
+Nginx (SSL + reverse proxy)
+   |-- overrealm.shop       --> web  :3000
+   |-- overrealm.shop/api   --> api  :3001
+   |-- admin.overrealm.shop --> admin:3002
+
+Docker Compose
+   |-- postgres (5432, internal)
+   |-- api      (3001)
+   |-- web      (3000)
+   |-- admin    (3002)
+```
+
+### First-Time Setup
+
+```bash
+ssh root@<SERVER_IP>
+
+# 1. Install Docker & Nginx
+curl -fsSL https://get.docker.com | sh
+systemctl enable docker && systemctl start docker
+apt-get update && apt-get install -y nginx certbot python3-certbot-nginx git
+
+# 2. SSH key for GitHub
+ssh-keygen -t ed25519 -C "server" -N "" -f ~/.ssh/id_ed25519
+cat ~/.ssh/id_ed25519.pub
+# Copy -> GitHub -> Settings -> SSH and GPG keys -> New SSH key
+
+# 3. Clone
+git clone git@github.com:gguan/wanjukong.git /opt/wanjukong
+cd /opt/wanjukong
+
+# 4. Create .env (edit values)
+cat > .env << 'EOF'
+POSTGRES_PASSWORD=<strong-password>
+SESSION_SECRET=<random-string>
+SITE_URL=https://overrealm.shop
+CORS_ORIGIN=https://overrealm.shop,https://admin.overrealm.shop
+TENCENT_COS_SECRET_ID=
+TENCENT_COS_SECRET_KEY=
+TENCENT_COS_BUCKET=
+TENCENT_COS_REGION=ap-guangzhou
+TENCENT_COS_PUBLIC_BASE_URL=
+PAYPAL_CLIENT_ID=
+PAYPAL_CLIENT_SECRET=
+PAYPAL_BASE_URL=https://api-m.sandbox.paypal.com
+SMTP_HOST=
+SMTP_PORT=
+SMTP_USER=
+SMTP_PASS=
+SMTP_FROM=
+APP_BASE_URL=https://overrealm.shop
+EOF
+nano .env
+
+# 5. SSL certificate (DNS must point to this server first)
+rm -f /etc/nginx/sites-enabled/default
+systemctl restart nginx
+certbot certonly --nginx -d overrealm.shop -d admin.overrealm.shop
+
+# 6. Nginx config
+cp deploy/nginx.conf /etc/nginx/sites-available/overrealm.shop
+ln -sf /etc/nginx/sites-available/overrealm.shop /etc/nginx/sites-enabled/
+nginx -t && systemctl reload nginx
+
+# 7. Build & start
+docker compose up -d --build
+docker compose exec -T api npx prisma db push
+```
+
+### Routine Deployment
+
+```bash
+cd /opt/wanjukong && bash deploy/deploy.sh
+```
+
+Or manually:
+
+```bash
+cd /opt/wanjukong
+git pull origin main
+docker compose build
+docker compose up -d
+docker compose exec -T api npx prisma db push
+```
+
+### Security Group
+
+Cloud providers (Tencent Cloud, AWS, etc.) require inbound TCP **80** and **443** in the security group.
+
+### SSL Renewal
+
+Certbot auto-renews. Manual renewal:
+
+```bash
+certbot renew && systemctl reload nginx
+```
+
 ## Build
 
 ```bash
