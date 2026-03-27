@@ -11,6 +11,7 @@ import { ProductsModule } from './modules/products/products.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { AdminAuthModule } from './modules/admin-auth/admin-auth.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { AdminAuthModule } from './modules/admin-auth/admin-auth.module';
     CategoriesModule,
     ProductsModule,
     OrdersModule,
+    PaymentsModule,
     UploadsModule,
   ],
   providers: [

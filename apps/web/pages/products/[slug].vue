@@ -119,15 +119,26 @@ const shipQuarter = computed(() => {
   return `Q${q} ${d.getFullYear()}`;
 });
 
-// ─── Checkout URL ────────────────────────────────────────
-const checkoutUrl = computed(() => {
-  const base = `/checkout/${product.value?.slug}`;
-  const params = new URLSearchParams();
-  if (selectedVariant.value) params.set('variant', selectedVariant.value.id);
-  if (quantity.value > 1) params.set('qty', String(quantity.value));
-  const qs = params.toString();
-  return qs ? `${base}?${qs}` : base;
-});
+// ─── Cart ─────────────────────────────────────────────────
+const { addToCart } = useCart();
+const addedToCart = ref(false);
+
+function handleAddToCart() {
+  if (!product.value || !selectedVariant.value) return;
+  addToCart({
+    productId: product.value.id,
+    variantId: selectedVariant.value.id,
+    quantity: quantity.value,
+    productName: product.value.name,
+    productSlug: product.value.slug,
+    brandName: product.value.brand?.name || '',
+    variantName: selectedVariant.value.name,
+    priceCents: selectedVariant.value.priceCents,
+    imageUrl: selectedVariant.value.coverImageUrl || product.value.imageUrl || null,
+  });
+  addedToCart.value = true;
+  setTimeout(() => { addedToCart.value = false; }, 2000);
+}
 
 // ─── Related Products ────────────────────────────────────
 const relatedProducts = ref<Product[]>([]);
@@ -280,9 +291,14 @@ function formatDate(iso: string | null | undefined) {
                   </div>
                 </div>
 
-                <NuxtLink v-if="isPurchasable" :to="checkoutUrl" class="btn-primary">
-                  {{ isPreorder ? 'Pre-order' : 'Add to Cart' }}
-                </NuxtLink>
+                <button
+                  v-if="isPurchasable"
+                  class="btn-primary"
+                  :class="{ 'btn-added': addedToCart }"
+                  @click="handleAddToCart"
+                >
+                  {{ addedToCart ? 'Added!' : isPreorder ? 'Pre-order' : 'Add to Cart' }}
+                </button>
                 <button v-else class="btn-primary btn-disabled" disabled>
                   {{ availabilityLabel(displayAvailability) }}
                 </button>
@@ -686,6 +702,8 @@ function formatDate(iso: string | null | undefined) {
   transition: background 0.15s;
 }
 .btn-primary:hover { background: #333; }
+.btn-added { background: #0f766e !important; }
+.btn-added:hover { background: #0d6460 !important; }
 .btn-disabled {
   background: #ccc;
   color: #888;
