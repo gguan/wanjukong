@@ -19,10 +19,12 @@ export class UploadsService {
 
   /**
    * Generate temporary COS credentials for frontend direct upload.
-   * Scoped to the products/ prefix with a 30-minute duration.
+   * Scoped to the given prefix (default: products/) with a 30-minute duration.
    */
-  async getTemporaryCredentials() {
+  async getTemporaryCredentials(prefix = 'products/') {
     const { secretId, secretKey, bucket, region, publicBaseUrl } = this.config;
+    // Sanitize prefix: must end with /, only allow safe path segments
+    const safePrefix = prefix.replace(/[^a-zA-Z0-9/_-]/g, '').replace(/\/*$/, '') + '/';
 
     if (!secretId || !secretKey || !bucket || !region) {
       throw new InternalServerErrorException(
@@ -47,7 +49,7 @@ export class UploadsService {
           ],
           effect: 'allow',
           resource: [
-            `qcs::cos:${region}:uid/${appId}:${bucket}/products/*`,
+            `qcs::cos:${region}:uid/${appId}:${bucket}/${safePrefix}*`,
           ],
         },
       ],
@@ -70,7 +72,7 @@ export class UploadsService {
         bucket,
         region,
         publicBaseUrl,
-        keyPrefix: 'products/',
+        keyPrefix: safePrefix,
       };
     } catch (err) {
       throw new InternalServerErrorException(
