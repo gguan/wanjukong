@@ -38,16 +38,16 @@ ENVEOF
 fi
 
 echo "=== 5. 配置 Nginx ==="
-cp deploy/nginx.conf /etc/nginx/sites-available/overrealm.store
-ln -sf /etc/nginx/sites-available/overrealm.store /etc/nginx/sites-enabled/
+cp deploy/nginx.conf /etc/nginx/sites-available/overrealm.shop
+ln -sf /etc/nginx/sites-available/overrealm.shop /etc/nginx/sites-enabled/
 
 echo "=== 6. 申请 SSL 证书 ==="
 echo ">>> 请先将以下 DNS 解析到此服务器 IP:"
-echo "    overrealm.store -> $(curl -s ifconfig.me)"
-echo "    admin.overrealm.store -> $(curl -s ifconfig.me)"
+echo "    overrealm.shop -> $(curl -s ifconfig.me)"
+echo "    admin.overrealm.shop -> $(curl -s ifconfig.me)"
 echo ""
 echo ">>> DNS 生效后运行:"
-echo "    certbot --nginx -d overrealm.store -d admin.overrealm.store"
+echo "    certbot --nginx -d overrealm.shop -d admin.overrealm.shop"
 
 echo "=== 7. 启动服务 ==="
 echo ">>> 编辑 .env 后运行:"
