@@ -130,6 +130,12 @@ export class AdminAuthService {
         name: true,
         role: true,
         lastLoginAt: true,
+        brandAssignments: {
+          select: {
+            brandId: true,
+            brand: { select: { id: true, name: true } },
+          },
+        },
       },
     });
 

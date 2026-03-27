@@ -42,7 +42,8 @@ model Brand {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  products Product[]
+  products         Product[]
+  adminAssignments AdminBrandAssignment[]
 }
 
 model Category {
@@ -243,6 +244,7 @@ enum AdminRole {
   SUPER_ADMIN
   ADMIN
   EDITOR
+  BRAND_MANAGER
 }
 
 model AdminUser {
@@ -260,7 +262,8 @@ model AdminUser {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  auditLogs AdminAuditLog[]
+  auditLogs        AdminAuditLog[]
+  brandAssignments AdminBrandAssignment[]
 
   @@index([email])
 }
@@ -281,4 +284,18 @@ model AdminAuditLog {
   @@index([adminUserId])
   @@index([action])
   @@index([createdAt])
+}
+
+model AdminBrandAssignment {
+  id          String   @id @default(cuid())
+  adminUserId String
+  brandId     String
+  createdAt   DateTime @default(now())
+
+  adminUser AdminUser @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+  brand     Brand     @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@unique([adminUserId, brandId])
+  @@index([adminUserId])
+  @@index([brandId])
 }

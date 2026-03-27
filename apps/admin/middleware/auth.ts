@@ -19,6 +19,14 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   // Redirect logged-in users away from login page
   if (store.isLoggedIn && to.path === '/login') {
-    return navigateTo('/');
+    return navigateTo(store.isBrandManager ? '/products' : '/');
+  }
+
+  // Brand managers can only access /products routes
+  if (store.isBrandManager) {
+    const allowed = to.path.startsWith('/products') || to.path === '/login';
+    if (!allowed) {
+      return navigateTo('/products');
+    }
   }
 });

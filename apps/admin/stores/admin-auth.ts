@@ -1,11 +1,17 @@
 import { defineStore } from 'pinia';
 
+interface BrandAssignment {
+  brandId: string;
+  brand: { id: string; name: string };
+}
+
 interface AdminUser {
   id: string;
   email: string;
   name: string;
   role: string;
   lastLoginAt?: string | null;
+  brandAssignments?: BrandAssignment[];
 }
 
 export const useAdminAuthStore = defineStore('admin-auth', {
@@ -18,6 +24,13 @@ export const useAdminAuthStore = defineStore('admin-auth', {
     isLoggedIn: (state) => !!state.user,
     email: (state) => state.user?.email ?? null,
     role: (state) => state.user?.role ?? null,
+    isBrandManager: (state) => state.user?.role === 'BRAND_MANAGER',
+    isAdminOrAbove: (state) =>
+      state.user?.role === 'ADMIN' || state.user?.role === 'SUPER_ADMIN',
+    allowedBrandIds: (state) =>
+      state.user?.brandAssignments?.map((a) => a.brandId) ?? [],
+    allowedBrands: (state) =>
+      state.user?.brandAssignments?.map((a) => a.brand) ?? [],
   },
 
   actions: {

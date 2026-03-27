@@ -54,6 +54,7 @@ export class SessionAuthGuard implements CanActivate {
         name: true,
         role: true,
         isActive: true,
+        brandAssignments: { select: { brandId: true } },
       },
     });
 

@@ -35,7 +35,12 @@ const defaultVariant = ref({
 const isPreorder = computed(() => form.value.saleType === 'PREORDER');
 
 onMounted(async () => {
-  brands.value = await api.get('/api/admin/brands');
+  const store = useAdminAuthStore();
+  if (store.isBrandManager) {
+    brands.value = store.allowedBrands;
+  } else {
+    brands.value = await api.get('/api/admin/brands');
+  }
   categories.value = await api.get('/api/admin/categories');
 });
 

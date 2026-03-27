@@ -30,8 +30,13 @@ export interface ProductFilters {
 export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll() {
+  findAll(brandIds?: string[]) {
+    const where: Prisma.ProductWhereInput = {};
+    if (brandIds) {
+      where.brandId = { in: brandIds };
+    }
     return this.prisma.product.findMany({
+      where,
       include: includeRelations,
       orderBy: { createdAt: 'desc' },
     });

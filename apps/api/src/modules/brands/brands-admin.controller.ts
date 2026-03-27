@@ -7,10 +7,13 @@ import {
   Param,
   Body,
 } from '@nestjs/common';
+import { AdminRole } from '@prisma/client';
 import { BrandsService } from './brands.service';
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { UpdateBrandDto } from './dto/update-brand.dto';
+import { Roles } from '../admin-auth/decorators/roles.decorator';
 
+@Roles(AdminRole.SUPER_ADMIN, AdminRole.ADMIN, AdminRole.EDITOR)
 @Controller('admin/brands')
 export class BrandsAdminController {
   constructor(private readonly brandsService: BrandsService) {}

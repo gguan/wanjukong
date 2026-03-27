@@ -7,7 +7,10 @@ import {
   Patch,
   Param,
   Body,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { ProductsService } from './products.service';
 import { ProductImagesService } from './product-images.service';
 import { ProductVariantsService } from './product-variants.service';
@@ -17,7 +20,9 @@ import { AddProductImagesDto } from './dto/add-product-images.dto';
 import { ReorderProductImagesDto } from './dto/reorder-product-images.dto';
 import { CreateProductVariantDto } from './dto/create-product-variant.dto';
 import { UpdateProductVariantDto } from './dto/update-product-variant.dto';
+import { BrandPermissionGuard } from '../admin-auth/guards/brand-permission.guard';
 
+@UseGuards(BrandPermissionGuard)
 @Controller('admin/products')
 export class ProductsAdminController {
   constructor(
@@ -27,8 +32,9 @@ export class ProductsAdminController {
   ) {}
 
   @Get()
-  findAll() {
-    return this.productsService.findAll();
+  findAll(@Req() req: Request) {
+    const allowedBrandIds = (req as any).allowedBrandIds;
+    return this.productsService.findAll(allowedBrandIds);
   }
 
   @Get(':id')

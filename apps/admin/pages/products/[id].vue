@@ -29,11 +29,21 @@ const form = ref({
 const updatedAt = ref('');
 
 onMounted(async () => {
-  const [product, brandList, categoryList] = await Promise.all([
+  const store = useAdminAuthStore();
+
+  const fetches: Promise<unknown>[] = [
     api.get<Record<string, unknown>>(`/api/admin/products/${route.params.id}`),
-    api.get<Option[]>('/api/admin/brands'),
+    store.isBrandManager
+      ? Promise.resolve(store.allowedBrands)
+      : api.get<Option[]>('/api/admin/brands'),
     api.get<Option[]>('/api/admin/categories'),
-  ]);
+  ];
+
+  const [product, brandList, categoryList] = (await Promise.all(fetches)) as [
+    Record<string, unknown>,
+    Option[],
+    Option[],
+  ];
 
   brands.value = brandList;
   categories.value = categoryList;
