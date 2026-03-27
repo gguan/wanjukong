@@ -1,58 +1,91 @@
-import { Controller, Post, Body, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Body, Req } from '@nestjs/common';
 import { Public } from '../admin-auth/decorators/public.decorator';
 import { PaymentsService } from './payments.service';
-import { OrdersService } from '../orders/orders.service';
+import { IsString, IsArray, IsOptional, IsNumber, ValidateNested, IsEmail } from 'class-validator';
+import { Type } from 'class-transformer';
 
 class CartItemDto {
+  @IsString()
   productId!: string;
+
+  @IsString()
   variantId!: string;
+
+  @IsNumber()
   quantity!: number;
 }
 
 class CreatePayPalOrderDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CartItemDto)
   items!: CartItemDto[];
+
+  @IsString()
+  @IsOptional()
   currency?: string;
 }
 
 class CapturePayPalOrderDto {
+  @IsString()
   paypalOrderId!: string;
-  items!: CartItemDto[];
+
+  @IsString()
   fullName!: string;
+
+  @IsEmail()
   email!: string;
+
+  @IsString()
+  @IsOptional()
   phone?: string;
+
+  @IsString()
   country!: string;
+
+  @IsString()
+  @IsOptional()
   stateOrProvince?: string;
+
+  @IsString()
   city!: string;
+
+  @IsString()
   addressLine1!: string;
+
+  @IsString()
+  @IsOptional()
   addressLine2?: string;
+
+  @IsString()
+  @IsOptional()
   postalCode?: string;
+
+  @IsString()
+  @IsOptional()
   currency?: string;
 }
 
 @Public()
 @Controller('public/payments/paypal')
 export class PaymentsController {
-  constructor(
-    private readonly paymentsService: PaymentsService,
-    private readonly ordersService: OrdersService,
-  ) {}
+  constructor(private readonly paymentsService: PaymentsService) {}
 
   @Post('create-order')
-  async createOrder(@Body() dto: CreatePayPalOrderDto) {
-    if (!dto.items || dto.items.length === 0) {
-      throw new BadRequestException('Cart is empty');
-    }
-    return this.paymentsService.createPayPalOrderFromCart(dto.items, dto.currency);
+  async createOrder(@Body() dto: CreatePayPalOrderDto, @Req() req: any) {
+    const customerId = req.session?.customerId || undefined;
+    return this.paymentsService.createPayPalOrderFromCart({
+      items: dto.items,
+      currency: dto.currency,
+      customerId,
+    });
   }
 
   @Post('capture-order')
-  async captureOrder(@Body() dto: CapturePayPalOrderDto) {
-    // 1. Capture payment with PayPal
-    await this.paymentsService.capturePayPalOrder(dto.paypalOrderId);
-
-    // 2. Create the DB order (with PAID status since PayPal captured)
-    const order = await this.ordersService.createCartOrder({
-      items: dto.items,
+  async captureOrder(@Body() dto: CapturePayPalOrderDto, @Req() req: any) {
+    const customerId = req.session?.customerId || undefined;
+    return this.paymentsService.captureAndCreateOrder({
+      paypalOrderId: dto.paypalOrderId,
       fullName: dto.fullName,
       email: dto.email,
       phone: dto.phone,
@@ -63,9 +96,7 @@ export class PaymentsController {
       addressLine2: dto.addressLine2,
       postalCode: dto.postalCode,
       currency: dto.currency,
-      paypalOrderId: dto.paypalOrderId,
+      customerId,
     });
-
-    return { orderNo: order.orderNo };
   }
 }

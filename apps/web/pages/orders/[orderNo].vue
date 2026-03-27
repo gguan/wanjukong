@@ -1,11 +1,12 @@
 <script setup lang="ts">
 const route = useRoute();
 const orderNo = route.params.orderNo as string;
+const token = (route.query.token as string) || undefined;
 const { fetchOrderByNo } = useOrders();
 
 const { data: order, error, status } = useAsyncData(
   `order-${orderNo}`,
-  () => fetchOrderByNo(orderNo),
+  () => fetchOrderByNo(orderNo, token),
 );
 
 function formatCents(cents: number) {

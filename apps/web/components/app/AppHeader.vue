@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const APP_NAME = 'wanjukong';
 const { count } = useCart();
+const { isLoggedIn, customer } = useStorefrontAuth();
 </script>
 
 <template>
@@ -21,6 +22,15 @@ const { count } = useCart();
             <span v-if="count > 0" class="cart-badge">{{ count }}</span>
           </ClientOnly>
         </NuxtLink>
+        <ClientOnly>
+          <NuxtLink v-if="isLoggedIn" to="/account" class="account-link" aria-label="Account">
+            <svg class="account-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          </NuxtLink>
+          <NuxtLink v-else to="/login" class="login-link">Sign In</NuxtLink>
+        </ClientOnly>
       </nav>
     </div>
   </header>
@@ -99,5 +109,30 @@ const { count } = useCart();
   justify-content: center;
   padding: 0 3px;
   line-height: 1;
+}
+
+.account-link {
+  display: flex;
+  align-items: center;
+}
+
+.account-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.login-link {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #111 !important;
+  border: 1px solid #111;
+  padding: 5px 14px;
+  border-radius: 4px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.login-link:hover {
+  background: #111;
+  color: #fff !important;
 }
 </style>

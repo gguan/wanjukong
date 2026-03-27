@@ -12,6 +12,9 @@ import { OrdersModule } from './modules/orders/orders.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { AdminAuthModule } from './modules/admin-auth/admin-auth.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { MailerModule } from './modules/mailer/mailer.module';
+import { StorefrontAuthModule } from './modules/storefront-auth/storefront-auth.module';
+import { StorefrontAccountModule } from './modules/storefront-account/storefront-account.module';
 
 @Module({
   imports: [
@@ -22,6 +25,9 @@ import { PaymentsModule } from './modules/payments/payments.module';
     }),
     PrismaModule,
     AdminAuthModule,
+    MailerModule,
+    StorefrontAuthModule,
+    StorefrontAccountModule,
     HealthModule,
     BrandsModule,
     CategoriesModule,

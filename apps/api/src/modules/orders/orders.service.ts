@@ -2,7 +2,9 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
+import * as crypto from 'crypto';
 import { ProductStatus } from '@prisma/client';
 import { deriveProductDisplayAvailability } from '../../utils/product-sale-state';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -189,6 +191,8 @@ export class OrdersService {
       return tx.order.create({
         data: {
           orderNo,
+          customerId: dto.customerId || null,
+          guestAccessTokenHash: dto.guestAccessTokenHash || null,
           fullName: dto.fullName,
           email: dto.email,
           phone: dto.phone,
@@ -269,6 +273,34 @@ export class OrdersService {
 
     if (!order) {
       throw new NotFoundException('Order not found');
+    }
+
+    return order;
+  }
+
+  /**
+   * Guest order lookup: requires valid access token.
+   */
+  async findGuestOrderByOrderNoAndToken(orderNo: string, token: string) {
+    const tokenHash = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex');
+
+    const order = await this.prisma.order.findUnique({
+      where: { orderNo },
+      include: { items: true },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    // If order has a guest token, validate it
+    if (order.guestAccessTokenHash) {
+      if (order.guestAccessTokenHash !== tokenHash) {
+        throw new ForbiddenException('Invalid access token');
+      }
     }
 
     return order;

@@ -1,8 +1,10 @@
-import { Controller, Post, Get, Param, Body } from '@nestjs/common';
+import { Controller, Post, Get, Param, Body, Query } from '@nestjs/common';
+import { Public } from '../../admin-auth/decorators/public.decorator';
 import { OrdersService } from '../orders.service';
 import { CreateBuyNowOrderDto } from '../dto/create-buy-now-order.dto';
 import { CreateCartOrderDto } from '../dto/create-cart-order.dto';
 
+@Public()
 @Controller('public/orders')
 export class PublicOrdersController {
   constructor(private readonly ordersService: OrdersService) {}
@@ -18,7 +20,16 @@ export class PublicOrdersController {
   }
 
   @Get(':orderNo')
-  findByOrderNo(@Param('orderNo') orderNo: string) {
+  findByOrderNo(
+    @Param('orderNo') orderNo: string,
+    @Query('token') token?: string,
+  ) {
+    if (token) {
+      return this.ordersService.findGuestOrderByOrderNoAndToken(
+        orderNo,
+        token,
+      );
+    }
     return this.ordersService.findByOrderNo(orderNo);
   }
 }

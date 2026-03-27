@@ -160,6 +160,116 @@ model ProductImage {
   @@index([productId, sortOrder])
 }
 
+// ─── Storefront Customer Models ──────────────────────────
+
+model Customer {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  passwordHash    String
+  name            String?
+  phone           String?
+  emailVerifiedAt DateTime?
+  isActive        Boolean   @default(true)
+  failedAttempts  Int       @default(0)
+  lockedUntil     DateTime?
+  lastLoginAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  addresses            CustomerAddress[]
+  emailVerifications   CustomerEmailVerification[]
+  passwordResets       CustomerPasswordReset[]
+  orders               Order[]
+  paymentIntents       PaymentIntent[]
+
+  @@index([email])
+}
+
+model CustomerAddress {
+  id              String   @id @default(cuid())
+  customerId      String
+  label           String?
+  fullName        String
+  phone           String?
+  country         String
+  stateOrProvince String?
+  city            String
+  addressLine1    String
+  addressLine2    String?
+  postalCode      String?
+  isDefault       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+}
+
+model CustomerEmailVerification {
+  id         String    @id @default(cuid())
+  customerId String
+  tokenHash  String
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([tokenHash])
+}
+
+model CustomerPasswordReset {
+  id         String    @id @default(cuid())
+  customerId String
+  tokenHash  String
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([tokenHash])
+}
+
+// ─── Payment Intent ─────────────────────────────────────
+
+enum PaymentProvider {
+  PAYPAL
+}
+
+enum PaymentIntentStatus {
+  CREATED
+  APPROVED
+  CAPTURED
+  FAILED
+  ORDER_CREATED
+}
+
+model PaymentIntent {
+  id               String              @id @default(cuid())
+  provider         PaymentProvider     @default(PAYPAL)
+  paypalOrderId    String?             @unique
+  customerId       String?
+  email            String?
+  currency         String              @default("USD")
+  amountCents      Int
+  cartSnapshotJson String              @db.Text
+  status           PaymentIntentStatus @default(CREATED)
+  capturedAt       DateTime?
+  orderId          String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  customer Customer? @relation(fields: [customerId], references: [id])
+  order    Order?    @relation(fields: [orderId], references: [id])
+
+  @@index([paypalOrderId])
+  @@index([status])
+}
+
 // ─── Order Enums ──────────────────────────────────────────
 
 enum OrderStatus {
@@ -178,37 +288,44 @@ enum PaymentStatus {
 // ─── Order Models ─────────────────────────────────────────
 
 model Order {
-  id                 String        @id @default(cuid())
-  orderNo            String        @unique
-  status             OrderStatus   @default(PENDING)
-  paymentStatus      PaymentStatus @default(UNPAID)
+  id                    String        @id @default(cuid())
+  orderNo               String        @unique
+  status                OrderStatus   @default(PENDING)
+  paymentStatus         PaymentStatus @default(UNPAID)
+
+  // Customer link (nullable for guest orders)
+  customerId            String?
+  guestAccessTokenHash  String?
 
   // Customer / contact
-  fullName           String
-  email              String
-  phone              String?
+  fullName              String
+  email                 String
+  phone                 String?
 
   // Shipping address
-  country            String
-  stateOrProvince    String?
-  city               String
-  addressLine1       String
-  addressLine2       String?
-  postalCode         String?
+  country               String
+  stateOrProvince       String?
+  city                  String
+  addressLine1          String
+  addressLine2          String?
+  postalCode            String?
 
   // Pricing
-  currency           String        @default("USD")
-  subtotalPriceCents Int
-  totalPriceCents    Int
+  currency              String        @default("USD")
+  subtotalPriceCents    Int
+  totalPriceCents       Int
 
   // Payment
-  paypalOrderId      String?
+  paypalOrderId         String?
 
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
 
-  items OrderItem[]
+  customer       Customer?       @relation(fields: [customerId], references: [id])
+  items          OrderItem[]
+  paymentIntents PaymentIntent[]
 
+  @@index([customerId])
   @@index([email])
   @@index([status])
 }

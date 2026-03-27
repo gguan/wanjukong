@@ -57,8 +57,9 @@ export function useOrders() {
     return post<Order>('/public/orders/buy-now', payload);
   }
 
-  function fetchOrderByNo(orderNo: string) {
-    return get<Order>(`/public/orders/${orderNo}`);
+  function fetchOrderByNo(orderNo: string, token?: string) {
+    const query = token ? `?token=${encodeURIComponent(token)}` : '';
+    return get<Order>(`/public/orders/${orderNo}${query}`);
   }
 
   return { createBuyNowOrder, fetchOrderByNo };

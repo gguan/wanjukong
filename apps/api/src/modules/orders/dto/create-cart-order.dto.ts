@@ -22,4 +22,6 @@ export class CreateCartOrderDto {
 
   currency?: string;
   paypalOrderId?: string;
+  customerId?: string;
+  guestAccessTokenHash?: string;
 }

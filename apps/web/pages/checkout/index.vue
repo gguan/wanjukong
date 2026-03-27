@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const { items, count, subtotalCents, clearCart } = useCart();
+const { isLoggedIn, customer } = useStorefrontAuth();
 const router = useRouter();
 const config = useRuntimeConfig();
 
@@ -33,6 +34,46 @@ const formError = ref('');
 const isSubmitting = ref(false);
 const paypalReady = ref(false);
 const paypalContainerRef = ref<HTMLElement | null>(null);
+const prefilled = ref(false);
+
+// Prefill from logged-in customer profile + default address
+async function prefillFromAccount() {
+  if (!isLoggedIn.value || prefilled.value) return;
+  prefilled.value = true;
+
+  try {
+    const { get } = usePublicApi();
+
+    // Prefill email & name from customer profile
+    if (customer.value) {
+      form.email = customer.value.email || '';
+      form.fullName = customer.value.name || '';
+      form.phone = customer.value.phone || '';
+    }
+
+    // Prefill default address
+    const addresses = await get<any[]>('/public/account/addresses');
+    const defaultAddr = addresses?.find((a: any) => a.isDefault) || addresses?.[0];
+    if (defaultAddr) {
+      form.fullName = defaultAddr.fullName || form.fullName;
+      form.phone = defaultAddr.phone || form.phone;
+      form.country = defaultAddr.country || form.country;
+      form.stateOrProvince = defaultAddr.stateOrProvince || '';
+      form.city = defaultAddr.city || '';
+      form.addressLine1 = defaultAddr.addressLine1 || '';
+      form.addressLine2 = defaultAddr.addressLine2 || '';
+      form.postalCode = defaultAddr.postalCode || '';
+    }
+  } catch {
+    // Silent fail — user can fill manually
+  }
+}
+
+onMounted(() => {
+  if (import.meta.client) {
+    prefillFromAccount();
+  }
+});
 
 // Validate form before PayPal renders
 function validateForm(): string | null {
@@ -94,6 +135,7 @@ async function initPayPal() {
       const res = await fetch(`${apiBase}/api/public/payments/paypal/create-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           items: items.value.map((i) => ({
             productId: i.productId,
@@ -116,13 +158,9 @@ async function initPayPal() {
         const res = await fetch(`${apiBase}/api/public/payments/paypal/capture-order`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({
             paypalOrderId: data.orderID,
-            items: items.value.map((i) => ({
-              productId: i.productId,
-              variantId: i.variantId,
-              quantity: i.quantity,
-            })),
             fullName: form.fullName,
             email: form.email,
             phone: form.phone || undefined,
@@ -141,7 +179,12 @@ async function initPayPal() {
         }
         const result = await res.json();
         clearCart();
-        router.push(`/orders/${result.orderNo}`);
+        // For guests, include access token in URL
+        if (result.guestAccessToken) {
+          router.push(`/orders/${result.orderNo}?token=${result.guestAccessToken}`);
+        } else {
+          router.push(`/orders/${result.orderNo}`);
+        }
       } catch (e: any) {
         formError.value = e.message || 'Payment failed. Please try again.';
         isSubmitting.value = false;
@@ -165,6 +208,11 @@ async function initPayPal() {
         <!-- Contact -->
         <section class="form-section">
           <h2 class="section-title">Contact</h2>
+          <ClientOnly>
+            <p v-if="!isLoggedIn" class="auth-hint">
+              Already have an account? <NuxtLink to="/login?redirect=/checkout">Sign in</NuxtLink>
+            </p>
+          </ClientOnly>
           <div class="field">
             <label class="field-label">Email address *</label>
             <input v-model="form.email" type="email" class="field-input" placeholder="you@example.com" autocomplete="email" />
@@ -325,6 +373,18 @@ async function initPayPal() {
   color: #111;
   border-bottom: 1px solid #e5e7eb;
   padding-bottom: 10px;
+}
+
+.auth-hint {
+  font-size: 0.85rem;
+  color: #555;
+  margin: 0;
+}
+
+.auth-hint a {
+  color: #111;
+  font-weight: 600;
+  text-decoration: underline;
 }
 
 .field {

@@ -20,6 +20,12 @@ describe('ProductsService.create', () => {
     };
 
     const prisma = {
+      brand: {
+        findUnique: vi.fn().mockResolvedValue({ id: 'brand-1', name: 'TestBrand', code: 'TB' }),
+      },
+      productVariant: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
       $transaction: vi.fn(async (callback: (innerTx: typeof tx) => Promise<unknown>) =>
         callback(tx),
       ),
@@ -47,7 +53,7 @@ describe('ProductsService.create', () => {
       data: expect.objectContaining({
         productId: 'product-1',
         name: 'Standard',
-        sku: 'raiden-std',
+        sku: 'RAIDEN-STD',
         priceCents: 12999,
         stock: 5,
         isDefault: true,
