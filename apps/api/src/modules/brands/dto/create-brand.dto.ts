@@ -9,5 +9,13 @@ export class CreateBrandDto {
 
   @IsString()
   @IsOptional()
+  code?: string;
+
+  @IsString()
+  @IsOptional()
   logo?: string;
+
+  @IsString()
+  @IsOptional()
+  notes?: string;
 }
