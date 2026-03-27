@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "=== Deploying wanjukong ==="
+echo "=== Deploying wanjukong (staging) ==="
 
 cd /opt/wanjukong
 
@@ -12,8 +12,8 @@ git pull origin main
 docker compose build
 docker compose up -d
 
-# 运行数据库迁移
-docker compose exec -T api npx prisma migrate deploy
+# Staging: 用 db push 同步 schema（不需要迁移文件，可破坏性更新）
+docker compose exec -T api npx prisma db push
 
 echo "=== Deploy complete ==="
 docker compose ps
