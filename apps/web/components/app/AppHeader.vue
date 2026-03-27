@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const APP_NAME = 'wanjukong';
+const { count } = useCart();
 </script>
 
 <template>
@@ -10,6 +11,16 @@ const APP_NAME = 'wanjukong';
         <NuxtLink to="/">Home</NuxtLink>
         <NuxtLink to="/brands">Brands</NuxtLink>
         <NuxtLink to="/products">Products</NuxtLink>
+        <NuxtLink to="/cart" class="cart-link" aria-label="Cart">
+          <svg class="cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <path d="M16 10a4 4 0 01-8 0" />
+          </svg>
+          <ClientOnly>
+            <span v-if="count > 0" class="cart-badge">{{ count }}</span>
+          </ClientOnly>
+        </NuxtLink>
       </nav>
     </div>
   </header>
@@ -44,6 +55,7 @@ const APP_NAME = 'wanjukong';
 
 .nav {
   display: flex;
+  align-items: center;
   gap: 24px;
 }
 
@@ -58,5 +70,34 @@ const APP_NAME = 'wanjukong';
 .nav a:hover,
 .nav a.router-link-active {
   color: #111;
+}
+
+.cart-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.cart-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.cart-badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background: #111;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  line-height: 1;
 }
 </style>

@@ -201,6 +201,9 @@ model Order {
   subtotalPriceCents Int
   totalPriceCents    Int
 
+  // Payment
+  paypalOrderId      String?
+
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 

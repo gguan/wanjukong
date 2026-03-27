@@ -7,6 +7,7 @@ import { ProductStatus } from '@prisma/client';
 import { deriveProductDisplayAvailability } from '../../utils/product-sale-state';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateBuyNowOrderDto } from './dto/create-buy-now-order.dto';
+import { CreateCartOrderDto } from './dto/create-cart-order.dto';
 
 @Injectable()
 export class OrdersService {
@@ -114,6 +115,114 @@ export class OrdersService {
               quantity: dto.quantity,
               totalPriceCents: totalItemCents,
             },
+          },
+        },
+        include: { items: true },
+      });
+    });
+
+    return order;
+  }
+
+  /**
+   * Create a multi-item cart order (typically after PayPal payment).
+   */
+  async createCartOrder(dto: CreateCartOrderDto) {
+    if (!dto.items || dto.items.length === 0) {
+      throw new BadRequestException('Cart is empty');
+    }
+
+    // Load all variants + products in one go
+    const variantIds = dto.items.map((i) => i.variantId);
+    const variants = await this.prisma.productVariant.findMany({
+      where: { id: { in: variantIds } },
+      include: { product: { include: { brand: true, category: true } } },
+    });
+
+    // Validate each cart item
+    for (const item of dto.items) {
+      const variant = variants.find((v) => v.id === item.variantId);
+      if (!variant) throw new NotFoundException(`Variant ${item.variantId} not found`);
+      if (variant.productId !== item.productId) throw new BadRequestException(`Variant/product mismatch`);
+
+      const { product } = variant;
+      if (product.status !== ProductStatus.ACTIVE) {
+        throw new BadRequestException(`Product "${product.name}" is not available`);
+      }
+      const availability = deriveProductDisplayAvailability({
+        productStatus: product.status,
+        saleType: product.saleType,
+        preorderStartAt: product.preorderStartAt,
+        preorderEndAt: product.preorderEndAt,
+        now: new Date(),
+        variantStocks: [variant.stock],
+      });
+      if (availability !== 'IN_STOCK' && availability !== 'PREORDER') {
+        throw new BadRequestException(`Product "${product.name}" is not available for purchase`);
+      }
+      if (variant.stock < item.quantity) {
+        throw new BadRequestException(`Insufficient stock for "${product.name}"`);
+      }
+    }
+
+    // Calculate totals
+    const subtotalCents = dto.items.reduce((sum, item) => {
+      const v = variants.find((v) => v.id === item.variantId)!;
+      return sum + v.priceCents * item.quantity;
+    }, 0);
+
+    const currency = dto.currency || 'USD';
+    const orderNo = this.generateOrderNo();
+
+    const order = await this.prisma.$transaction(async (tx) => {
+      // Decrement stock for all items atomically
+      for (const item of dto.items) {
+        const updated = await tx.productVariant.updateMany({
+          where: { id: item.variantId, stock: { gte: item.quantity } },
+          data: { stock: { decrement: item.quantity } },
+        });
+        if (updated.count !== 1) {
+          throw new BadRequestException('Insufficient stock (race condition)');
+        }
+      }
+
+      return tx.order.create({
+        data: {
+          orderNo,
+          fullName: dto.fullName,
+          email: dto.email,
+          phone: dto.phone,
+          country: dto.country,
+          stateOrProvince: dto.stateOrProvince,
+          city: dto.city,
+          addressLine1: dto.addressLine1,
+          addressLine2: dto.addressLine2,
+          postalCode: dto.postalCode,
+          currency,
+          subtotalPriceCents: subtotalCents,
+          totalPriceCents: subtotalCents,
+          paypalOrderId: dto.paypalOrderId,
+          paymentStatus: dto.paypalOrderId ? 'PAID' : 'UNPAID',
+          items: {
+            create: dto.items.map((item) => {
+              const v = variants.find((v) => v.id === item.variantId)!;
+              const { product } = v;
+              return {
+                productId: product.id,
+                variantId: v.id,
+                productNameSnapshot: product.name,
+                productSlugSnapshot: product.slug,
+                variantNameSnapshot: v.name,
+                skuSnapshot: v.sku,
+                brandNameSnapshot: product.brand?.name,
+                categoryNameSnapshot: product.category?.name,
+                coverImageUrlSnapshot: v.coverImageUrl || product.imageUrl,
+                scaleSnapshot: product.scale,
+                unitPriceCents: v.priceCents,
+                quantity: item.quantity,
+                totalPriceCents: v.priceCents * item.quantity,
+              };
+            }),
           },
         },
         include: { items: true },

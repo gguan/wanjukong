@@ -6,5 +6,6 @@ import { AdminOrdersController } from './controllers/admin-orders.controller';
 @Module({
   controllers: [PublicOrdersController, AdminOrdersController],
   providers: [OrdersService],
+  exports: [OrdersService],
 })
 export class OrdersModule {}
