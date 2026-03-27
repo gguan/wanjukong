@@ -1,0 +1,20 @@
+# overrealm.store — wanjukong
+# Caddy 自动管理 HTTPS 证书
+
+# 主站：Web 前台 + API
+overrealm.store {
+	# API 请求代理到后端
+	handle /api/* {
+		reverse_proxy 127.0.0.1:3001
+	}
+
+	# 其余请求代理到 Web 前台
+	handle {
+		reverse_proxy 127.0.0.1:3000
+	}
+}
+
+# Admin 后台
+admin.overrealm.store {
+	reverse_proxy 127.0.0.1:3002
+}

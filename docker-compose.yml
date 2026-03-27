@@ -17,6 +17,7 @@ services:
       retries: 5
 
   api:
+    image: ghcr.io/gguan/wanjukong-api:latest
     build:
       context: .
       dockerfile: apps/api/Dockerfile
@@ -30,15 +31,18 @@ services:
       NODE_ENV: production
       DATABASE_URL: postgresql://wanjukong:${POSTGRES_PASSWORD}@postgres:5432/wanjukong
       SESSION_SECRET: ${SESSION_SECRET}
-      COS_SECRET_ID: ${COS_SECRET_ID}
-      COS_SECRET_KEY: ${COS_SECRET_KEY}
-      COS_BUCKET: ${COS_BUCKET}
-      COS_REGION: ${COS_REGION}
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      TENCENT_COS_SECRET_ID: ${TENCENT_COS_SECRET_ID}
+      TENCENT_COS_SECRET_KEY: ${TENCENT_COS_SECRET_KEY}
+      TENCENT_COS_BUCKET: ${TENCENT_COS_BUCKET}
+      TENCENT_COS_REGION: ${TENCENT_COS_REGION}
+      TENCENT_COS_PUBLIC_BASE_URL: ${TENCENT_COS_PUBLIC_BASE_URL}
       PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID}
       PAYPAL_CLIENT_SECRET: ${PAYPAL_CLIENT_SECRET}
       PAYPAL_BASE_URL: ${PAYPAL_BASE_URL}
 
   web:
+    image: ghcr.io/gguan/wanjukong-web:latest
     build:
       context: .
       dockerfile: apps/web/Dockerfile
@@ -47,10 +51,11 @@ services:
     ports:
       - "127.0.0.1:3000:3000"
     environment:
-      NUXT_PUBLIC_API_BASE: https://overrealm.store
+      NUXT_PUBLIC_API_BASE: ${SITE_URL}
       NUXT_PUBLIC_PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID}
 
   admin:
+    image: ghcr.io/gguan/wanjukong-admin:latest
     build:
       context: .
       dockerfile: apps/admin/Dockerfile
@@ -59,7 +64,7 @@ services:
     ports:
       - "127.0.0.1:3002:3002"
     environment:
-      NUXT_PUBLIC_API_BASE: https://overrealm.store
+      NUXT_PUBLIC_API_BASE_URL: ${SITE_URL}
 
 volumes:
   pgdata:
