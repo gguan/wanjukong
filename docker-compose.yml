@@ -64,6 +64,7 @@ services:
     ports:
       - "127.0.0.1:3002:3002"
     environment:
+      PORT: 3002
       NUXT_PUBLIC_API_BASE_URL: ${SITE_URL}
 
 volumes:
