@@ -16,24 +16,24 @@ const { user, email, logout } = useAdminAuth();
 
 <style scoped>
 .admin-header {
-  background: var(--wk-admin-header-bg, #111111);
+  background: var(--wk-admin-header-bg, #1a1a1a);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 52px;
-  padding: 0 24px;
+  height: 48px;
+  padding: 0 16px;
   border-bottom: none;
 }
 
 .admin-header__logo {
-  font-size: 1.05rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .admin-header__user {
-  font-size: 0.8rem;
+  font-size: 12px;
   opacity: 0.7;
 }
 </style>
