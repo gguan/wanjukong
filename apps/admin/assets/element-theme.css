@@ -1,102 +1,148 @@
 /* ─── Element Plus CSS Variable Overrides ─────────────────────
- *  Premium minimal theme: black primary, large radius, soft borders
+ *  Shopify Polaris-inspired theme
  * ──────────────────────────────────────────────────────────── */
 
 :root {
   /* ── Brand / Primary ─────────────────────────────────────── */
-  --el-color-primary: #111111;
-  --el-color-primary-light-3: #444444;
-  --el-color-primary-light-5: #888888;
-  --el-color-primary-light-7: #c4c4c4;
+  --el-color-primary: #303030;
+  --el-color-primary-light-3: #555555;
+  --el-color-primary-light-5: #979797;
+  --el-color-primary-light-7: #c9c9c9;
   --el-color-primary-light-8: #e0e0e0;
-  --el-color-primary-light-9: #f5f5f5;
-  --el-color-primary-dark-2: #000000;
+  --el-color-primary-light-9: #f1f1f1;
+  --el-color-primary-dark-2: #1a1a1a;
+
+  /* ── Success (Shopify green) ────────────────────────────── */
+  --el-color-success: #008060;
+  --el-color-success-light-3: #33a080;
+  --el-color-success-light-5: #80c0b0;
+  --el-color-success-light-7: #b3d9cf;
+  --el-color-success-light-8: #ccebe4;
+  --el-color-success-light-9: #e6f5f1;
+  --el-color-success-dark-2: #006649;
+
+  /* ── Danger / Critical ──────────────────────────────────── */
+  --el-color-danger: #e51c00;
+  --el-color-danger-light-3: #eb4933;
+  --el-color-danger-light-5: #f28d80;
+  --el-color-danger-light-8: #f9ccc6;
+  --el-color-danger-light-9: #fde8e5;
+
+  /* ── Warning ────────────────────────────────────────────── */
+  --el-color-warning: #b98900;
+  --el-color-warning-light-3: #d4a72b;
+  --el-color-warning-light-5: #dcc480;
+  --el-color-warning-light-8: #f0e4bf;
+  --el-color-warning-light-9: #f8f2e0;
 
   /* ── Text ────────────────────────────────────────────────── */
-  --el-text-color-primary: #111111;
-  --el-text-color-regular: #4b5563;
-  --el-text-color-secondary: #9ca3af;
-  --el-text-color-placeholder: #c0c4cc;
+  --el-text-color-primary: #303030;
+  --el-text-color-regular: #616161;
+  --el-text-color-secondary: #8c9196;
+  --el-text-color-placeholder: #b5b5b5;
 
   /* ── Border ──────────────────────────────────────────────── */
-  --el-border-color: #e5e7eb;
-  --el-border-color-light: #f0f2f5;
-  --el-border-color-lighter: #f5f7fa;
-  --el-border-color-dark: #d1d5db;
+  --el-border-color: #e3e3e3;
+  --el-border-color-light: #ebebeb;
+  --el-border-color-lighter: #f1f1f1;
+  --el-border-color-dark: #c9cccf;
 
   /* ── Background ──────────────────────────────────────────── */
   --el-bg-color: #ffffff;
-  --el-bg-color-page: #f7f7f8;
+  --el-bg-color-page: #f1f1f1;
   --el-bg-color-overlay: #ffffff;
   --el-fill-color-blank: #ffffff;
-  --el-fill-color-light: #f9fafb;
+  --el-fill-color-light: #f6f6f7;
   --el-fill-color-lighter: #fafafa;
 
-  /* ── Border Radius ───────────────────────────────────────── */
-  --el-border-radius-base: 10px;
-  --el-border-radius-small: 8px;
+  /* ── Border Radius ─────────────────────────────────────── */
+  --el-border-radius-base: 8px;
+  --el-border-radius-small: 6px;
   --el-border-radius-round: 20px;
   --el-border-radius-circle: 100%;
 
-  /* ── Typography ──────────────────────────────────────────── */
-  --el-font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --el-font-size-base: 14px;
-  --el-font-size-small: 13px;
-  --el-font-size-extra-small: 12px;
+  /* ── Typography ────────────────────────────────────────── */
+  --el-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --el-font-size-base: 13px;
+  --el-font-size-small: 12px;
+  --el-font-size-extra-small: 11px;
+  --el-font-size-medium: 14px;
+  --el-font-size-large: 16px;
+  --el-font-line-height-primary: 20px;
 
-  /* ── Shadow ──────────────────────────────────────────────── */
-  --el-box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
-  --el-box-shadow-light: 0 2px 8px rgba(0, 0, 0, 0.04);
-  --el-box-shadow-lighter: 0 1px 4px rgba(0, 0, 0, 0.03);
-  --el-box-shadow-dark: 0 8px 24px rgba(0, 0, 0, 0.08);
+  /* ── Shadow ────────────────────────────────────────────── */
+  --el-box-shadow: 0 1px 2px 0 rgba(26, 26, 26, 0.07), 0 1px 3px 0 rgba(26, 26, 26, 0.1);
+  --el-box-shadow-light: 0 1px 2px rgba(26, 26, 26, 0.05);
+  --el-box-shadow-lighter: 0 0 1px rgba(26, 26, 26, 0.06);
+  --el-box-shadow-dark: 0 4px 6px -1px rgba(26, 26, 26, 0.1), 0 2px 4px -2px rgba(26, 26, 26, 0.1);
 }
 
 /* ─── Button ──────────────────────────────────────────────── */
 
 .el-button {
   font-weight: 500;
-  border-radius: 8px;
-  letter-spacing: 0.01em;
+  border-radius: 6px;
+  letter-spacing: 0;
+  font-size: 13px;
+  height: 32px;
+  padding: 0 12px;
 }
 
 .el-button--primary {
-  --el-button-bg-color: #111111;
-  --el-button-border-color: #111111;
-  --el-button-hover-bg-color: #333333;
-  --el-button-hover-border-color: #333333;
+  --el-button-bg-color: #303030;
+  --el-button-border-color: #303030;
+  --el-button-hover-bg-color: #1a1a1a;
+  --el-button-hover-border-color: #1a1a1a;
   --el-button-active-bg-color: #000000;
   --el-button-active-border-color: #000000;
 }
 
 .el-button--default {
   --el-button-bg-color: #ffffff;
-  --el-button-border-color: #e5e7eb;
-  --el-button-hover-bg-color: #f9fafb;
-  --el-button-hover-border-color: #d1d5db;
-  --el-button-text-color: #374151;
+  --el-button-border-color: #c9cccf;
+  --el-button-hover-bg-color: #f6f6f7;
+  --el-button-hover-border-color: #babfc3;
+  --el-button-text-color: #303030;
 }
 
 .el-button--danger {
   --el-button-bg-color: #ffffff;
   --el-button-border-color: #fca5a5;
-  --el-button-text-color: #dc2626;
-  --el-button-hover-bg-color: #fef2f2;
+  --el-button-text-color: #e51c00;
+  --el-button-hover-bg-color: #fde8e5;
   --el-button-hover-border-color: #f87171;
   --el-button-active-bg-color: #fee2e2;
 }
 
+.el-button--success {
+  --el-button-bg-color: #008060;
+  --el-button-border-color: #008060;
+  --el-button-hover-bg-color: #006e52;
+  --el-button-hover-border-color: #006e52;
+}
+
 .el-button--small {
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 12px;
+  height: 28px;
+  padding: 0 8px;
+}
+
+.el-button--large {
+  border-radius: 8px;
+  font-size: 14px;
+  height: 36px;
+  padding: 0 16px;
 }
 
 /* ─── Input / Select / Textarea ───────────────────────────── */
 
 .el-input__wrapper,
 .el-textarea__inner {
-  border-radius: 8px !important;
+  border-radius: 6px !important;
   box-shadow: 0 0 0 1px var(--el-border-color) inset !important;
-  transition: box-shadow 0.2s, border-color 0.2s;
+  transition: box-shadow 0.15s;
+  font-size: 13px;
 }
 
 .el-input__wrapper:hover,
@@ -106,111 +152,112 @@
 
 .el-input__wrapper.is-focus,
 .el-textarea__inner:focus {
-  box-shadow: 0 0 0 1px #111111 inset, 0 0 0 3px rgba(17, 17, 17, 0.08) !important;
+  box-shadow: 0 0 0 2px #005bd3 inset !important;
 }
 
 .el-select .el-input__wrapper {
-  border-radius: 8px !important;
+  border-radius: 6px !important;
 }
 
 .el-input-number {
-  --el-input-number-border-radius: 8px;
+  --el-input-number-border-radius: 6px;
 }
 
 /* ─── Card ────────────────────────────────────────────────── */
 
 .el-card {
-  --el-card-border-radius: 12px;
+  --el-card-border-radius: 8px;
   --el-card-border-color: var(--el-border-color);
   border: 1px solid var(--el-border-color);
-  box-shadow: none;
+  box-shadow: 0 1px 2px rgba(26, 26, 26, 0.05);
 }
 
 .el-card__header {
-  border-bottom: 1px solid var(--el-border-color-light);
-  padding: 16px 20px;
-  font-size: 15px;
+  border-bottom: 1px solid var(--el-border-color);
+  padding: 16px 16px;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .el-card__body {
-  padding: 20px;
+  padding: 16px;
 }
 
 /* ─── Table ───────────────────────────────────────────────── */
 
 .el-table {
-  --el-table-border-color: var(--el-border-color-light);
-  --el-table-header-bg-color: #fafafa;
-  --el-table-row-hover-bg-color: #f9fafb;
-  border-radius: 10px;
+  --el-table-border-color: var(--el-border-color);
+  --el-table-header-bg-color: #f6f6f7;
+  --el-table-row-hover-bg-color: #f6f6f7;
+  border-radius: 8px;
   overflow: hidden;
+  font-size: 13px;
 }
 
 .el-table th.el-table__cell {
-  font-weight: 600;
+  font-weight: 500;
   font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   color: var(--el-text-color-secondary);
 }
 
 .el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell {
-  background: #fafbfc;
+  background: #fafafa;
 }
 
 /* ─── Dialog ──────────────────────────────────────────────── */
 
 .el-dialog {
-  --el-dialog-border-radius: 14px;
-  border-radius: 14px;
+  --el-dialog-border-radius: 12px;
+  border-radius: 12px;
   overflow: hidden;
 }
 
 .el-dialog__header {
-  padding: 20px 24px 16px;
+  padding: 16px 20px;
   margin-right: 0;
 }
 
 .el-dialog__body {
-  padding: 0 24px 20px;
+  padding: 0 20px 16px;
 }
 
 .el-dialog__footer {
-  padding: 16px 24px 20px;
-  border-top: 1px solid var(--el-border-color-light);
+  padding: 12px 20px 16px;
+  border-top: 1px solid var(--el-border-color);
 }
 
 /* ─── Drawer ──────────────────────────────────────────────── */
 
 .el-drawer__header {
   margin-bottom: 0;
-  padding: 20px 24px;
-  border-bottom: 1px solid var(--el-border-color-light);
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--el-border-color);
 }
 
 .el-drawer__body {
-  padding: 20px 24px;
+  padding: 16px 20px;
 }
 
 .el-drawer__footer {
-  padding: 16px 24px;
-  border-top: 1px solid var(--el-border-color-light);
+  padding: 12px 20px;
+  border-top: 1px solid var(--el-border-color);
 }
 
 /* ─── Tag ─────────────────────────────────────────────────── */
 
 .el-tag {
-  border-radius: 999px;
+  border-radius: 20px;
   font-weight: 500;
-  padding: 0 10px;
+  padding: 0 8px;
   border: none;
+  font-size: 12px;
 }
 
 .el-tag--small {
-  padding: 0 8px;
-  height: 22px;
-  line-height: 22px;
-  font-size: 12px;
+  padding: 0 6px;
+  height: 20px;
+  line-height: 20px;
+  font-size: 11px;
 }
 
 /* ─── Form ────────────────────────────────────────────────── */
@@ -222,36 +269,36 @@
 }
 
 .el-form-item {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 /* ─── Menu (Sidebar) ──────────────────────────────────────── */
 
 .el-menu-item {
-  border-radius: 8px;
-  margin: 2px 8px;
-  height: 40px;
-  line-height: 40px;
-  font-size: 14px;
+  border-radius: 6px;
+  margin: 1px 8px;
+  height: 32px;
+  line-height: 32px;
+  font-size: 13px;
   font-weight: 450;
   color: var(--el-text-color-regular);
 }
 
 .el-menu-item:hover {
-  background: #f3f4f6;
+  background: #f1f1f1;
   color: var(--el-text-color-primary);
 }
 
 .el-menu-item.is-active {
-  background: #f0f0f0;
-  color: #111111;
-  font-weight: 600;
+  background: #f1f1f1;
+  color: #303030;
+  font-weight: 550;
 }
 
 /* ─── Alert ───────────────────────────────────────────────── */
 
 .el-alert {
-  border-radius: 10px;
+  border-radius: 8px;
 }
 
 /* ─── Progress ────────────────────────────────────────────── */
@@ -268,15 +315,15 @@
 
 .el-divider__text {
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--el-text-color-primary);
 }
 
 /* ─── Message Box ─────────────────────────────────────────── */
 
 .el-message-box {
-  border-radius: 14px;
-  padding-bottom: 20px;
+  border-radius: 12px;
+  padding-bottom: 16px;
 }
 
 /* ─── Empty ───────────────────────────────────────────────── */
@@ -288,6 +335,46 @@
 /* ─── Switch ──────────────────────────────────────────────── */
 
 .el-switch.is-checked .el-switch__core {
-  background-color: #111111;
-  border-color: #111111;
+  background-color: #008060;
+  border-color: #008060;
+}
+
+/* ─── Checkbox ────────────────────────────────────────────── */
+
+.el-checkbox__input.is-checked .el-checkbox__inner {
+  background-color: #303030;
+  border-color: #303030;
+}
+
+/* ─── Radio ───────────────────────────────────────────────── */
+
+.el-radio__input.is-checked .el-radio__inner {
+  background-color: #303030;
+  border-color: #303030;
+}
+
+/* ─── Pagination ──────────────────────────────────────────── */
+
+.el-pagination {
+  font-size: 13px;
+}
+
+.el-pagination .btn-prev,
+.el-pagination .btn-next,
+.el-pager li {
+  border-radius: 6px;
+  min-width: 28px;
+  height: 28px;
+  font-size: 13px;
+}
+
+/* ─── Tabs ────────────────────────────────────────────────── */
+
+.el-tabs__item {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.el-tabs__active-bar {
+  background-color: #303030;
 }

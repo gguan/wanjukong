@@ -23,12 +23,13 @@ const navItems = useAdminNav();
 
 <style scoped>
 .admin-sidebar {
-  background: #fff;
+  background: #f6f6f7;
   border-right: 1px solid var(--wk-admin-border);
 }
 
 .admin-sidebar__menu {
   border-right: none;
-  padding: 12px 0;
+  padding: 8px 0;
+  background: transparent;
 }
 </style>
