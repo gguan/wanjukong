@@ -59,10 +59,12 @@ See `apps/api/.env.example` for all backend variables. Key ones:
 | `DATABASE_URL` | PostgreSQL connection string |
 | `SESSION_SECRET` | Session cookie signing secret |
 | `CORS_ORIGIN` | Allowed CORS origins |
+| `APP_BASE_URL` | Base storefront URL used in verification/reset emails |
 | `TENCENT_COS_*` | Tencent Cloud COS credentials |
 | `PAYPAL_CLIENT_ID` | PayPal client ID |
 | `PAYPAL_CLIENT_SECRET` | PayPal client secret |
 | `SMTP_HOST/PORT/USER/PASS` | Email sending (optional, logs to console if not set) |
+| `SMTP_FROM` | Sender address for verification/reset emails |
 
 ## Production Deployment
 
