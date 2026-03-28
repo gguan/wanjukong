@@ -24,7 +24,7 @@ async function load() {
 
 async function remove(id: string) {
   try {
-    await ElMessageBox.confirm('Delete this product?', 'Confirm', { type: 'warning' });
+    await ElMessageBox.confirm('确认删除该商品吗？', '提示', { type: 'warning' });
     await api.del(`/api/admin/products/${id}`);
     await load();
   } catch {}
@@ -35,42 +35,42 @@ onMounted(load);
 
 <template>
   <div>
-    <AdminPageHeader title="Products">
+    <AdminPageHeader title="商品">
       <template #actions>
         <NuxtLink to="/products/create">
-          <ElButton type="primary">+ New Product</ElButton>
+          <ElButton type="primary">+ 新建商品</ElButton>
         </NuxtLink>
       </template>
     </AdminPageHeader>
 
     <ElTable v-loading="loading" :data="products" stripe>
-      <ElTableColumn prop="name" label="Name" min-width="200" />
-      <ElTableColumn label="Brand" width="140">
+      <ElTableColumn prop="name" label="名称" min-width="200" />
+      <ElTableColumn label="品牌" width="140">
         <template #default="{ row }">{{ row.brand?.name }}</template>
       </ElTableColumn>
-      <ElTableColumn label="Category" width="140">
+      <ElTableColumn label="分类" width="140">
         <template #default="{ row }">{{ row.category?.name }}</template>
       </ElTableColumn>
-      <ElTableColumn label="Status" width="100">
+      <ElTableColumn label="状态" width="100">
         <template #default="{ row }">
           <AdminStatusTag :value="row.status" />
         </template>
       </ElTableColumn>
-      <ElTableColumn label="Sale Type" width="120">
+      <ElTableColumn label="销售类型" width="120">
         <template #default="{ row }">
           <AdminStatusTag :value="row.saleType" />
         </template>
       </ElTableColumn>
-      <ElTableColumn label="Actions" width="160" align="right">
+      <ElTableColumn label="操作" width="160" align="right">
         <template #default="{ row }">
           <NuxtLink :to="`/products/${row.id}`">
-            <ElButton size="small">Edit</ElButton>
+            <ElButton size="small">编辑</ElButton>
           </NuxtLink>
-          <ElButton size="small" type="danger" @click="remove(row.id)">Delete</ElButton>
+          <ElButton size="small" type="danger" @click="remove(row.id)">删除</ElButton>
         </template>
       </ElTableColumn>
       <template #empty>
-        <ElEmpty description="No products yet" />
+        <ElEmpty description="暂无商品" />
       </template>
     </ElTable>
   </div>

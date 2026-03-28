@@ -39,7 +39,7 @@ export class BrandPermissionGuard implements CanActivate {
     if (method === 'POST' && !productId) {
       const brandId = request.body?.brandId;
       if (!brandId || !allowedBrandIds.includes(brandId)) {
-        throw new ForbiddenException('You do not have permission for this brand');
+        throw new ForbiddenException('你没有该品牌的操作权限');
       }
       return true;
     }
@@ -57,14 +57,14 @@ export class BrandPermissionGuard implements CanActivate {
       }
 
       if (!allowedBrandIds.includes(product.brandId)) {
-        throw new ForbiddenException('You do not have permission for this brand');
+        throw new ForbiddenException('你没有该品牌的操作权限');
       }
 
       // For update: also check if they're trying to change brandId to a non-allowed brand
       if (method === 'PUT' || method === 'PATCH') {
         const newBrandId = request.body?.brandId;
         if (newBrandId && !allowedBrandIds.includes(newBrandId)) {
-          throw new ForbiddenException('You do not have permission for the target brand');
+          throw new ForbiddenException('你没有目标品牌的操作权限');
         }
       }
     }

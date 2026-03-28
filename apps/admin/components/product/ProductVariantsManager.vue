@@ -60,7 +60,7 @@ async function loadVariants() {
       expandedIds.value.add(defaultV.id);
     }
   } catch {
-    error.value = 'Failed to load variants';
+    error.value = '加载版本失败';
   } finally {
     loading.value = false;
   }
@@ -81,10 +81,10 @@ async function saveVariant(id: string, data: Partial<Variant>) {
       `/api/admin/products/${props.productId}/variants/${id}`,
       data,
     );
-    ElMessage.success('Variant updated');
+    ElMessage.success('版本已更新');
     await loadVariants();
   } catch (e: any) {
-    error.value = e?.data?.message || e?.message || 'Failed to save variant';
+    error.value = e?.data?.message || e?.message || '保存版本失败';
   }
 }
 
@@ -107,7 +107,7 @@ async function createVariant() {
       `/api/admin/products/${props.productId}/variants`,
       payload,
     );
-    ElMessage.success('Variant created');
+    ElMessage.success('版本已创建');
     showNewForm.value = false;
     resetNewForm();
     await loadVariants();
@@ -116,7 +116,7 @@ async function createVariant() {
       expandedIds.value.add(created.id);
     }
   } catch (e: any) {
-    error.value = e?.data?.message || e?.message || 'Failed to create variant';
+    error.value = e?.data?.message || e?.message || '创建版本失败';
   } finally {
     creatingNew.value = false;
   }
@@ -124,14 +124,14 @@ async function createVariant() {
 
 async function deleteVariant(id: string) {
   try {
-    await ElMessageBox.confirm('Delete this variant?', 'Confirm', { type: 'warning' });
+    await ElMessageBox.confirm('确认删除该版本吗？', '提示', { type: 'warning' });
     await api.del(`/api/admin/products/${props.productId}/variants/${id}`);
-    ElMessage.success('Variant deleted');
+    ElMessage.success('版本已删除');
     expandedIds.value.delete(id);
     await loadVariants();
   } catch (e: any) {
     if (e !== 'cancel') {
-      error.value = e?.data?.message || 'Failed to delete variant';
+      error.value = e?.data?.message || '删除版本失败';
     }
   }
 }
@@ -142,10 +142,10 @@ async function setDefault(id: string) {
       `/api/admin/products/${props.productId}/variants/${id}`,
       { isDefault: true },
     );
-    ElMessage.success('Default variant updated');
+    ElMessage.success('默认版本已更新');
     await loadVariants();
   } catch {
-    error.value = 'Failed to set default';
+    error.value = '设置默认版本失败';
   }
 }
 
@@ -178,57 +178,57 @@ onMounted(loadVariants);
         />
       </div>
 
-      <ElEmpty v-else-if="!showNewForm" description="No variants yet." />
+      <ElEmpty v-else-if="!showNewForm" description="暂无版本" />
 
       <!-- New variant inline form -->
       <div v-if="showNewForm" class="variant-card" style="margin-top: 12px">
         <div class="variant-card__header" style="cursor: default">
           <div class="variant-card__header-left">
-            <span class="variant-card__name">New Version</span>
+            <span class="variant-card__name">新建版本</span>
           </div>
           <div class="variant-card__actions">
-            <ElButton size="small" text @click="showNewForm = false">Cancel</ElButton>
+            <ElButton size="small" text @click="showNewForm = false">取消</ElButton>
           </div>
         </div>
         <div class="variant-card__body">
           <ElForm label-position="top">
             <div class="form-grid form-grid--2">
-              <ElFormItem label="Version Name" required>
-                <ElInput v-model="newForm.name" placeholder="e.g. Deluxe, Exclusive" />
+              <ElFormItem label="版本名称" required>
+                <ElInput v-model="newForm.name" placeholder="例如：豪华版、限定版" />
               </ElFormItem>
-              <ElFormItem label="Sort Order">
+              <ElFormItem label="排序值">
                 <ElInputNumber v-model="newForm.sortOrder" :min="0" style="width: 100%" />
               </ElFormItem>
             </div>
             <div class="form-grid form-grid--2">
-              <ElFormItem label="SKU">
-                <ElInput v-model="newForm.sku" placeholder="Auto-generated if blank" />
-                <div class="field-hint">Leave blank to auto-generate</div>
+              <ElFormItem label="货号">
+                <ElInput v-model="newForm.sku" placeholder="留空自动生成" />
+                <div class="field-hint">留空后系统自动生成</div>
               </ElFormItem>
-              <ElFormItem label="Manufacturer SKU">
-                <ElInput v-model="newForm.manufacturerSku" placeholder="e.g. MMS617" />
+              <ElFormItem label="厂商货号">
+                <ElInput v-model="newForm.manufacturerSku" placeholder="例如：MMS617" />
               </ElFormItem>
             </div>
             <div class="form-grid form-grid--2">
-              <ElFormItem label="Price (cents)" required>
+              <ElFormItem label="价格（分）" required>
                 <ElInputNumber v-model="newForm.priceCents" :min="0" style="width: 100%" />
               </ElFormItem>
-              <ElFormItem label="Stock">
+              <ElFormItem label="库存">
                 <ElInputNumber v-model="newForm.stock" :min="0" style="width: 100%" />
               </ElFormItem>
             </div>
-            <ElFormItem label="Subtitle">
-              <ElInput v-model="newForm.subtitle" placeholder="e.g. Includes extra accessories..." />
+            <ElFormItem label="副标题">
+              <ElInput v-model="newForm.subtitle" placeholder="例如：含额外配件..." />
             </ElFormItem>
-            <ElFormItem label="Cover Image URL">
-              <ElInput v-model="newForm.coverImageUrl" placeholder="Optional variant-specific image" />
+            <ElFormItem label="封面图链接">
+              <ElInput v-model="newForm.coverImageUrl" placeholder="可选的版本专属图片" />
             </ElFormItem>
-            <ElFormItem label="Specifications">
+            <ElFormItem label="说明信息">
               <ProductRichTextEditor v-model="newForm.specifications" />
             </ElFormItem>
             <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px">
-              <ElButton @click="showNewForm = false">Cancel</ElButton>
-              <ElButton type="primary" :loading="creatingNew" @click="createVariant">Create Version</ElButton>
+              <ElButton @click="showNewForm = false">取消</ElButton>
+              <ElButton type="primary" :loading="creatingNew" @click="createVariant">创建版本</ElButton>
             </div>
           </ElForm>
         </div>
@@ -236,7 +236,7 @@ onMounted(loadVariants);
 
       <!-- Add version button -->
       <div v-if="!showNewForm" style="margin-top: 12px">
-        <ElButton @click="startCreate">+ Add Version</ElButton>
+        <ElButton @click="startCreate">+ 添加版本</ElButton>
       </div>
     </template>
   </div>

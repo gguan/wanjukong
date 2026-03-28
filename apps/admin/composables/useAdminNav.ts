@@ -2,11 +2,11 @@ export function useAdminNav() {
   const store = useAdminAuthStore();
 
   const allItems = [
-    { label: 'Dashboard', to: '/' },
-    { label: 'Brands', to: '/brands' },
-    { label: 'Categories', to: '/categories' },
-    { label: 'Products', to: '/products' },
-    { label: 'Admin Users', to: '/admin-users' },
+    { label: '总览', to: '/' },
+    { label: '品牌', to: '/brands' },
+    { label: '分类', to: '/categories' },
+    { label: '商品', to: '/products' },
+    { label: '管理员', to: '/admin-users' },
   ];
 
   if (store.isBrandManager) {

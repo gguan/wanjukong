@@ -68,8 +68,8 @@ function formatPrice(cents: number) {
 const summaryLine = computed(() => {
   const parts: string[] = [];
   parts.push(formatPrice(props.variant.priceCents));
-  parts.push(`Stock: ${props.variant.stock}`);
-  if (props.variant.sku) parts.push(`SKU ${props.variant.sku}`);
+  parts.push(`库存：${props.variant.stock}`);
+  if (props.variant.sku) parts.push(`货号 ${props.variant.sku}`);
   return parts.join(' \u00b7 ');
 });
 
@@ -102,15 +102,15 @@ async function handleSave() {
         <span v-if="!expanded" class="variant-card__summary">{{ summaryLine }}</span>
       </div>
       <div class="variant-card__badges">
-        <AdminStatusBadge v-if="variant.isDefault" value="ACTIVE" size="small" />
+        <ElTag v-if="variant.isDefault" type="primary" size="small" disable-transitions>默认版本</ElTag>
         <AdminStatusBadge v-if="variant.stock === 0" value="SOLD_OUT" size="small" />
       </div>
       <div class="variant-card__actions" @click.stop>
         <ElButton v-if="!variant.isDefault" size="small" text @click="emit('set-default')">
-          Set Default
+          设为默认
         </ElButton>
         <ElButton v-if="!variant.isDefault" size="small" text type="danger" @click="emit('delete')">
-          Remove
+          删除
         </ElButton>
       </div>
     </div>
@@ -118,48 +118,48 @@ async function handleSave() {
     <div v-if="expanded" class="variant-card__body">
       <ElForm label-position="top">
         <div class="form-grid form-grid--2">
-          <ElFormItem label="Version Name" required>
+          <ElFormItem label="版本名称" required>
             <ElInput v-model="editing.name" />
           </ElFormItem>
-          <ElFormItem label="Sort Order">
+          <ElFormItem label="排序值">
             <ElInputNumber v-model="editing.sortOrder" :min="0" style="width: 100%" />
           </ElFormItem>
         </div>
 
         <div class="form-grid form-grid--2">
-          <ElFormItem label="SKU">
-            <ElInput v-model="editing.sku" placeholder="Auto-generated if blank" />
-            <div class="field-hint">Leave blank to auto-generate</div>
+          <ElFormItem label="货号">
+            <ElInput v-model="editing.sku" placeholder="留空自动生成" />
+            <div class="field-hint">留空后系统自动生成</div>
           </ElFormItem>
-          <ElFormItem label="Manufacturer SKU">
-            <ElInput v-model="editing.manufacturerSku" placeholder="e.g. MMS617" />
+          <ElFormItem label="厂商货号">
+            <ElInput v-model="editing.manufacturerSku" placeholder="例如：MMS617" />
           </ElFormItem>
         </div>
 
         <div class="form-grid form-grid--2">
-          <ElFormItem label="Price (cents)" required>
+          <ElFormItem label="价格（分）" required>
             <ElInputNumber v-model="editing.priceCents" :min="0" style="width: 100%" />
           </ElFormItem>
-          <ElFormItem label="Stock">
+          <ElFormItem label="库存">
             <ElInputNumber v-model="editing.stock" :min="0" style="width: 100%" />
           </ElFormItem>
         </div>
 
-        <ElFormItem label="Subtitle">
-          <ElInput v-model="editing.subtitle" placeholder="e.g. Includes extra accessories..." />
+        <ElFormItem label="副标题">
+          <ElInput v-model="editing.subtitle" placeholder="例如：含额外配件..." />
         </ElFormItem>
 
-        <ElFormItem label="Cover Image URL">
-          <ElInput v-model="editing.coverImageUrl" placeholder="Optional variant-specific image" />
+        <ElFormItem label="封面图链接">
+          <ElInput v-model="editing.coverImageUrl" placeholder="可选的版本专属图片" />
         </ElFormItem>
 
-        <ElFormItem label="Specifications">
+        <ElFormItem label="说明信息">
           <ProductRichTextEditor v-model="editing.specifications" />
         </ElFormItem>
 
         <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px">
           <ElButton type="primary" :loading="saving" :disabled="!dirty" @click="handleSave">
-            Save Changes
+            保存更改
           </ElButton>
         </div>
       </ElForm>

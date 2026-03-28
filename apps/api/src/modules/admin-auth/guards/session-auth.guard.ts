@@ -42,7 +42,7 @@ export class SessionAuthGuard implements CanActivate {
 
     const adminUserId = request.session?.adminUserId;
     if (!adminUserId) {
-      throw new UnauthorizedException('Authentication required');
+      throw new UnauthorizedException('请先登录');
     }
 
     // Attach admin user to request for downstream use
@@ -63,7 +63,7 @@ export class SessionAuthGuard implements CanActivate {
       if (typeof request.session.destroy === 'function') {
         request.session.destroy(() => {});
       }
-      throw new UnauthorizedException('Authentication required');
+      throw new UnauthorizedException('请先登录');
     }
 
     request.adminUser = adminUser;

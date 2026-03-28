@@ -35,7 +35,7 @@ export class AdminAuthService {
         ipAddress,
         userAgent,
       });
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('账号或密码错误');
     }
 
     if (!user.isActive) {
@@ -46,7 +46,7 @@ export class AdminAuthService {
         ipAddress,
         userAgent,
       });
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('账号或密码错误');
     }
 
     // Check lockout
@@ -58,7 +58,7 @@ export class AdminAuthService {
         ipAddress,
         userAgent,
       });
-      throw new UnauthorizedException('Account temporarily locked. Try again later.');
+      throw new UnauthorizedException('账号已被临时锁定，请稍后再试');
     }
 
     // Verify password
@@ -93,7 +93,7 @@ export class AdminAuthService {
         userAgent,
       });
 
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('账号或密码错误');
     }
 
     // Success — reset counters
@@ -140,7 +140,7 @@ export class AdminAuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('Admin not found');
+      throw new UnauthorizedException('管理员不存在');
     }
 
     return user;
@@ -158,12 +158,12 @@ export class AdminAuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('Admin not found');
+      throw new UnauthorizedException('管理员不存在');
     }
 
     const valid = await argon2.verify(user.passwordHash, oldPassword);
     if (!valid) {
-      throw new UnauthorizedException('Current password is incorrect');
+      throw new UnauthorizedException('当前密码不正确');
     }
 
     const passwordHash = await this.hashPassword(newPassword);

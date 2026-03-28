@@ -6,6 +6,6 @@ export class ChangePasswordDto {
   oldPassword!: string;
 
   @IsString()
-  @MinLength(12, { message: 'Password must be at least 12 characters' })
+  @MinLength(12, { message: '密码长度至少为 12 位' })
   newPassword!: string;
 }

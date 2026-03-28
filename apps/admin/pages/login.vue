@@ -15,7 +15,7 @@ async function handleLogin() {
   try {
     await login(email.value, password.value);
   } catch (e: any) {
-    error.value = e?.data?.message || e?.message || 'Login failed';
+    error.value = e?.data?.message || e?.message || '登录失败';
   } finally {
     loading.value = false;
   }
@@ -25,22 +25,22 @@ async function handleLogin() {
 <template>
   <div class="login-page">
     <form class="login-form" @submit.prevent="handleLogin">
-      <h1>Admin Login</h1>
+      <h1>管理后台登录</h1>
 
       <div v-if="error" class="login-form__error">{{ error }}</div>
 
       <label>
-        Email
-        <input v-model="email" type="email" placeholder="admin@example.com" required autocomplete="email" />
+        邮箱
+        <input v-model="email" type="email" placeholder="请输入邮箱" required autocomplete="email" />
       </label>
 
       <label>
-        Password
-        <input v-model="password" type="password" placeholder="Enter password" required autocomplete="current-password" />
+        密码
+        <input v-model="password" type="password" placeholder="请输入密码" required autocomplete="current-password" />
       </label>
 
       <button type="submit" :disabled="loading">
-        {{ loading ? 'Signing in...' : 'Login' }}
+        {{ loading ? '登录中...' : '登录' }}
       </button>
     </form>
   </div>

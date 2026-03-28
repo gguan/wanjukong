@@ -80,11 +80,11 @@ async function handleLogoUpload(event: Event) {
   const file = input.files?.[0];
   if (!file) return;
   if (!file.type.startsWith('image/')) {
-    ElMessage.error('Please select an image file');
+    ElMessage.error('请选择图片文件');
     return;
   }
   if (file.size > 5 * 1024 * 1024) {
-    ElMessage.error('Image must be under 5 MB');
+    ElMessage.error('图片大小不能超过 5 MB');
     return;
   }
 
@@ -130,9 +130,9 @@ async function handleLogoUpload(event: Event) {
     });
 
     form.value.logo = publicUrl;
-    ElMessage.success('Logo uploaded');
+    ElMessage.success('品牌标志上传成功');
   } catch (err: any) {
-    ElMessage.error(err?.message || 'Upload failed');
+    ElMessage.error(err?.message || '上传失败');
   } finally {
     uploading.value = false;
     uploadProgress.value = 0;
@@ -146,7 +146,7 @@ function clearLogo() {
 
 async function save() {
   if (!form.value.name || !form.value.slug) {
-    ElMessage.error('Name and Slug are required');
+    ElMessage.error('品牌名称和 URL 标识为必填项');
     return;
   }
   try {
@@ -157,18 +157,18 @@ async function save() {
     }
     dialogVisible.value = false;
     await load();
-    ElMessage.success(editing.value ? 'Brand updated' : 'Brand created');
+    ElMessage.success(editing.value ? '品牌已更新' : '品牌已创建');
   } catch (err: any) {
-    ElMessage.error(err?.message || 'Save failed');
+    ElMessage.error(err?.message || '保存失败');
   }
 }
 
 async function remove(id: string) {
   try {
-    await ElMessageBox.confirm('Delete this brand?', 'Confirm', { type: 'warning' });
+    await ElMessageBox.confirm('确认删除该品牌吗？', '提示', { type: 'warning' });
     await api.del(`/api/admin/brands/${id}`);
     await load();
-    ElMessage.success('Brand deleted');
+    ElMessage.success('品牌已删除');
   } catch {}
 }
 
@@ -177,37 +177,37 @@ onMounted(load);
 
 <template>
   <div>
-    <AdminPageHeader title="Brands">
+    <AdminPageHeader title="品牌">
       <template #actions>
-        <ElButton type="primary" @click="openCreate">+ New Brand</ElButton>
+        <ElButton type="primary" @click="openCreate">+ 新建品牌</ElButton>
       </template>
     </AdminPageHeader>
 
     <!-- Dialog -->
     <ElDialog
       v-model="dialogVisible"
-      :title="editing ? 'Edit Brand' : 'New Brand'"
+      :title="editing ? '编辑品牌' : '新建品牌'"
       width="520px"
       destroy-on-close
     >
       <ElForm label-position="top" @submit.prevent="save">
         <!-- Name + Slug -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px">
-          <ElFormItem label="Name" required>
+          <ElFormItem label="名称" required>
             <ElInput v-model="form.name" @input="onNameInput" />
           </ElFormItem>
-          <ElFormItem label="Slug" required>
-            <ElInput v-model="form.slug" placeholder="auto-generated" />
+          <ElFormItem label="URL 标识" required>
+            <ElInput v-model="form.slug" placeholder="自动生成" />
           </ElFormItem>
         </div>
 
         <!-- Code -->
-        <ElFormItem label="Brand Code">
-          <ElInput v-model="form.code" placeholder="e.g. HT, DAM, TZ" style="max-width: 160px" />
+        <ElFormItem label="品牌编码">
+          <ElInput v-model="form.code" placeholder="例如：HT、DAM、TZ" style="max-width: 160px" />
         </ElFormItem>
 
         <!-- Logo upload -->
-        <ElFormItem label="Logo">
+        <ElFormItem label="品牌标志">
           <div style="display: flex; flex-direction: column; gap: 10px; width: 100%">
             <!-- Preview -->
             <div
@@ -215,12 +215,12 @@ onMounted(load);
               style="display: flex; align-items: center; gap: 12px; padding: 10px; background: #f5f7fa; border-radius: 6px; border: 1px solid #e4e7ed"
             >
               <div style="width: 56px; height: 56px; background: #fff; border-radius: 4px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid #eee; flex-shrink: 0">
-                <img :src="form.logo" alt="Logo" style="max-width: 100%; max-height: 100%; object-fit: contain" />
+                <img :src="form.logo" alt="品牌标志" style="max-width: 100%; max-height: 100%; object-fit: contain" />
               </div>
               <div style="flex: 1; min-width: 0">
                 <div style="font-size: 12px; color: #606266; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{ form.logo }}</div>
               </div>
-              <ElButton size="small" type="danger" plain @click="clearLogo">Remove</ElButton>
+              <ElButton size="small" type="danger" plain @click="clearLogo">移除</ElButton>
             </div>
 
             <!-- Upload button -->
@@ -230,7 +230,7 @@ onMounted(load);
                 :loading="uploading"
                 @click="triggerLogoUpload"
               >
-                {{ uploading ? `Uploading ${uploadProgress}%` : form.logo ? 'Replace Logo' : 'Upload Logo' }}
+                {{ uploading ? `上传中 ${uploadProgress}%` : form.logo ? '替换标志' : '上传标志' }}
               </ElButton>
               <ElProgress
                 v-if="uploading"
@@ -250,25 +250,25 @@ onMounted(load);
         </ElFormItem>
 
         <!-- Notes -->
-        <ElFormItem label="Notes">
+        <ElFormItem label="备注">
           <ElInput
             v-model="form.notes"
             type="textarea"
             :rows="3"
-            placeholder="Internal notes about this brand (not shown to customers)"
+            placeholder="仅后台可见的品牌备注（前台不展示）"
           />
         </ElFormItem>
       </ElForm>
 
       <template #footer>
-        <ElButton @click="dialogVisible = false">Cancel</ElButton>
-        <ElButton type="primary" :loading="uploading" @click="save">Save</ElButton>
+        <ElButton @click="dialogVisible = false">取消</ElButton>
+        <ElButton type="primary" :loading="uploading" @click="save">保存</ElButton>
       </template>
     </ElDialog>
 
     <!-- Table -->
     <ElTable v-loading="loading" :data="brands" stripe>
-      <ElTableColumn label="Logo" width="72">
+      <ElTableColumn label="标志" width="72">
         <template #default="{ row }">
           <div style="width: 40px; height: 40px; background: #f5f7fa; border-radius: 4px; display: flex; align-items: center; justify-content: center; overflow: hidden">
             <img
@@ -281,26 +281,26 @@ onMounted(load);
           </div>
         </template>
       </ElTableColumn>
-      <ElTableColumn prop="name" label="Name" />
-      <ElTableColumn prop="slug" label="Slug">
+      <ElTableColumn prop="name" label="名称" />
+      <ElTableColumn prop="slug" label="URL 标识">
         <template #default="{ row }">
           <ElTag size="small" type="info" disable-transitions>{{ row.slug }}</ElTag>
         </template>
       </ElTableColumn>
-      <ElTableColumn prop="code" label="Code" width="80" />
-      <ElTableColumn prop="notes" label="Notes" show-overflow-tooltip>
+      <ElTableColumn prop="code" label="编码" width="80" />
+      <ElTableColumn prop="notes" label="备注" show-overflow-tooltip>
         <template #default="{ row }">
           <span style="color: #909399; font-size: 12px">{{ row.notes || '—' }}</span>
         </template>
       </ElTableColumn>
-      <ElTableColumn label="Actions" width="140" align="right">
+      <ElTableColumn label="操作" width="140" align="right">
         <template #default="{ row }">
-          <ElButton size="small" @click="openEdit(row)">Edit</ElButton>
-          <ElButton size="small" type="danger" @click="remove(row.id)">Delete</ElButton>
+          <ElButton size="small" @click="openEdit(row)">编辑</ElButton>
+          <ElButton size="small" type="danger" @click="remove(row.id)">删除</ElButton>
         </template>
       </ElTableColumn>
       <template #empty>
-        <ElEmpty description="No brands yet" />
+        <ElEmpty description="暂无品牌" />
       </template>
     </ElTable>
   </div>

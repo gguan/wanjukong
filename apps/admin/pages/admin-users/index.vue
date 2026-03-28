@@ -37,10 +37,10 @@ const assignUser = ref<AdminUser | null>(null);
 const assignBrandIds = ref<string[]>([]);
 
 const roleOptions = [
-  { label: 'Super Admin', value: 'SUPER_ADMIN' },
-  { label: 'Admin', value: 'ADMIN' },
-  { label: 'Editor', value: 'EDITOR' },
-  { label: 'Brand Manager', value: 'BRAND_MANAGER' },
+  { label: '超级管理员', value: 'SUPER_ADMIN' },
+  { label: '管理员', value: 'ADMIN' },
+  { label: '编辑', value: 'EDITOR' },
+  { label: '品牌管理员', value: 'BRAND_MANAGER' },
 ];
 
 async function load() {
@@ -61,16 +61,16 @@ function openCreate() {
 
 async function saveCreate() {
   if (!createForm.value.email || !createForm.value.password || !createForm.value.name) {
-    ElMessage.error('All fields are required');
+    ElMessage.error('请填写所有必填项');
     return;
   }
   try {
     await api.post('/api/admin/users', createForm.value);
     createDialogVisible.value = false;
     await load();
-    ElMessage.success('Admin user created');
+    ElMessage.success('管理员已创建');
   } catch (err: any) {
-    ElMessage.error(err?.message || 'Failed to create user');
+    ElMessage.error(err?.message || '创建管理员失败');
   }
 }
 
@@ -88,9 +88,9 @@ async function saveAssignments() {
     });
     assignDialogVisible.value = false;
     await load();
-    ElMessage.success('Brand assignments updated');
+    ElMessage.success('品牌权限已更新');
   } catch (err: any) {
-    ElMessage.error(err?.message || 'Failed to update assignments');
+    ElMessage.error(err?.message || '更新品牌权限失败');
   }
 }
 
@@ -98,9 +98,9 @@ async function toggleActive(user: AdminUser) {
   try {
     await api.put(`/api/admin/users/${user.id}`, { isActive: !user.isActive });
     await load();
-    ElMessage.success(user.isActive ? 'User deactivated' : 'User activated');
+    ElMessage.success(user.isActive ? '用户已停用' : '用户已启用');
   } catch (err: any) {
-    ElMessage.error(err?.message || 'Failed to update user');
+    ElMessage.error(err?.message || '更新用户失败');
   }
 }
 
@@ -113,25 +113,25 @@ onMounted(load);
 
 <template>
   <div>
-    <AdminPageHeader title="Admin Users">
+    <AdminPageHeader title="管理员">
       <template #actions>
-        <ElButton type="primary" @click="openCreate">+ New User</ElButton>
+        <ElButton type="primary" @click="openCreate">+ 新建管理员</ElButton>
       </template>
     </AdminPageHeader>
 
     <!-- Create Dialog -->
-    <ElDialog v-model="createDialogVisible" title="New Admin User" width="480px" destroy-on-close>
+    <ElDialog v-model="createDialogVisible" title="新建管理员" width="480px" destroy-on-close>
       <ElForm label-position="top" @submit.prevent="saveCreate">
-        <ElFormItem label="Name" required>
+        <ElFormItem label="名称" required>
           <ElInput v-model="createForm.name" />
         </ElFormItem>
-        <ElFormItem label="Email" required>
+        <ElFormItem label="邮箱" required>
           <ElInput v-model="createForm.email" type="email" />
         </ElFormItem>
-        <ElFormItem label="Password" required>
+        <ElFormItem label="密码" required>
           <ElInput v-model="createForm.password" type="password" show-password />
         </ElFormItem>
-        <ElFormItem label="Role" required>
+        <ElFormItem label="角色" required>
           <ElSelect v-model="createForm.role" style="width: 100%">
             <ElOption
               v-for="r in roleOptions"
@@ -143,15 +143,15 @@ onMounted(load);
         </ElFormItem>
       </ElForm>
       <template #footer>
-        <ElButton @click="createDialogVisible = false">Cancel</ElButton>
-        <ElButton type="primary" @click="saveCreate">Create</ElButton>
+        <ElButton @click="createDialogVisible = false">取消</ElButton>
+        <ElButton type="primary" @click="saveCreate">创建</ElButton>
       </template>
     </ElDialog>
 
     <!-- Brand Assignment Dialog -->
-    <ElDialog v-model="assignDialogVisible" title="Assign Brands" width="480px" destroy-on-close>
+    <ElDialog v-model="assignDialogVisible" title="分配品牌" width="480px" destroy-on-close>
       <p style="margin-bottom: 16px; color: #606266; font-size: 14px">
-        Select which brands <strong>{{ assignUser?.name }}</strong> can manage:
+        选择 <strong>{{ assignUser?.name }}</strong> 可管理的品牌：
       </p>
       <ElCheckboxGroup v-model="assignBrandIds">
         <div v-for="b in brands" :key="b.id" style="margin-bottom: 8px">
@@ -159,16 +159,16 @@ onMounted(load);
         </div>
       </ElCheckboxGroup>
       <template #footer>
-        <ElButton @click="assignDialogVisible = false">Cancel</ElButton>
-        <ElButton type="primary" @click="saveAssignments">Save</ElButton>
+        <ElButton @click="assignDialogVisible = false">取消</ElButton>
+        <ElButton type="primary" @click="saveAssignments">保存</ElButton>
       </template>
     </ElDialog>
 
     <!-- Table -->
     <ElTable v-loading="loading" :data="users" stripe>
-      <ElTableColumn prop="name" label="Name" min-width="120" />
-      <ElTableColumn prop="email" label="Email" min-width="180" />
-      <ElTableColumn label="Role" width="140">
+      <ElTableColumn prop="name" label="名称" min-width="120" />
+      <ElTableColumn prop="email" label="邮箱" min-width="180" />
+      <ElTableColumn label="角色" width="140">
         <template #default="{ row }">
           <ElTag
             :type="row.role === 'SUPER_ADMIN' ? 'danger' : row.role === 'ADMIN' ? 'warning' : row.role === 'BRAND_MANAGER' ? 'success' : 'info'"
@@ -179,7 +179,7 @@ onMounted(load);
           </ElTag>
         </template>
       </ElTableColumn>
-      <ElTableColumn label="Brands" min-width="160">
+      <ElTableColumn label="品牌" min-width="160">
         <template #default="{ row }">
           <template v-if="row.role === 'BRAND_MANAGER' && row.brandAssignments?.length">
             <ElTag
@@ -191,25 +191,25 @@ onMounted(load);
               {{ a.brand.name }}
             </ElTag>
           </template>
-          <span v-else-if="row.role === 'BRAND_MANAGER'" style="color: #909399; font-size: 12px">No brands assigned</span>
-          <span v-else style="color: #909399; font-size: 12px">All</span>
+          <span v-else-if="row.role === 'BRAND_MANAGER'" style="color: #909399; font-size: 12px">未分配品牌</span>
+          <span v-else style="color: #909399; font-size: 12px">全部</span>
         </template>
       </ElTableColumn>
-      <ElTableColumn label="Status" width="80">
+      <ElTableColumn label="状态" width="80">
         <template #default="{ row }">
           <ElTag :type="row.isActive ? 'success' : 'danger'" size="small" disable-transitions>
-            {{ row.isActive ? 'Active' : 'Inactive' }}
+            {{ row.isActive ? '启用' : '停用' }}
           </ElTag>
         </template>
       </ElTableColumn>
-      <ElTableColumn label="Actions" width="220" align="right">
+      <ElTableColumn label="操作" width="220" align="right">
         <template #default="{ row }">
           <ElButton
             v-if="row.role === 'BRAND_MANAGER'"
             size="small"
             @click="openAssignBrands(row)"
           >
-            Brands
+            品牌
           </ElButton>
           <ElButton
             size="small"
@@ -217,12 +217,12 @@ onMounted(load);
             :disabled="row.id === store.user?.id"
             @click="toggleActive(row)"
           >
-            {{ row.isActive ? 'Deactivate' : 'Activate' }}
+            {{ row.isActive ? '停用' : '启用' }}
           </ElButton>
         </template>
       </ElTableColumn>
       <template #empty>
-        <ElEmpty description="No admin users" />
+        <ElEmpty description="暂无管理员" />
       </template>
     </ElTable>
   </div>

@@ -10,7 +10,7 @@ const editor = useEditor({
   content: props.modelValue || '',
   extensions: [
     StarterKit,
-    Placeholder.configure({ placeholder: 'Enter specifications...' }),
+    Placeholder.configure({ placeholder: '请输入说明信息...' }),
   ],
   onUpdate({ editor: e }) {
     const html = e.getHTML();
@@ -41,14 +41,14 @@ onBeforeUnmount(() => editor.value?.destroy());
         type="button"
         class="tb-btn"
         :class="{ active: editor.isActive('bold') }"
-        title="Bold"
+        title="加粗"
         @click="editor.chain().focus().toggleBold().run()"
       ><b>B</b></button>
       <button
         type="button"
         class="tb-btn"
         :class="{ active: editor.isActive('italic') }"
-        title="Italic"
+        title="斜体"
         @click="editor.chain().focus().toggleItalic().run()"
       ><i>I</i></button>
       <span class="tb-sep" />
@@ -56,21 +56,21 @@ onBeforeUnmount(() => editor.value?.destroy());
         type="button"
         class="tb-btn"
         :class="{ active: editor.isActive('bulletList') }"
-        title="Bullet list"
+        title="无序列表"
         @click="editor.chain().focus().toggleBulletList().run()"
-      >&#8226; List</button>
+      >&#8226; 无序</button>
       <button
         type="button"
         class="tb-btn"
         :class="{ active: editor.isActive('orderedList') }"
-        title="Numbered list"
+        title="有序列表"
         @click="editor.chain().focus().toggleOrderedList().run()"
-      >1. List</button>
+      >1. 有序</button>
       <span class="tb-sep" />
       <button
         type="button"
         class="tb-btn"
-        title="Clear formatting"
+        title="清除格式"
         @click="editor.chain().focus().clearNodes().unsetAllMarks().run()"
       >&#10005;</button>
     </div>

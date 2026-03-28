@@ -9,7 +9,7 @@ const { user, email, logout } = useAdminAuth();
       <span v-if="user" class="admin-header__user">
         {{ user.name || email }}
       </span>
-      <ElButton size="small" text bg style="color: rgba(255,255,255,0.85)" @click="logout">Logout</ElButton>
+      <ElButton size="small" text bg style="color: rgba(255,255,255,0.85)" @click="logout">退出登录</ElButton>
     </ElSpace>
   </ElHeader>
 </template>

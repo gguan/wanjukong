@@ -27,7 +27,7 @@ export class ProductVariantsService {
     const variant = await this.prisma.productVariant.findFirst({
       where: { id: variantId, productId },
     });
-    if (!variant) throw new NotFoundException('Variant not found');
+    if (!variant) throw new NotFoundException('版本不存在');
     return variant;
   }
 
@@ -37,7 +37,7 @@ export class ProductVariantsService {
       where: { id: productId },
       include: { brand: true },
     });
-    if (!product) throw new NotFoundException('Product not found');
+    if (!product) throw new NotFoundException('商品不存在');
 
     // If this is set as default, clear other defaults
     if (dto.isDefault) {
@@ -72,7 +72,7 @@ export class ProductVariantsService {
     const variant = await this.prisma.productVariant.findFirst({
       where: { id: variantId, productId },
     });
-    if (!variant) throw new NotFoundException('Variant not found');
+    if (!variant) throw new NotFoundException('版本不存在');
 
     // If setting as default, clear other defaults
     if (dto.isDefault) {
@@ -93,7 +93,7 @@ export class ProductVariantsService {
         where: { sku: normalized, id: { not: variantId } },
       });
       if (existing) {
-        throw new BadRequestException(`SKU "${normalized}" is already in use`);
+        throw new BadRequestException(`SKU "${normalized}" 已被占用`);
       }
       data.sku = normalized;
     } else {
@@ -111,12 +111,12 @@ export class ProductVariantsService {
     const variant = await this.prisma.productVariant.findFirst({
       where: { id: variantId, productId },
     });
-    if (!variant) throw new NotFoundException('Variant not found');
+    if (!variant) throw new NotFoundException('版本不存在');
 
     // Protect default variant from deletion
     if (variant.isDefault) {
       throw new BadRequestException(
-        'Cannot delete the default variant. Set another variant as default first.',
+        '不能删除默认版本，请先将其他版本设为默认版本。',
       );
     }
 
@@ -148,7 +148,7 @@ export class ProductVariantsService {
         where: { sku: normalized },
       });
       if (existing) {
-        throw new BadRequestException(`SKU "${normalized}" is already in use`);
+        throw new BadRequestException(`SKU "${normalized}" 已被占用`);
       }
       return normalized;
     }

@@ -44,7 +44,7 @@ async function loadImages() {
       `/api/admin/products/${props.productId}/images`,
     );
   } catch {
-    error.value = 'Failed to load images';
+    error.value = '加载图片失败';
   } finally {
     loading.value = false;
   }
@@ -119,12 +119,12 @@ async function handleUpload(event: Event) {
       await api.post(`/api/admin/products/${props.productId}/images`, {
         images: newImages,
       });
-      ElMessage.success(`${newImages.length} image(s) uploaded`);
+      ElMessage.success(`已上传 ${newImages.length} 张图片`);
       await loadImages();
     }
   } catch (err: any) {
-    error.value = err?.message || 'Upload failed';
-    ElMessage.error('Upload failed');
+    error.value = err?.message || '上传失败';
+    ElMessage.error('上传失败');
   } finally {
     uploading.value = false;
     uploadProgress.value = 0;
@@ -137,10 +137,10 @@ async function setPrimary(imageId: string) {
     await api.patch(
       `/api/admin/products/${props.productId}/images/${imageId}/primary`,
     );
-    ElMessage.success('Primary image updated');
+    ElMessage.success('主图已更新');
     await loadImages();
   } catch {
-    error.value = 'Failed to set primary image';
+    error.value = '设置主图失败';
   }
 }
 
@@ -161,15 +161,15 @@ async function moveImage(imageId: string, direction: 'up' | 'down') {
       { items },
     );
   } catch {
-    error.value = 'Failed to reorder';
+    error.value = '排序失败';
   }
 }
 
 async function removeImage(imageId: string) {
   try {
-    await ElMessageBox.confirm('Remove this image from the product?', 'Confirm', { type: 'warning' });
+    await ElMessageBox.confirm('确认从商品中移除这张图片吗？', '提示', { type: 'warning' });
     await api.del(`/api/admin/products/${props.productId}/images/${imageId}`);
-    ElMessage.success('Image removed');
+    ElMessage.success('图片已删除');
     await loadImages();
   } catch {}
 }
@@ -181,7 +181,7 @@ onMounted(loadImages);
   <div>
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px">
       <ElButton :loading="uploading" type="primary" size="small" @click="triggerUpload">
-        {{ uploading ? `Uploading ${uploadProgress}%` : '+ Upload Images' }}
+        {{ uploading ? `上传中 ${uploadProgress}%` : '+ 上传图片' }}
       </ElButton>
       <input
         ref="fileInputRef"
@@ -200,7 +200,7 @@ onMounted(loadImages);
 
     <div v-if="loading" v-loading="true" style="height: 100px" />
 
-    <ElEmpty v-else-if="images.length === 0" description="No images yet. Upload some above." />
+    <ElEmpty v-else-if="images.length === 0" description="暂无图片，请先上传。" />
 
     <div v-else style="display: flex; flex-direction: column; gap: 8px">
       <div
@@ -210,13 +210,13 @@ onMounted(loadImages);
         :style="img.isPrimary ? { borderColor: '#409EFF', background: '#ecf5ff' } : {}"
       >
         <div style="position: relative; width: 72px; height: 72px; flex-shrink: 0; border-radius: 4px; overflow: hidden; background: #f5f7fa">
-          <img :src="img.imageUrl" :alt="img.altText || 'Product image'" style="width: 100%; height: 100%; object-fit: cover" />
+          <img :src="img.imageUrl" :alt="img.altText || '商品图片'" style="width: 100%; height: 100%; object-fit: cover" />
           <ElTag v-if="img.isPrimary" type="primary" size="small" style="position: absolute; bottom: 0; left: 0; right: 0; text-align: center; border-radius: 0">
-            Primary
+            主图
           </ElTag>
         </div>
         <ElSpace wrap>
-          <ElButton v-if="!img.isPrimary" size="small" @click="setPrimary(img.id)">★ Primary</ElButton>
+          <ElButton v-if="!img.isPrimary" size="small" @click="setPrimary(img.id)">★ 设为主图</ElButton>
           <ElButton size="small" :disabled="idx === 0" @click="moveImage(img.id, 'up')">↑</ElButton>
           <ElButton size="small" :disabled="idx === images.length - 1" @click="moveImage(img.id, 'down')">↓</ElButton>
           <ElButton size="small" type="danger" @click="removeImage(img.id)">✕</ElButton>
@@ -225,4 +225,3 @@ onMounted(loadImages);
     </div>
   </div>
 </template>
-

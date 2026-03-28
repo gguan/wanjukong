@@ -13,7 +13,7 @@ async function checkHealth() {
   try {
     healthData.value = await api.get('/api/health');
   } catch (e: unknown) {
-    error.value = e instanceof Error ? e.message : 'Failed to connect';
+    error.value = e instanceof Error ? e.message : '连接失败';
   } finally {
     loading.value = false;
   }
@@ -22,11 +22,11 @@ async function checkHealth() {
 
 <template>
   <div>
-    <h2>Dashboard</h2>
-    <p>Welcome to the wanjukong admin panel.</p>
+    <h2>总览</h2>
+    <p>欢迎使用 wanjukong 管理后台。</p>
 
     <button :disabled="loading" class="btn" @click="checkHealth">
-      {{ loading ? 'Checking...' : 'Check API Health' }}
+      {{ loading ? '检查中...' : '检查接口健康状态' }}
     </button>
 
     <div v-if="healthData" class="result success">

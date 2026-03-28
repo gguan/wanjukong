@@ -48,7 +48,7 @@ async function save() {
 
 async function remove(id: string) {
   try {
-    await ElMessageBox.confirm('Delete this category?', 'Confirm', { type: 'warning' });
+    await ElMessageBox.confirm('确认删除该分类吗？', '提示', { type: 'warning' });
     await api.del(`/api/admin/categories/${id}`);
     await load();
   } catch {}
@@ -59,46 +59,46 @@ onMounted(load);
 
 <template>
   <div>
-    <AdminPageHeader title="Categories">
+    <AdminPageHeader title="分类">
       <template #actions>
-        <ElButton type="primary" @click="openCreate">+ New Category</ElButton>
+        <ElButton type="primary" @click="openCreate">+ 新建分类</ElButton>
       </template>
     </AdminPageHeader>
 
-    <ElDialog v-model="dialogVisible" :title="editing ? 'Edit Category' : 'New Category'" width="480px" destroy-on-close>
+    <ElDialog v-model="dialogVisible" :title="editing ? '编辑分类' : '新建分类'" width="480px" destroy-on-close>
       <ElForm label-position="top" @submit.prevent="save">
-        <ElFormItem label="Name">
+        <ElFormItem label="名称">
           <ElInput v-model="form.name" />
         </ElFormItem>
-        <ElFormItem label="Slug">
-          <ElInput v-model="form.slug" />
+        <ElFormItem label="URL 标识">
+          <ElInput v-model="form.slug" placeholder="请输入 URL 标识" />
         </ElFormItem>
-        <ElFormItem label="Sort Order">
+        <ElFormItem label="排序值">
           <ElInputNumber v-model="form.sortOrder" :min="0" />
         </ElFormItem>
       </ElForm>
       <template #footer>
-        <ElButton @click="dialogVisible = false">Cancel</ElButton>
-        <ElButton type="primary" @click="save">Save</ElButton>
+        <ElButton @click="dialogVisible = false">取消</ElButton>
+        <ElButton type="primary" @click="save">保存</ElButton>
       </template>
     </ElDialog>
 
     <ElTable v-loading="loading" :data="categories" stripe>
-      <ElTableColumn prop="name" label="Name" />
-      <ElTableColumn prop="slug" label="Slug">
+      <ElTableColumn prop="name" label="名称" />
+      <ElTableColumn prop="slug" label="URL 标识">
         <template #default="{ row }">
           <ElTag size="small" type="info" disable-transitions>{{ row.slug }}</ElTag>
         </template>
       </ElTableColumn>
-      <ElTableColumn prop="sortOrder" label="Sort" width="80" />
-      <ElTableColumn label="Actions" width="160" align="right">
+      <ElTableColumn prop="sortOrder" label="排序" width="80" />
+      <ElTableColumn label="操作" width="160" align="right">
         <template #default="{ row }">
-          <ElButton size="small" @click="openEdit(row)">Edit</ElButton>
-          <ElButton size="small" type="danger" @click="remove(row.id)">Delete</ElButton>
+          <ElButton size="small" @click="openEdit(row)">编辑</ElButton>
+          <ElButton size="small" type="danger" @click="remove(row.id)">删除</ElButton>
         </template>
       </ElTableColumn>
       <template #empty>
-        <ElEmpty description="No categories yet" />
+        <ElEmpty description="暂无分类" />
       </template>
     </ElTable>
   </div>

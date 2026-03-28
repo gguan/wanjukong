@@ -25,7 +25,7 @@ const form = ref({
 });
 
 const defaultVariant = ref({
-  name: 'Standard',
+  name: '标准版',
   sku: '',
   manufacturerSku: '',
   priceCents: 0,
@@ -75,10 +75,10 @@ async function save() {
     }
 
     const product = await api.post<{ id: string }>('/api/admin/products', payload);
-    ElMessage.success('Product created');
+    ElMessage.success('商品已创建');
     router.push(`/products/${product.id}`);
   } catch (e: unknown) {
-    error.value = e instanceof Error ? e.message : 'Failed to create product';
+    error.value = e instanceof Error ? e.message : '创建商品失败';
   } finally {
     saving.value = false;
   }
@@ -91,15 +91,15 @@ async function save() {
     <div class="editor-header">
       <div class="editor-header__left">
         <NuxtLink to="/products" class="editor-header__back">
-          &larr; Products
+          &larr; 商品
         </NuxtLink>
-        <h2 class="editor-header__title">Create Product</h2>
+        <h2 class="editor-header__title">新建商品</h2>
       </div>
       <div class="editor-header__actions">
         <NuxtLink to="/products">
-          <ElButton>Cancel</ElButton>
+          <ElButton>取消</ElButton>
         </NuxtLink>
-        <ElButton type="primary" :loading="saving" @click="save">Create Product</ElButton>
+        <ElButton type="primary" :loading="saving" @click="save">创建商品</ElButton>
       </div>
     </div>
 
@@ -109,7 +109,7 @@ async function save() {
       <!-- ═══ Main Column ═══ -->
       <div class="product-editor__main">
         <!-- Basic Information -->
-        <AdminProductEditorSection title="Basic information" description="Core product content shown on the storefront.">
+        <AdminProductEditorSection title="基础信息" description="前台展示的核心商品信息。">
           <ProductFormFields
             v-model:form="form"
             :brands="brands"
@@ -119,25 +119,25 @@ async function save() {
         </AdminProductEditorSection>
 
         <!-- Default Variant -->
-        <AdminProductEditorSection title="Default version" description="The Standard version is created with the product. Add more versions after saving.">
+        <AdminProductEditorSection title="默认版本" description="保存商品时会同步创建默认版本，保存后可继续新增其他版本。">
           <ElForm label-position="top">
             <div class="form-grid form-grid--2">
-              <ElFormItem label="Version Name" required>
+              <ElFormItem label="版本名称" required>
                 <ElInput v-model="defaultVariant.name" />
               </ElFormItem>
-              <ElFormItem label="SKU">
-                <ElInput v-model="defaultVariant.sku" placeholder="Auto-generated if blank" />
-                <div class="field-hint">Leave blank to auto-generate</div>
+              <ElFormItem label="货号">
+                <ElInput v-model="defaultVariant.sku" placeholder="留空自动生成" />
+                <div class="field-hint">留空后系统自动生成</div>
               </ElFormItem>
             </div>
             <div class="form-grid form-grid--3">
-              <ElFormItem label="Manufacturer SKU">
-                <ElInput v-model="defaultVariant.manufacturerSku" placeholder="e.g. MMS617" />
+              <ElFormItem label="厂商货号">
+                <ElInput v-model="defaultVariant.manufacturerSku" placeholder="例如：MMS617" />
               </ElFormItem>
-              <ElFormItem label="Price (cents)" required>
+              <ElFormItem label="价格（分）" required>
                 <ElInputNumber v-model="defaultVariant.priceCents" :min="0" style="width: 100%" />
               </ElFormItem>
-              <ElFormItem label="Stock" required>
+              <ElFormItem label="库存" required>
                 <ElInputNumber v-model="defaultVariant.stock" :min="0" style="width: 100%" />
               </ElFormItem>
             </div>
@@ -145,11 +145,11 @@ async function save() {
         </AdminProductEditorSection>
 
         <!-- Product Details -->
-        <AdminProductEditorSection title="Product details">
+        <AdminProductEditorSection title="商品详情">
           <ElForm label-position="top">
             <div class="form-grid form-grid--2">
-              <ElFormItem label="Brand" required>
-                <ElSelect v-model="form.brandId" placeholder="Select brand" style="width: 100%">
+              <ElFormItem label="品牌" required>
+                <ElSelect v-model="form.brandId" placeholder="请选择品牌" style="width: 100%">
                   <ElOption
                     v-for="b in brands"
                     :key="b.id"
@@ -158,8 +158,8 @@ async function save() {
                   />
                 </ElSelect>
               </ElFormItem>
-              <ElFormItem label="Category" required>
-                <ElSelect v-model="form.categoryId" placeholder="Select category" style="width: 100%">
+              <ElFormItem label="分类" required>
+                <ElSelect v-model="form.categoryId" placeholder="请选择分类" style="width: 100%">
                   <ElOption
                     v-for="c in categories"
                     :key="c.id"
@@ -170,8 +170,8 @@ async function save() {
               </ElFormItem>
             </div>
             <div class="form-grid form-grid--2">
-              <ElFormItem label="Scale">
-                <ElInput v-model="form.scale" placeholder="e.g. 1/6" />
+              <ElFormItem label="比例">
+                <ElInput v-model="form.scale" placeholder="例如：1/6" />
               </ElFormItem>
             </div>
           </ElForm>
@@ -181,39 +181,39 @@ async function save() {
       <!-- ═══ Sidebar ═══ -->
       <aside class="product-editor__sidebar">
         <!-- Status -->
-        <AdminSidebarCard title="Status">
+        <AdminSidebarCard title="状态">
           <ElForm label-position="top">
-            <ElFormItem label="Product Status">
+            <ElFormItem label="商品状态">
               <ElSelect v-model="form.status" style="width: 100%">
-                <ElOption label="Draft" value="DRAFT" />
-                <ElOption label="Active" value="ACTIVE" />
-                <ElOption label="Inactive" value="INACTIVE" />
+                <ElOption label="草稿" value="DRAFT" />
+                <ElOption label="上架" value="ACTIVE" />
+                <ElOption label="下架" value="INACTIVE" />
               </ElSelect>
-              <div class="field-hint">Controls storefront visibility</div>
+              <div class="field-hint">控制商品在前台的可见性</div>
             </ElFormItem>
           </ElForm>
           <AdminStatusBadge :value="form.status" />
         </AdminSidebarCard>
 
         <!-- Sales -->
-        <AdminSidebarCard title="Sales">
+        <AdminSidebarCard title="销售设置">
           <ElForm label-position="top">
-            <ElFormItem label="Sale Type">
+            <ElFormItem label="销售类型">
               <ElSelect v-model="form.saleType" style="width: 100%">
-                <ElOption label="In Stock" value="IN_STOCK" />
-                <ElOption label="Preorder" value="PREORDER" />
+                <ElOption label="现货" value="IN_STOCK" />
+                <ElOption label="预售" value="PREORDER" />
               </ElSelect>
-              <div class="field-hint">Controls whether customers can purchase</div>
+              <div class="field-hint">控制用户当前是否可购买</div>
             </ElFormItem>
 
             <template v-if="isPreorder">
-              <ElFormItem label="Preorder Start">
+              <ElFormItem label="预售开始时间">
                 <ElInput v-model="form.preorderStartAt" type="datetime-local" />
               </ElFormItem>
-              <ElFormItem label="Preorder End">
+              <ElFormItem label="预售结束时间">
                 <ElInput v-model="form.preorderEndAt" type="datetime-local" />
               </ElFormItem>
-              <ElFormItem label="Estimated Ship Date" style="margin-bottom: 0">
+              <ElFormItem label="预计发货时间" style="margin-bottom: 0">
                 <ElInput v-model="form.estimatedShipAt" type="datetime-local" />
               </ElFormItem>
             </template>
@@ -221,10 +221,10 @@ async function save() {
         </AdminSidebarCard>
 
         <!-- Organization -->
-        <AdminSidebarCard title="Organization">
+        <AdminSidebarCard title="品牌分类">
           <ElForm label-position="top">
-            <ElFormItem label="Brand">
-              <ElSelect v-model="form.brandId" placeholder="Select brand" style="width: 100%">
+            <ElFormItem label="品牌">
+              <ElSelect v-model="form.brandId" placeholder="请选择品牌" style="width: 100%">
                 <ElOption
                   v-for="b in brands"
                   :key="b.id"
@@ -233,8 +233,8 @@ async function save() {
                 />
               </ElSelect>
             </ElFormItem>
-            <ElFormItem label="Category" style="margin-bottom: 0">
-              <ElSelect v-model="form.categoryId" placeholder="Select category" style="width: 100%">
+            <ElFormItem label="分类" style="margin-bottom: 0">
+              <ElSelect v-model="form.categoryId" placeholder="请选择分类" style="width: 100%">
                 <ElOption
                   v-for="c in categories"
                   :key="c.id"
@@ -247,7 +247,7 @@ async function save() {
         </AdminSidebarCard>
 
         <!-- Storefront Preview -->
-        <AdminSidebarCard title="Storefront">
+        <AdminSidebarCard title="商品链接">
           <div style="font-size: 13px; color: var(--el-text-color-secondary); word-break: break-all">
             /products/{{ form.slug || '...' }}
           </div>

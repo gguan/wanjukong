@@ -35,7 +35,7 @@ export class ProductImagesService {
     const product = await this.prisma.product.findUnique({
       where: { id: productId },
     });
-    if (!product) throw new NotFoundException('Product not found');
+    if (!product) throw new NotFoundException('商品不存在');
 
     // Get current max sortOrder
     const last = await this.prisma.productImage.findFirst({
@@ -95,7 +95,7 @@ export class ProductImagesService {
       where: { id: imageId, productId },
     });
     if (!image) {
-      throw new BadRequestException('Image does not belong to this product');
+      throw new BadRequestException('该图片不属于当前商品');
     }
 
     // Clear all primaries for this product
@@ -139,7 +139,7 @@ export class ProductImagesService {
       where: { id: imageId, productId },
     });
     if (!image) {
-      throw new BadRequestException('Image does not belong to this product');
+      throw new BadRequestException('该图片不属于当前商品');
     }
 
     await this.prisma.productImage.delete({ where: { id: imageId } });

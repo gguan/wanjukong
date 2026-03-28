@@ -6,13 +6,13 @@ const props = defineProps<{
 
 const config = computed(() => {
   const map: Record<string, { label: string; color: string; bg: string }> = {
-    ACTIVE: { label: 'Active', color: '#16a34a', bg: '#f0fdf4' },
-    DRAFT: { label: 'Draft', color: '#6b7280', bg: '#f3f4f6' },
-    INACTIVE: { label: 'Inactive', color: '#d97706', bg: '#fffbeb' },
-    IN_STOCK: { label: 'In Stock', color: '#16a34a', bg: '#f0fdf4' },
-    PREORDER: { label: 'Preorder', color: '#7c3aed', bg: '#f5f3ff' },
-    SOLD_OUT: { label: 'Sold Out', color: '#dc2626', bg: '#fef2f2' },
-    COMING_SOON: { label: 'Coming Soon', color: '#d97706', bg: '#fffbeb' },
+    ACTIVE: { label: '上架', color: '#16a34a', bg: '#f0fdf4' },
+    DRAFT: { label: '草稿', color: '#6b7280', bg: '#f3f4f6' },
+    INACTIVE: { label: '下架', color: '#d97706', bg: '#fffbeb' },
+    IN_STOCK: { label: '现货', color: '#16a34a', bg: '#f0fdf4' },
+    PREORDER: { label: '预售', color: '#7c3aed', bg: '#f5f3ff' },
+    SOLD_OUT: { label: '售罄', color: '#dc2626', bg: '#fef2f2' },
+    COMING_SOON: { label: '即将发售', color: '#d97706', bg: '#fffbeb' },
   };
   return map[props.value] || { label: props.value, color: '#6b7280', bg: '#f3f4f6' };
 });

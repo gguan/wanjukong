@@ -57,7 +57,7 @@ export class AdminUsersService {
     data: { email?: string; name?: string; role?: string; isActive?: boolean },
   ) {
     const user = await this.prisma.adminUser.findUnique({ where: { id } });
-    if (!user) throw new NotFoundException('Admin user not found');
+    if (!user) throw new NotFoundException('管理员不存在');
 
     const updateData: Record<string, unknown> = {};
     if (data.email !== undefined)
@@ -84,7 +84,7 @@ export class AdminUsersService {
     const user = await this.prisma.adminUser.findUnique({
       where: { id: adminUserId },
     });
-    if (!user) throw new NotFoundException('Admin user not found');
+    if (!user) throw new NotFoundException('管理员不存在');
 
     // Replace all assignments in a transaction
     await this.prisma.$transaction([
