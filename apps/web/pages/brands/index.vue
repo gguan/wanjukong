@@ -1,4 +1,9 @@
 <script setup lang="ts">
+useSeoMeta({
+  title: 'Brands — Wanjukong',
+  description: 'Browse collectible figure brands including Hot Toys, DAM Toys, Threezero and more.',
+})
+
 const { fetchBrands } = useBrands();
 
 const { data: brands, status } = useAsyncData('brands', fetchBrands);

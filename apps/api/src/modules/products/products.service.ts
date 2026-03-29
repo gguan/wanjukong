@@ -24,22 +24,46 @@ export interface ProductFilters {
   category?: string;
   scale?: string;
   availability?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
 }
 
 @Injectable()
 export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll(brandIds?: string[]) {
+  async findAll(
+    brandIds?: string[],
+    query?: { search?: string; status?: string; page?: number; limit?: number },
+  ) {
     const where: Prisma.ProductWhereInput = {};
     if (brandIds) {
       where.brandId = { in: brandIds };
     }
-    return this.prisma.product.findMany({
-      where,
-      include: includeRelations,
-      orderBy: { createdAt: 'desc' },
-    });
+    if (query?.search) {
+      where.name = { contains: query.search, mode: 'insensitive' };
+    }
+    if (query?.status) {
+      where.status = query.status as any;
+    }
+
+    const page = Math.max(1, query?.page || 1);
+    const limit = Math.min(100, Math.max(1, query?.limit || 50));
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.prisma.product.findMany({
+        where,
+        include: includeRelations,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.product.count({ where }),
+    ]);
+
+    return { data, total, page, limit };
   }
 
   findOne(id: string) {
@@ -145,24 +169,38 @@ export class ProductsService {
     if (filters.scale) {
       where.scale = filters.scale;
     }
-    const products = await this.prisma.product.findMany({
-      where,
-      include: {
-        ...includeRelations,
-        variants: {
-          orderBy: { sortOrder: 'asc' },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    const views = products.map((product) => toPublicProductView(product));
-    if (!filters.availability) {
-      return views;
+    if (filters.search) {
+      where.name = { contains: filters.search, mode: 'insensitive' };
     }
-    return views.filter(
-      (product) => product.displayAvailability === filters.availability,
-    );
+
+    const page = Math.max(1, filters.page || 1);
+    const limit = Math.min(100, Math.max(1, filters.limit || 20));
+    const skip = (page - 1) * limit;
+
+    const [products, total] = await Promise.all([
+      this.prisma.product.findMany({
+        where,
+        include: {
+          ...includeRelations,
+          variants: {
+            orderBy: { sortOrder: 'asc' },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.product.count({ where }),
+    ]);
+
+    let views = products.map((product) => toPublicProductView(product));
+    if (filters.availability) {
+      views = views.filter(
+        (product) => product.displayAvailability === filters.availability,
+      );
+    }
+
+    return { data: views, total, page, limit };
   }
 
   async findBySlug(slug: string) {

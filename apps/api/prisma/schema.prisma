@@ -270,6 +270,27 @@ model PaymentIntent {
   @@index([status])
 }
 
+// ─── Coupon Model ─────────────────────────────────────────
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+model Coupon {
+  id             String       @id @default(cuid())
+  code           String       @unique
+  discountType   DiscountType
+  discountValue  Int          // percent (0-100) or cents
+  minOrderCents  Int          @default(0)
+  maxUsageTimes  Int?         // null = unlimited
+  usedCount      Int          @default(0)
+  isActive       Boolean      @default(true)
+  expiresAt      DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
 // ─── Order Enums ──────────────────────────────────────────
 
 enum OrderStatus {
@@ -312,6 +333,8 @@ model Order {
 
   // Pricing
   currency              String        @default("USD")
+  couponCode            String?
+  discountCents         Int         @default(0)
   subtotalPriceCents    Int
   totalPriceCents       Int
 

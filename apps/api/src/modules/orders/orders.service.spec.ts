@@ -2,7 +2,13 @@ import { BadRequestException } from '@nestjs/common';
 import { describe, expect, it, vi } from 'vitest';
 import { OrdersService } from './orders.service';
 import type { PrismaService } from '../../prisma/prisma.service';
+import type { MailerService } from '../mailer/mailer.service';
 import type { CreateBuyNowOrderDto } from './dto/create-buy-now-order.dto';
+
+const mockMailer = {
+  sendOrderConfirmationEmail: vi.fn().mockResolvedValue(undefined),
+  sendOrderStatusUpdateEmail: vi.fn().mockResolvedValue(undefined),
+} as unknown as MailerService;
 
 describe('OrdersService.createBuyNow', () => {
   it('rejects preorder purchases outside the preorder window', async () => {
@@ -46,7 +52,7 @@ describe('OrdersService.createBuyNow', () => {
       ),
     } as unknown as PrismaService;
 
-    const service = new OrdersService(prisma);
+    const service = new OrdersService(prisma, mockMailer);
 
     await expect(
       service.createBuyNow({
@@ -103,7 +109,7 @@ describe('OrdersService.createBuyNow', () => {
       ),
     } as unknown as PrismaService;
 
-    const service = new OrdersService(prisma);
+    const service = new OrdersService(prisma, mockMailer);
 
     await service.createBuyNow({
       productId: 'product-1',

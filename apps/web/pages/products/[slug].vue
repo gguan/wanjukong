@@ -111,13 +111,22 @@ const isPurchasable = computed(() => {
 });
 
 const isPreorder = computed(() => product.value?.saleType === 'PREORDER');
+const isSoldOut = computed(() => product.value?.displayAvailability === 'SOLD_OUT');
 
 const shipQuarter = computed(() => {
-  if (!product.value?.estimatedShipAt) return null;
-  const d = new Date(product.value.estimatedShipAt);
+  const iso = selectedVariant.value?.estimatedShipAt || product.value?.estimatedShipAt;
+  if (!iso) return null;
+  const d = new Date(iso);
   const q = Math.ceil((d.getMonth() + 1) / 3);
   return `Q${q} ${d.getFullYear()}`;
 });
+
+function variantShipHint(v: ProductVariant): string | null {
+  if (!v.estimatedShipAt) return null;
+  const d = new Date(v.estimatedShipAt);
+  const q = Math.ceil((d.getMonth() + 1) / 3);
+  return `Ships Q${q} ${d.getFullYear()}`;
+}
 
 // ─── Cart ─────────────────────────────────────────────────
 const { addToCart } = useCart();
@@ -140,14 +149,26 @@ function handleAddToCart() {
   setTimeout(() => { addedToCart.value = false; }, 2000);
 }
 
+// ─── SEO ──────────────────────────────────────────────────
+watchEffect(() => {
+  if (!product.value) return;
+  useSeoMeta({
+    title: `${product.value.name} — Wanjukong`,
+    description: product.value.description?.slice(0, 160) || `${product.value.name} by ${product.value.brand?.name}. ${product.value.scale || ''} scale collectible figure.`,
+    ogTitle: product.value.name,
+    ogDescription: product.value.description?.slice(0, 160) || `${product.value.name} by ${product.value.brand?.name}`,
+    ogImage: product.value.imageUrl || undefined,
+  })
+})
+
 // ─── Related Products ────────────────────────────────────
 const relatedProducts = ref<Product[]>([]);
 
 watch(product, async (p) => {
   if (!p) return;
   try {
-    const all = await fetchProducts({ brand: p.brand.slug });
-    relatedProducts.value = all.filter((item) => item.slug !== p.slug).slice(0, 4);
+    const result = await fetchProducts({ brand: p.brand.slug });
+    relatedProducts.value = result.data.filter((item) => item.slug !== p.slug).slice(0, 4);
   } catch {
     relatedProducts.value = [];
   }
@@ -198,6 +219,16 @@ function formatDate(iso: string | null | undefined) {
     </div>
 
     <template v-else>
+      <!-- Breadcrumb -->
+      <div class="pdp-breadcrumb">
+        <UiBreadcrumb :items="[
+          { label: 'Home', to: '/' },
+          { label: 'Products', to: '/products' },
+          { label: product.brand.name, to: `/brands/${product.brand.slug}` },
+          { label: product.name },
+        ]" />
+      </div>
+
       <!-- ═══ HERO: stacked images left + info right ═══ -->
       <section class="pdp-hero">
         <div class="hero-inner">
@@ -231,6 +262,9 @@ function formatDate(iso: string | null | undefined) {
               <!-- Price -->
               <p class="panel-price">{{ displayPrice }}</p>
 
+              <!-- Sold Out banner -->
+              <div v-if="isSoldOut" class="panel-sold-out">Sold Out</div>
+
               <!-- Subtitle -->
               <p v-if="selectedVariant?.subtitle" class="panel-subtitle">
                 {{ selectedVariant.subtitle }}
@@ -251,9 +285,15 @@ function formatDate(iso: string | null | undefined) {
                     <span class="pill-name">{{ v.name }}</span>
                     <span class="pill-price">${{ (v.priceCents / 100).toFixed(2) }}</span>
                     <span v-if="v.isSoldOut" class="pill-sold">Sold Out</span>
+                    <span v-else-if="variantShipHint(v)" class="pill-ship">{{ variantShipHint(v) }}</span>
                   </button>
                 </div>
               </div>
+
+              <!-- Spec summary -->
+              <p v-if="selectedVariant?.specSummary" class="panel-spec-summary">
+                {{ selectedVariant.specSummary }}
+              </p>
 
               <!-- Preorder summary -->
               <div v-if="isPreorder" class="panel-preorder">
@@ -313,6 +353,9 @@ function formatDate(iso: string | null | undefined) {
               <!-- ─── Divider ─── -->
               <hr class="panel-divider" />
 
+              <!-- ─── Product description (plain text, preserves line breaks) ─── -->
+              <p v-if="product.description" class="panel-product-description">{{ product.description }}</p>
+
               <!-- ─── Specifications (rich text) ─── -->
               <!-- eslint-disable-next-line vue/no-v-html -->
               <div v-if="selectedVariant?.specifications" class="panel-description" v-html="selectedVariant.specifications" />
@@ -369,6 +412,19 @@ function formatDate(iso: string | null | undefined) {
 .pdp-page {
   background: #fff;
 }
+.pdp-breadcrumb {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 16px 24px 0;
+}
+
+@media (min-width: 1024px) {
+  .pdp-breadcrumb {
+    padding-left: 160px;
+    padding-right: 160px;
+  }
+}
+
 .error-link {
   display: inline-block;
   margin-top: 16px;
@@ -602,6 +658,38 @@ function formatDate(iso: string | null | undefined) {
   letter-spacing: 0.04em;
 }
 
+/* Sold Out banner */
+.panel-sold-out {
+  font-family: 'Jost', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #991b1b;
+  background: #fee2e2;
+  padding: 8px 14px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+/* Spec summary */
+.panel-spec-summary {
+  font-family: 'Jost', sans-serif;
+  font-size: 0.8rem;
+  color: #666;
+  line-height: 1.5;
+  margin: -8px 0 16px;
+}
+
+/* Variant ship hint */
+.pill-ship {
+  font-size: 0.6rem;
+  color: #92400e;
+  display: block;
+  margin-top: 3px;
+  letter-spacing: 0.02em;
+}
+
 /* Preorder */
 .panel-preorder {
   margin-bottom: 16px;
@@ -727,6 +815,16 @@ function formatDate(iso: string | null | undefined) {
   border: none;
   border-top: 1px solid #eee;
   margin: 24px 0;
+}
+
+/* Product description (plain text) */
+.panel-product-description {
+  font-family: 'Jost', sans-serif;
+  font-size: 0.9rem;
+  line-height: 1.75;
+  color: #444;
+  white-space: pre-line;
+  margin: 0 0 20px;
 }
 
 /* ═══════════════════════════════════════════════════════════
