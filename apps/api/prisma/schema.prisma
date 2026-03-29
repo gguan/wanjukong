@@ -168,6 +168,8 @@ model Customer {
   passwordHash    String
   name            String?
   phone           String?
+  wechatOpenId    String?   @unique
+  authProvider    String    @default("email") // "email" | "wechat"
   emailVerifiedAt DateTime?
   isActive        Boolean   @default(true)
   failedAttempts  Int       @default(0)
@@ -238,6 +240,7 @@ model CustomerPasswordReset {
 
 enum PaymentProvider {
   PAYPAL
+  WECHAT_PAY
 }
 
 enum PaymentIntentStatus {
@@ -249,9 +252,15 @@ enum PaymentIntentStatus {
 }
 
 model PaymentIntent {
-  id               String              @id @default(cuid())
-  provider         PaymentProvider     @default(PAYPAL)
-  paypalOrderId    String?             @unique
+  id                  String              @id @default(cuid())
+  provider            PaymentProvider     @default(PAYPAL)
+  // PayPal
+  paypalOrderId       String?             @unique
+  // WeChat Pay
+  wechatPrepayId      String?
+  wechatOutTradeNo    String?             @unique
+  wechatTransactionId String?
+
   customerId       String?
   email            String?
   currency         String              @default("USD")
@@ -267,6 +276,7 @@ model PaymentIntent {
   order    Order?    @relation(fields: [orderId], references: [id])
 
   @@index([paypalOrderId])
+  @@index([wechatOutTradeNo])
   @@index([status])
 }
 
@@ -340,6 +350,7 @@ model Order {
 
   // Payment
   paypalOrderId         String?
+  wechatTransactionId   String?
 
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt

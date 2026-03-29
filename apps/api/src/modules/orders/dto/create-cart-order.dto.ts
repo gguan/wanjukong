@@ -22,6 +22,7 @@ export class CreateCartOrderDto {
 
   currency?: string;
   paypalOrderId?: string;
+  wechatTransactionId?: string;
   customerId?: string;
   guestAccessTokenHash?: string;
 }

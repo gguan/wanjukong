@@ -221,7 +221,8 @@ export class OrdersService {
           subtotalPriceCents: subtotalCents,
           totalPriceCents: subtotalCents,
           paypalOrderId: dto.paypalOrderId,
-          paymentStatus: dto.paypalOrderId ? 'PAID' : 'UNPAID',
+          wechatTransactionId: dto.wechatTransactionId,
+          paymentStatus: (dto.paypalOrderId || dto.wechatTransactionId) ? 'PAID' : 'UNPAID',
           items: {
             create: dto.items.map((item) => {
               const v = variants.find((v) => v.id === item.variantId)!;
