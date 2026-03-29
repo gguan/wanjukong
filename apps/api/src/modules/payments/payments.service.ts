@@ -7,6 +7,7 @@ import {
 import * as crypto from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { OrdersService } from '../orders/orders.service';
+import { MailerService } from '../mailer/mailer.service';
 
 interface CartItemInput {
   productId: string;
@@ -43,6 +44,7 @@ export class PaymentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly ordersService: OrdersService,
+    private readonly mailerService: MailerService,
   ) {}
 
   private get baseUrl() {
@@ -270,6 +272,17 @@ export class PaymentsService {
       where: { id: pi.id },
       data: { status: 'ORDER_CREATED', orderId: order.id },
     });
+
+    // 8. Send order confirmation email (non-blocking)
+    this.mailerService.sendOrderConfirmationEmail({
+      email: input.email,
+      name: input.fullName,
+      orderNo: order.orderNo,
+      items: order.items,
+      totalPriceCents: order.totalPriceCents,
+      currency: order.currency,
+      guestAccessToken,
+    }).catch((err) => this.logger.error('Failed to send order confirmation email', err));
 
     return {
       orderNo: order.orderNo,

@@ -13,13 +13,40 @@ interface Product {
   category: { name: string };
 }
 
+// Search / filter state
+const search = ref('');
+const statusFilter = ref('');
+const page = ref(1);
+const limit = 20;
+
+const loading = ref(false);
 const products = ref<Product[]>([]);
-const loading = ref(true);
+const total = ref(0);
+
+const totalPages = computed(() => Math.ceil(total.value / limit) || 1);
 
 async function load() {
   loading.value = true;
-  products.value = await api.get('/api/admin/products');
+  const params = new URLSearchParams();
+  if (search.value) params.set('search', search.value);
+  if (statusFilter.value) params.set('status', statusFilter.value);
+  params.set('page', String(page.value));
+  params.set('limit', String(limit));
+  const qs = params.toString();
+  const result = await api.get(`/api/admin/products?${qs}`);
+  products.value = result.data || result;
+  total.value = result.total ?? products.value.length;
   loading.value = false;
+}
+
+function onSearch() {
+  page.value = 1;
+  load();
+}
+
+function goToPage(p: number) {
+  page.value = p;
+  load();
 }
 
 async function remove(id: string) {
@@ -29,6 +56,13 @@ async function remove(id: string) {
     await load();
   } catch {}
 }
+
+const statusOptions = [
+  { label: '全部状态', value: '' },
+  { label: '草稿', value: 'DRAFT' },
+  { label: '上架', value: 'ACTIVE' },
+  { label: '下架', value: 'INACTIVE' },
+];
 
 onMounted(load);
 </script>
@@ -42,6 +76,33 @@ onMounted(load);
         </NuxtLink>
       </template>
     </AdminPageHeader>
+
+    <!-- Filters -->
+    <div class="filters">
+      <ElInput
+        v-model="search"
+        placeholder="搜索商品名称..."
+        clearable
+        style="width: 240px"
+        @keyup.enter="onSearch"
+        @clear="onSearch"
+      >
+        <template #prefix>
+          <ElIcon><Search /></ElIcon>
+        </template>
+      </ElInput>
+
+      <ElSelect v-model="statusFilter" style="width: 160px" @change="onSearch">
+        <ElOption
+          v-for="opt in statusOptions"
+          :key="opt.value"
+          :label="opt.label"
+          :value="opt.value"
+        />
+      </ElSelect>
+
+      <ElButton @click="onSearch">查询</ElButton>
+    </div>
 
     <ElTable v-loading="loading" :data="products" stripe>
       <ElTableColumn prop="name" label="名称" min-width="200" />
@@ -73,5 +134,31 @@ onMounted(load);
         <ElEmpty description="暂无商品" />
       </template>
     </ElTable>
+
+    <!-- Pagination -->
+    <div v-if="totalPages > 1" class="pagination">
+      <ElPagination
+        :current-page="page"
+        :page-size="limit"
+        :total="total"
+        layout="prev, pager, next, total"
+        @current-change="goToPage"
+      />
+    </div>
   </div>
 </template>
+
+<style scoped>
+.filters {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.pagination {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+</style>

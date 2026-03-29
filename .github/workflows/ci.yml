@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-build:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: wanjukong_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Generate Prisma client
+        run: npx prisma generate --schema=apps/api/prisma/schema.prisma
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Type check API
+        working-directory: apps/api
+        run: npx tsc --noEmit
+        continue-on-error: true
+
+      - name: Build API
+        run: pnpm --filter api build
+
+      - name: Build Web
+        run: pnpm --filter web build
+        env:
+          NUXT_PUBLIC_API_BASE: http://localhost:3001
+          NUXT_PUBLIC_PAYPAL_CLIENT_ID: dummy
+
+      - name: Build Admin
+        run: pnpm --filter admin build
+        env:
+          NUXT_PUBLIC_API_BASE_URL: http://localhost:3001

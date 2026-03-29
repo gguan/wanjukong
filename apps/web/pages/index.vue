@@ -1,12 +1,20 @@
 <script setup lang="ts">
 const APP_NAME = 'wanjukong';
+
+useSeoMeta({
+  title: 'Wanjukong — Premium Collectible Figures',
+  description: 'Your destination for Hot Toys, DAM, Threezero and premium collectible action figures. Shop 1/6, 1/4, 1/12 scale figures.',
+  ogTitle: 'Wanjukong — Premium Collectible Figures',
+  ogDescription: 'Shop premium collectible figures from Hot Toys, DAM, Threezero and more.',
+  ogType: 'website',
+})
 const { fetchBrands } = useBrands();
 const { fetchProducts } = useProducts();
 
 const { data: brands } = useAsyncData('home-brands', fetchBrands);
 const { data: products } = useAsyncData('home-products', () => fetchProducts());
 
-const featuredProducts = computed(() => (products.value ?? []).slice(0, 4));
+const featuredProducts = computed(() => (products.value?.data ?? []).slice(0, 4));
 </script>
 
 <template>

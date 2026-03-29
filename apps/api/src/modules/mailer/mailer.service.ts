@@ -2,6 +2,8 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { getVerificationEmailHtml } from './templates/customer-email-verification';
 import { getPasswordResetEmailHtml } from './templates/customer-password-reset';
+import { getOrderConfirmationEmailHtml } from './templates/order-confirmation';
+import { getOrderStatusUpdateEmailHtml } from './templates/order-status-update';
 
 @Injectable()
 export class MailerService implements OnModuleInit {
@@ -78,6 +80,81 @@ export class MailerService implements OnModuleInit {
       from: this.fromAddress,
       to: email,
       subject: 'Reset your password',
+      html,
+    });
+  }
+
+  async sendOrderConfirmationEmail(params: {
+    email: string;
+    name: string | null;
+    orderNo: string;
+    items: Array<{
+      productNameSnapshot: string;
+      variantNameSnapshot?: string | null;
+      skuSnapshot?: string | null;
+      quantity: number;
+      unitPriceCents: number;
+      totalPriceCents: number;
+    }>;
+    totalPriceCents: number;
+    currency: string;
+    guestAccessToken?: string;
+  }): Promise<void> {
+    const baseUrl = process.env.APP_BASE_URL || 'http://localhost:3000';
+    const orderUrl = params.guestAccessToken
+      ? `${baseUrl}/orders/${params.orderNo}?token=${params.guestAccessToken}`
+      : `${baseUrl}/account/orders/${params.orderNo}`;
+
+    if (!this.transporter) {
+      this.logger.log(`[DEV] Order confirmation email for ${params.email} — Order ${params.orderNo}`);
+      return;
+    }
+
+    const html = getOrderConfirmationEmailHtml({
+      name: params.name,
+      orderNo: params.orderNo,
+      items: params.items,
+      totalPriceCents: params.totalPriceCents,
+      currency: params.currency,
+      orderUrl,
+    });
+
+    await this.transporter.sendMail({
+      from: this.fromAddress,
+      to: params.email,
+      subject: `Order Confirmed — ${params.orderNo}`,
+      html,
+    });
+  }
+
+  async sendOrderStatusUpdateEmail(params: {
+    email: string;
+    name: string | null;
+    orderNo: string;
+    status: string;
+    guestAccessToken?: string;
+  }): Promise<void> {
+    const baseUrl = process.env.APP_BASE_URL || 'http://localhost:3000';
+    const orderUrl = params.guestAccessToken
+      ? `${baseUrl}/orders/${params.orderNo}?token=${params.guestAccessToken}`
+      : `${baseUrl}/account/orders/${params.orderNo}`;
+
+    if (!this.transporter) {
+      this.logger.log(`[DEV] Order status update email for ${params.email} — Order ${params.orderNo} → ${params.status}`);
+      return;
+    }
+
+    const html = getOrderStatusUpdateEmailHtml({
+      name: params.name,
+      orderNo: params.orderNo,
+      status: params.status,
+      orderUrl,
+    });
+
+    await this.transporter.sendMail({
+      from: this.fromAddress,
+      to: params.email,
+      subject: `Order Update — ${params.orderNo}`,
       html,
     });
   }

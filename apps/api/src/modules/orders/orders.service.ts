@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { ProductStatus, Prisma } from '@prisma/client';
@@ -10,6 +11,7 @@ import { deriveProductDisplayAvailability } from '../../utils/product-sale-state
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateBuyNowOrderDto } from './dto/create-buy-now-order.dto';
 import { CreateCartOrderDto } from './dto/create-cart-order.dto';
+import { MailerService } from '../mailer/mailer.service';
 
 export interface FindAllOrdersQuery {
   page?: number;
@@ -21,7 +23,12 @@ export interface FindAllOrdersQuery {
 
 @Injectable()
 export class OrdersService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(OrdersService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailerService: MailerService,
+  ) {}
 
   /**
    * Create a single-product "Buy Now" order using a specific variant.
@@ -301,6 +308,43 @@ export class OrdersService {
   }
 
   /**
+   * Admin: dashboard stats — totals, breakdowns, low stock, recent orders.
+   */
+  async getDashboardStats() {
+    const [totalOrders, totalRevenue, byStatus, byPaymentStatus, lowStockVariants, recentOrders] = await Promise.all([
+      this.prisma.order.count(),
+      this.prisma.order.aggregate({ _sum: { totalPriceCents: true }, where: { paymentStatus: 'PAID' } }),
+      this.prisma.order.groupBy({ by: ['status'], _count: true }),
+      this.prisma.order.groupBy({ by: ['paymentStatus'], _count: true }),
+      this.prisma.productVariant.findMany({
+        where: { stock: { gt: 0, lte: 5 }, status: 'ACTIVE' },
+        include: { product: { include: { brand: true } } },
+        orderBy: { stock: 'asc' },
+        take: 10,
+      }),
+      this.prisma.order.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        include: { items: true },
+      }),
+    ]);
+
+    const statusCounts: Record<string, number> = {};
+    for (const row of byStatus) statusCounts[row.status] = row._count;
+    const paymentStatusCounts: Record<string, number> = {};
+    for (const row of byPaymentStatus) paymentStatusCounts[row.paymentStatus] = row._count;
+
+    return {
+      totalOrders,
+      totalRevenueCents: totalRevenue._sum.totalPriceCents || 0,
+      byStatus: statusCounts,
+      byPaymentStatus: paymentStatusCounts,
+      lowStockVariants,
+      recentOrders,
+    };
+  }
+
+  /**
    * Admin: get order statistics by status.
    */
   async getOrderStats() {
@@ -352,16 +396,25 @@ export class OrdersService {
     const order = await this.prisma.order.findUnique({ where: { id } });
     if (!order) throw new NotFoundException('Order not found');
 
-    // Validate status transition
     if (order.status === 'CANCELLED') {
       throw new BadRequestException('Cannot change status of a cancelled order');
     }
 
-    return this.prisma.order.update({
+    const updated = await this.prisma.order.update({
       where: { id },
       data: { status: status as any },
       include: { items: true },
     });
+
+    // Send notification email (fire-and-forget)
+    this.mailerService.sendOrderStatusUpdateEmail({
+      email: updated.email,
+      name: updated.fullName,
+      orderNo: updated.orderNo,
+      status,
+    }).catch(() => {});
+
+    return updated;
   }
 
   /**
@@ -404,6 +457,41 @@ export class OrdersService {
     }
 
     return order;
+  }
+
+  /**
+   * Validate a coupon code against a subtotal.
+   */
+  async validateCoupon(code: string, subtotalCents: number) {
+    const coupon = await this.prisma.coupon.findUnique({ where: { code: code.toUpperCase() } });
+
+    if (!coupon || !coupon.isActive) {
+      throw new BadRequestException('Invalid or expired coupon code');
+    }
+    if (coupon.expiresAt && coupon.expiresAt < new Date()) {
+      throw new BadRequestException('This coupon has expired');
+    }
+    if (coupon.maxUsageTimes !== null && coupon.usedCount >= coupon.maxUsageTimes) {
+      throw new BadRequestException('This coupon has reached its usage limit');
+    }
+    if (subtotalCents < coupon.minOrderCents) {
+      const minAmount = `$${(coupon.minOrderCents / 100).toFixed(2)}`;
+      throw new BadRequestException(`Minimum order amount for this coupon is ${minAmount}`);
+    }
+
+    let discountCents: number;
+    if (coupon.discountType === 'PERCENTAGE') {
+      discountCents = Math.round(subtotalCents * coupon.discountValue / 100);
+    } else {
+      discountCents = Math.min(coupon.discountValue, subtotalCents);
+    }
+
+    return {
+      code: coupon.code,
+      discountType: coupon.discountType,
+      discountValue: coupon.discountValue,
+      discountCents,
+    };
   }
 
   // ── Helpers ──────────────────────────────────────────────

@@ -17,8 +17,19 @@ export class ProductsPublicController {
     @Query('category') category?: string,
     @Query('scale') scale?: string,
     @Query('availability') availability?: string,
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
-    return this.productsService.findAllActive({ brand, category, scale, availability });
+    return this.productsService.findAllActive({
+      brand,
+      category,
+      scale,
+      availability,
+      search,
+      page: page ? parseInt(page, 10) : undefined,
+      limit: limit ? parseInt(limit, 10) : undefined,
+    });
   }
 
   @Get('variants/:variantId/stock')

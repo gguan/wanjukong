@@ -32,6 +32,11 @@ export class AdminOrdersController {
     return this.ordersService.getOrderStats();
   }
 
+  @Get('dashboard')
+  getDashboard() {
+    return this.ordersService.getDashboardStats();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.ordersService.findOne(id);

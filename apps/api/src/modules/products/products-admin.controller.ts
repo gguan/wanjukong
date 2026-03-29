@@ -8,6 +8,7 @@ import {
   Param,
   Body,
   Req,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
@@ -32,9 +33,20 @@ export class ProductsAdminController {
   ) {}
 
   @Get()
-  findAll(@Req() req: Request) {
+  findAll(
+    @Req() req: Request,
+    @Query('search') search?: string,
+    @Query('status') status?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
     const allowedBrandIds = (req as any).allowedBrandIds;
-    return this.productsService.findAll(allowedBrandIds);
+    return this.productsService.findAll(allowedBrandIds, {
+      search,
+      status,
+      page: page ? parseInt(page, 10) : undefined,
+      limit: limit ? parseInt(limit, 10) : undefined,
+    });
   }
 
   @Get(':id')

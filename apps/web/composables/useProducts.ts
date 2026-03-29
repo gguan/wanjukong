@@ -21,6 +21,8 @@ export interface ProductVariant {
   isDefault: boolean;
   sortOrder: number;
   coverImageUrl: string | null;
+  availabilityType: string | null;
+  estimatedShipAt: string | null;
   isPurchasable: boolean;
   isSoldOut: boolean;
 }
@@ -56,6 +58,13 @@ export interface Category {
   sortOrder: number;
 }
 
+export interface PaginatedProducts {
+  data: Product[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export function useProducts() {
   const { get } = usePublicApi();
 
@@ -67,7 +76,7 @@ export function useProducts() {
       }
     }
     const qs = params.toString();
-    return get<Product[]>(`/public/products${qs ? `?${qs}` : ''}`);
+    return get<PaginatedProducts>(`/public/products${qs ? `?${qs}` : ''}`);
   }
 
   function fetchProductBySlug(slug: string) {

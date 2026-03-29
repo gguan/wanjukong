@@ -56,8 +56,41 @@ const unitPrice = computed(() => {
   return 0;
 });
 
+const subtotalCents = computed(() => {
+  if (selectedVariant.value) return selectedVariant.value.priceCents * quantity.value;
+  return 0;
+});
 const subtotal = computed(() => unitPrice.value * quantity.value);
-const total = computed(() => subtotal.value);
+
+const couponInput = ref('')
+const appliedCoupon = ref<{ code: string; discountCents: number } | null>(null)
+const couponError = ref('')
+const applyingCoupon = ref(false)
+
+async function applyCoupon() {
+  couponError.value = ''
+  applyingCoupon.value = true
+  try {
+    const { post } = usePublicApi()
+    const result = await post<{ code: string; discountCents: number }>('/public/orders/validate-coupon', {
+      code: couponInput.value.trim(),
+      subtotalCents: subtotalCents.value,
+    })
+    appliedCoupon.value = result
+  } catch (e: any) {
+    couponError.value = e?.data?.message || 'Invalid coupon code'
+  } finally {
+    applyingCoupon.value = false
+  }
+}
+
+function removeCoupon() {
+  appliedCoupon.value = null
+  couponInput.value = ''
+  couponError.value = ''
+}
+
+const total = computed(() => subtotal.value - (appliedCoupon.value ? appliedCoupon.value.discountCents / 100 : 0));
 
 function formatPrice(val: number) {
   return `$${val.toFixed(2)}`;
@@ -195,6 +228,7 @@ async function initPayPal() {
             quantity: quantity.value,
           }],
           currency: 'USD',
+          couponCode: appliedCoupon.value?.code || undefined,
         }),
       });
       if (!res.ok) {
@@ -364,6 +398,33 @@ async function initPayPal() {
             </div>
           </section>
 
+          <!-- Coupon -->
+          <section class="form-section">
+            <h2 class="section-title">Promo Code</h2>
+            <div class="coupon-row">
+              <input
+                v-model="couponInput"
+                type="text"
+                class="coupon-input"
+                placeholder="Enter promo code"
+                :disabled="!!appliedCoupon"
+              />
+              <button
+                v-if="!appliedCoupon"
+                class="coupon-btn"
+                :disabled="!couponInput.trim() || applyingCoupon"
+                @click="applyCoupon"
+              >
+                {{ applyingCoupon ? '...' : 'Apply' }}
+              </button>
+              <button v-else class="coupon-remove" @click="removeCoupon">Remove</button>
+            </div>
+            <p v-if="couponError" class="coupon-error">{{ couponError }}</p>
+            <p v-if="appliedCoupon" class="coupon-success">
+              ✓ {{ appliedCoupon.code }} — saving ${{ (appliedCoupon.discountCents / 100).toFixed(2) }}
+            </p>
+          </section>
+
           <!-- Payment -->
           <section class="form-section">
             <h2 class="section-title">Payment</h2>
@@ -420,6 +481,10 @@ async function initPayPal() {
           <div class="summary-line">
             <span>Subtotal</span>
             <span>{{ formatPrice(subtotal) }}</span>
+          </div>
+          <div v-if="appliedCoupon" class="summary-line discount-line">
+            <span>Discount ({{ appliedCoupon.code }})</span>
+            <span>-{{ formatPrice(appliedCoupon.discountCents / 100) }}</span>
           </div>
           <div class="summary-line">
             <span>Shipping</span>
@@ -747,6 +812,15 @@ async function initPayPal() {
   color: #111;
   text-decoration: underline;
 }
+
+.coupon-row { display: flex; gap: 8px; }
+.coupon-input { flex: 1; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.9rem; }
+.coupon-btn { padding: 10px 18px; background: #111; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 500; }
+.coupon-btn:disabled { background: #ccc; cursor: not-allowed; }
+.coupon-remove { padding: 10px 14px; background: none; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; font-size: 0.85rem; color: #666; }
+.coupon-error { color: #dc2626; font-size: 0.8rem; margin: 6px 0 0; }
+.coupon-success { color: #16a34a; font-size: 0.85rem; margin: 6px 0 0; font-weight: 500; }
+.discount-line { color: #16a34a; }
 
 .back-link {
   display: inline-block;
