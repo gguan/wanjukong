@@ -336,6 +336,101 @@ export class StorefrontAuthService {
     return { customer: this.sanitizeCustomer(customer) };
   }
 
+  // ─── WeChat Access Token (cached) ──────────────────────
+
+  private wechatAccessToken: { value: string; expiresAt: number } | null = null;
+
+  private async getWechatAccessToken(): Promise<string> {
+    if (
+      this.wechatAccessToken &&
+      this.wechatAccessToken.expiresAt > Date.now() + 60_000
+    ) {
+      return this.wechatAccessToken.value;
+    }
+
+    const appId = process.env.WECHAT_PAY_APP_ID;
+    const appSecret = process.env.WECHAT_APP_SECRET;
+
+    if (!appId || !appSecret) {
+      throw new InternalServerErrorException(
+        'WeChat login is not configured on this server',
+      );
+    }
+
+    const res = await fetch(
+      `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${appId}&secret=${appSecret}`,
+    );
+    const data = (await res.json()) as {
+      access_token?: string;
+      expires_in?: number;
+      errcode?: number;
+      errmsg?: string;
+    };
+
+    if (!data.access_token) {
+      throw new InternalServerErrorException(
+        `Failed to get WeChat access_token: ${data.errmsg}`,
+      );
+    }
+
+    this.wechatAccessToken = {
+      value: data.access_token,
+      expiresAt: Date.now() + (data.expires_in ?? 7200) * 1000,
+    };
+
+    return this.wechatAccessToken.value;
+  }
+
+  // ─── Bind Phone ─────────────────────────────────────────
+
+  /**
+   * Exchange a getPhoneNumber code for the user's real phone number
+   * and persist it on their Customer record.
+   *
+   * Mini program flow:
+   *   <button open-type="getPhoneNumber" bindgetphonenumber="onGetPhone">
+   *   onGetPhone(e) → send e.detail.code to this endpoint
+   */
+  async bindWechatPhone(customerId: string, code: string) {
+    const accessToken = await this.getWechatAccessToken();
+
+    const res = await fetch(
+      `https://api.weixin.qq.com/wxa/business/getuserphonenumber?access_token=${accessToken}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      },
+    );
+
+    const data = (await res.json()) as {
+      errcode?: number;
+      errmsg?: string;
+      phone_info?: {
+        phoneNumber: string;
+        purePhoneNumber: string;
+        countryCode: string;
+      };
+    };
+
+    if (data.errcode || !data.phone_info) {
+      this.logger.warn(
+        `WeChat getuserphonenumber failed: ${data.errmsg} (${data.errcode})`,
+      );
+      throw new BadRequestException('Failed to retrieve phone number from WeChat');
+    }
+
+    const { countryCode, purePhoneNumber } = data.phone_info;
+    const phone = `+${countryCode}${purePhoneNumber}`;
+
+    await this.prisma.customer.update({
+      where: { id: customerId },
+      data: { phone },
+    });
+
+    return { phone };
+  }
+
   private async exchangeWechatCode(code: string): Promise<string> {
     const appId = process.env.WECHAT_PAY_APP_ID;
     const appSecret = process.env.WECHAT_APP_SECRET;
