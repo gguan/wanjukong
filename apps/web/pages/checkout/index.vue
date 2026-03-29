@@ -132,6 +132,20 @@ async function initPayPal() {
       height: 48,
     },
     async createOrder() {
+      // Pre-check stock for all items before creating PayPal order
+      for (const item of items.value) {
+        const stockRes = await fetch(
+          `${apiBase}/api/public/products/variants/${item.variantId}/stock`,
+          { credentials: 'include' },
+        );
+        if (stockRes.ok) {
+          const stockData = await stockRes.json();
+          if (!stockData.available || stockData.stock < item.quantity) {
+            throw new Error(`"${item.productName}" is no longer available in the requested quantity.`);
+          }
+        }
+      }
+
       const res = await fetch(`${apiBase}/api/public/payments/paypal/create-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

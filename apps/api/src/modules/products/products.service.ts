@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, ProductStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -177,5 +177,24 @@ export class ProductsService {
     });
 
     return product ? toPublicProductView(product) : null;
+  }
+
+  /**
+   * Check stock availability for a specific variant.
+   */
+  async checkVariantStock(variantId: string) {
+    const variant = await this.prisma.productVariant.findUnique({
+      where: { id: variantId },
+      select: { stock: true },
+    });
+
+    if (!variant) {
+      throw new NotFoundException('Variant not found');
+    }
+
+    return {
+      available: variant.stock > 0,
+      stock: variant.stock,
+    };
   }
 }

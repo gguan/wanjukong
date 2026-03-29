@@ -6,6 +6,7 @@ export function useAdminNav() {
     { label: '品牌', to: '/brands' },
     { label: '分类', to: '/categories' },
     { label: '商品', to: '/products' },
+    { label: '订单', to: '/orders' },
     { label: '管理员', to: '/admin-users' },
   ];
 

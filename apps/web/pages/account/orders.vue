@@ -57,7 +57,7 @@ function paymentLabel(s: string) {
 }
 
 function viewOrder(orderNo: string) {
-  router.push(`/orders/${orderNo}`);
+  router.push(`/account/orders/${orderNo}`);
 }
 
 async function handleLogout() {

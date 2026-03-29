@@ -12,6 +12,15 @@ const tagType = computed(() => {
     PREORDER: '',
     SOLD_OUT: 'danger',
     COMING_SOON: 'warning',
+    // Order statuses
+    PENDING: 'warning',
+    CONFIRMED: 'success',
+    CANCELLED: 'danger',
+    // Payment statuses
+    UNPAID: 'warning',
+    PAID: 'success',
+    FAILED: 'danger',
+    REFUNDED: 'info',
   };
   return map[props.value] ?? 'info';
 });
@@ -25,6 +34,15 @@ const label = computed(() => {
     PREORDER: '预售',
     SOLD_OUT: '售罄',
     COMING_SOON: '即将发售',
+    // Order statuses
+    PENDING: '待处理',
+    CONFIRMED: '已确认',
+    CANCELLED: '已取消',
+    // Payment statuses
+    UNPAID: '未付款',
+    PAID: '已付款',
+    FAILED: '付款失败',
+    REFUNDED: '已退款',
   };
   return map[props.value] ?? props.value;
 });

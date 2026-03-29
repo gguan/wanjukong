@@ -21,6 +21,11 @@ export class ProductsPublicController {
     return this.productsService.findAllActive({ brand, category, scale, availability });
   }
 
+  @Get('variants/:variantId/stock')
+  async checkVariantStock(@Param('variantId') variantId: string) {
+    return this.productsService.checkVariantStock(variantId);
+  }
+
   @Get(':slug')
   async findBySlug(@Param('slug') slug: string) {
     const product = await this.productsService.findBySlug(slug);

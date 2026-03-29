@@ -3,6 +3,7 @@ const route = useRoute();
 const orderNo = route.params.orderNo as string;
 const token = (route.query.token as string) || undefined;
 const { fetchOrderByNo } = useOrders();
+const { isLoggedIn } = useStorefrontAuth();
 
 const { data: order, error, status } = useAsyncData(
   `order-${orderNo}`,
@@ -132,7 +133,12 @@ function paymentLabel(s: string) {
         <p v-if="order.phone">{{ order.phone }}</p>
       </div>
 
-      <NuxtLink to="/products" class="continue-link">Continue Shopping &rarr;</NuxtLink>
+      <div class="actions-row">
+        <NuxtLink to="/products" class="continue-link">Continue Shopping &rarr;</NuxtLink>
+        <ClientOnly>
+          <NuxtLink v-if="isLoggedIn" to="/account/orders" class="history-link">View Order History</NuxtLink>
+        </ClientOnly>
+      </div>
     </div>
   </div>
 </template>
@@ -326,9 +332,14 @@ function paymentLabel(s: string) {
   color: #555;
 }
 
-.continue-link {
-  display: inline-block;
+.actions-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-top: 8px;
+}
+
+.continue-link {
   font-size: 0.9rem;
   color: #111;
   text-decoration: none;
@@ -336,6 +347,17 @@ function paymentLabel(s: string) {
 }
 
 .continue-link:hover {
+  text-decoration: underline;
+}
+
+.history-link {
+  font-size: 0.85rem;
+  color: #666;
+  text-decoration: none;
+}
+
+.history-link:hover {
+  color: #111;
   text-decoration: underline;
 }
 </style>

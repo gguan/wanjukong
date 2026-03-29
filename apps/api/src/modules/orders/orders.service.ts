@@ -5,11 +5,19 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import * as crypto from 'crypto';
-import { ProductStatus } from '@prisma/client';
+import { ProductStatus, Prisma } from '@prisma/client';
 import { deriveProductDisplayAvailability } from '../../utils/product-sale-state';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateBuyNowOrderDto } from './dto/create-buy-now-order.dto';
 import { CreateCartOrderDto } from './dto/create-cart-order.dto';
+
+export interface FindAllOrdersQuery {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+  paymentStatus?: string;
+}
 
 @Injectable()
 export class OrdersService {
@@ -253,13 +261,72 @@ export class OrdersService {
   }
 
   /**
-   * Admin: list all orders (newest first).
+   * Admin: list orders with pagination, search, and filtering.
    */
-  findAll() {
-    return this.prisma.order.findMany({
-      include: { items: true },
-      orderBy: { createdAt: 'desc' },
-    });
+  async findAll(query: FindAllOrdersQuery = {}) {
+    const page = Math.max(1, query.page || 1);
+    const limit = Math.min(100, Math.max(1, query.limit || 20));
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.OrderWhereInput = {};
+
+    if (query.status) {
+      where.status = query.status as any;
+    }
+
+    if (query.paymentStatus) {
+      where.paymentStatus = query.paymentStatus as any;
+    }
+
+    if (query.search) {
+      where.OR = [
+        { orderNo: { contains: query.search, mode: 'insensitive' } },
+        { email: { contains: query.search, mode: 'insensitive' } },
+        { fullName: { contains: query.search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [data, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        include: { items: true },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+
+    return { data, total, page, limit };
+  }
+
+  /**
+   * Admin: get order statistics by status.
+   */
+  async getOrderStats() {
+    const [total, byStatus, byPaymentStatus] = await Promise.all([
+      this.prisma.order.count(),
+      this.prisma.order.groupBy({
+        by: ['status'],
+        _count: true,
+      }),
+      this.prisma.order.groupBy({
+        by: ['paymentStatus'],
+        _count: true,
+      }),
+    ]);
+
+    const statusCounts: Record<string, number> = {};
+    for (const row of byStatus) {
+      statusCounts[row.status] = row._count;
+    }
+
+    const paymentStatusCounts: Record<string, number> = {};
+    for (const row of byPaymentStatus) {
+      paymentStatusCounts[row.paymentStatus] = row._count;
+    }
+
+    return { total, byStatus: statusCounts, byPaymentStatus: paymentStatusCounts };
   }
 
   /**
@@ -268,7 +335,7 @@ export class OrdersService {
   async findOne(id: string) {
     const order = await this.prisma.order.findUnique({
       where: { id },
-      include: { items: true },
+      include: { items: true, paymentIntents: true },
     });
 
     if (!order) {
@@ -276,6 +343,39 @@ export class OrdersService {
     }
 
     return order;
+  }
+
+  /**
+   * Admin: update order status.
+   */
+  async updateOrderStatus(id: string, status: string) {
+    const order = await this.prisma.order.findUnique({ where: { id } });
+    if (!order) throw new NotFoundException('Order not found');
+
+    // Validate status transition
+    if (order.status === 'CANCELLED') {
+      throw new BadRequestException('Cannot change status of a cancelled order');
+    }
+
+    return this.prisma.order.update({
+      where: { id },
+      data: { status: status as any },
+      include: { items: true },
+    });
+  }
+
+  /**
+   * Admin: update payment status.
+   */
+  async updatePaymentStatus(id: string, paymentStatus: string) {
+    const order = await this.prisma.order.findUnique({ where: { id } });
+    if (!order) throw new NotFoundException('Order not found');
+
+    return this.prisma.order.update({
+      where: { id },
+      data: { paymentStatus: paymentStatus as any },
+      include: { items: true },
+    });
   }
 
   /**
