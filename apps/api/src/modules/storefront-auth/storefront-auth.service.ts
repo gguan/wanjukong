@@ -4,6 +4,8 @@ import {
   UnauthorizedException,
   ForbiddenException,
   BadRequestException,
+  InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import * as argon2 from 'argon2';
 import * as crypto from 'crypto';
@@ -17,6 +19,8 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class StorefrontAuthService {
+  private readonly logger = new Logger(StorefrontAuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly mailerService: MailerService,
@@ -286,6 +290,80 @@ export class StorefrontAuthService {
   logout(session: Record<string, any>) {
     delete session.customerId;
     return { loggedOut: true };
+  }
+
+  // ─── WeChat Mini Program ────────────────────────────────
+
+  /**
+   * Exchange a wx.login() code for a session.
+   * Upserts a Customer record keyed by wechatOpenId.
+   * First-time users get a placeholder email; they can add a real email later.
+   */
+  async wechatLogin(code: string, session: Record<string, any>) {
+    const openid = await this.exchangeWechatCode(code);
+
+    let customer = await this.prisma.customer.findUnique({
+      where: { wechatOpenId: openid },
+    });
+
+    if (!customer) {
+      // Auto-register: placeholder email + random unusable password
+      const placeholderEmail = `wechat_${openid}@wechat.internal`;
+      const placeholderHash = crypto.randomBytes(32).toString('hex');
+
+      customer = await this.prisma.customer.create({
+        data: {
+          wechatOpenId: openid,
+          authProvider: 'wechat',
+          email: placeholderEmail,
+          passwordHash: placeholderHash,
+          isActive: true,
+        },
+      });
+    }
+
+    if (!customer.isActive) {
+      throw new ForbiddenException('Account is disabled');
+    }
+
+    await this.prisma.customer.update({
+      where: { id: customer.id },
+      data: { lastLoginAt: new Date() },
+    });
+
+    session.customerId = customer.id;
+
+    return { customer: this.sanitizeCustomer(customer) };
+  }
+
+  private async exchangeWechatCode(code: string): Promise<string> {
+    const appId = process.env.WECHAT_PAY_APP_ID;
+    const appSecret = process.env.WECHAT_APP_SECRET;
+
+    if (!appId || !appSecret) {
+      throw new InternalServerErrorException(
+        'WeChat login is not configured on this server',
+      );
+    }
+
+    const url =
+      `https://api.weixin.qq.com/sns/jscode2session` +
+      `?appid=${appId}&secret=${appSecret}&js_code=${encodeURIComponent(code)}&grant_type=authorization_code`;
+
+    const res = await fetch(url);
+    const data = (await res.json()) as {
+      openid?: string;
+      session_key?: string;
+      errcode?: number;
+      errmsg?: string;
+    };
+
+    if (data.errcode || !data.openid) {
+      this.logger.warn(`WeChat code exchange failed: ${data.errmsg} (${data.errcode})`);
+      throw new UnauthorizedException('Invalid or expired WeChat login code');
+    }
+
+    return data.openid;
   }
 
   private sanitizeCustomer(customer: {
