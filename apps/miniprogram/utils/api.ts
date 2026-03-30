@@ -6,32 +6,56 @@ interface RequestOptions {
   header?: Record<string, string>;
 }
 
-interface ApiResponse<T = unknown> {
-  data: T;
-  statusCode: number;
+// ─── Session Cookie Management ───────────────────────────
+// wx.request doesn't auto-send cookies like browsers do.
+// We persist the session cookie from Set-Cookie headers and
+// attach it to every subsequent request.
+
+const SESSION_COOKIE_KEY = 'wk_session_cookie';
+
+function getSessionCookie(): string {
+  return wx.getStorageSync(SESSION_COOKIE_KEY) || '';
+}
+
+function saveSessionCookie(setCookieHeader: string | string[] | undefined): void {
+  if (!setCookieHeader) return;
+  const cookies = Array.isArray(setCookieHeader) ? setCookieHeader : [setCookieHeader];
+  for (const cookie of cookies) {
+    // Extract "connect.sid=xxx" (or whatever session cookie name)
+    const match = cookie.match(/^([^=]+=[^;]+)/);
+    if (match) {
+      wx.setStorageSync(SESSION_COOKIE_KEY, match[1]);
+    }
+  }
 }
 
 /**
  * Wrapper around wx.request with session cookie support.
+ * Automatically persists and sends session cookies.
  */
 function request<T = unknown>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
   return new Promise((resolve, reject) => {
+    const cookie = getSessionCookie();
     wx.request({
       url: `${API_BASE_URL}/api${path}`,
       method: options.method || 'GET',
       data: options.data,
       header: {
         'Content-Type': 'application/json',
+        ...(cookie ? { Cookie: cookie } : {}),
         ...options.header,
       },
-      success(res: ApiResponse<T>) {
+      success(res: WechatMiniprogram.RequestSuccessCallbackResult) {
+        // Persist session cookie from response
+        const header = res.header || {};
+        saveSessionCookie(header['Set-Cookie'] || header['set-cookie']);
+
         if (res.statusCode >= 200 && res.statusCode < 300) {
-          resolve(res.data);
+          resolve(res.data as T);
         } else if (res.statusCode === 401) {
-          // Not authenticated — redirect to login
           wx.navigateTo({ url: '/pages/login/index' });
           reject(new Error('未登录'));
         } else {
@@ -108,18 +132,53 @@ export function createWechatOrder(data: {
 
 // ─── Orders ──────────────────────────────────────────────
 
-export function fetchMyOrders(params?: { page?: number; limit?: number }) {
-  const qs = params
-    ? '?' + Object.entries(params).map(([k, v]) => `${k}=${v}`).join('&')
-    : '';
-  return request<{
-    data: OrderSummary[];
-    total: number;
-  }>(`/public/orders/my${qs}`);
+export function fetchMyOrders() {
+  return request<OrderSummary[]>('/public/account/orders');
 }
 
 export function fetchOrderDetail(orderNo: string) {
-  return request<OrderDetail>(`/public/orders/${orderNo}`);
+  return request<OrderDetail>(`/public/account/orders/${orderNo}`);
+}
+
+// ─── Profile & Address ───────────────────────────────────
+
+export function fetchProfile() {
+  return request<CustomerInfo>('/public/account/profile');
+}
+
+export function updateProfile(data: { name?: string; phone?: string }) {
+  return request<CustomerInfo>('/public/account/profile', {
+    method: 'PUT',
+    data,
+  });
+}
+
+export function fetchAddresses() {
+  return request<Address[]>('/public/account/addresses');
+}
+
+export function createAddress(data: AddressInput) {
+  return request<Address>('/public/account/addresses', {
+    method: 'POST',
+    data,
+  });
+}
+
+export function updateAddress(id: string, data: Partial<AddressInput>) {
+  return request<Address>(`/public/account/addresses/${id}`, {
+    method: 'PUT',
+    data,
+  });
+}
+
+export function deleteAddress(id: string) {
+  return request(`/public/account/addresses/${id}`, { method: 'DELETE' });
+}
+
+export function setDefaultAddress(id: string) {
+  return request(`/public/account/addresses/${id}/set-default`, {
+    method: 'POST',
+  });
 }
 
 // ─── Coupon ──────────────────────────────────────────────
@@ -196,6 +255,33 @@ export interface WechatPayParams {
   package: string;
   signType: string;
   paySign: string;
+}
+
+export interface Address {
+  id: string;
+  label: string | null;
+  fullName: string;
+  phone: string | null;
+  country: string;
+  stateOrProvince: string | null;
+  city: string;
+  addressLine1: string;
+  addressLine2: string | null;
+  postalCode: string | null;
+  isDefault: boolean;
+}
+
+export interface AddressInput {
+  label?: string;
+  fullName: string;
+  phone?: string;
+  country: string;
+  stateOrProvince?: string;
+  city: string;
+  addressLine1: string;
+  addressLine2?: string;
+  postalCode?: string;
+  isDefault?: boolean;
 }
 
 export interface OrderSummary {

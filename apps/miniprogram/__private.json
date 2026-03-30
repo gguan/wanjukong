@@ -1,0 +1,25 @@
+{
+  "desc": "万局控小程序隐私保护指引",
+  "privacy_list": [
+    {
+      "api": "wx.login",
+      "purpose": "用于登录和获取用户标识"
+    },
+    {
+      "api": "wx.getPhoneNumber",
+      "purpose": "用于获取手机号绑定账户"
+    },
+    {
+      "api": "wx.requestPayment",
+      "purpose": "用于完成商品购买支付"
+    },
+    {
+      "api": "wx.getLocation",
+      "purpose": "用于配送地址自动定位"
+    },
+    {
+      "api": "wx.setClipboardData",
+      "purpose": "用于复制订单号和快递单号"
+    }
+  ]
+}
