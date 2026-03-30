@@ -12,6 +12,7 @@ export interface ProductVariant {
   versionCode: string | null;
   sku: string;
   priceCents: number;
+  usdPriceCents: number | null;
   stock: number;
   subtitle: string | null;
   specSummary: string | null;

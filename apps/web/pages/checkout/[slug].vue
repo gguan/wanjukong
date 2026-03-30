@@ -318,7 +318,7 @@ async function initPayPal() {
                   :disabled="v.isSoldOut"
                 />
                 <span class="variant-option-name">{{ v.name }}</span>
-                <span class="variant-option-price">${{ (v.priceCents / 100).toFixed(2) }}</span>
+                <span class="variant-option-price">¥{{ (v.priceCents / 100).toFixed(2) }}</span>
                 <span v-if="v.isSoldOut" class="variant-option-state">Sold Out</span>
               </label>
             </div>

@@ -31,6 +31,11 @@ export class UpdateProductVariantDto {
   @IsInt()
   @Min(0)
   @IsOptional()
+  usdPriceCents?: number;
+
+  @IsInt()
+  @Min(0)
+  @IsOptional()
   stock?: number;
 
   @IsString()

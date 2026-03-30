@@ -5,6 +5,7 @@ interface Variant {
   sku: string;
   manufacturerSku: string | null;
   priceCents: number;
+  usdPriceCents: number | null;
   stock: number;
   subtitle: string | null;
   specifications: string | null;
@@ -29,7 +30,8 @@ const editing = reactive({
   name: '',
   sku: '',
   manufacturerSku: '',
-  priceCents: 0,
+  priceYuan: 0,       // ¥ display (元)
+  usdPriceDollar: 0,  // $ display (dollars)
   stock: 0,
   subtitle: '',
   specifications: '',
@@ -46,7 +48,8 @@ watch(
     editing.name = v.name;
     editing.sku = v.sku;
     editing.manufacturerSku = v.manufacturerSku || '';
-    editing.priceCents = v.priceCents;
+    editing.priceYuan = v.priceCents / 100;
+    editing.usdPriceDollar = (v.usdPriceCents ?? 0) / 100;
     editing.stock = v.stock;
     editing.subtitle = v.subtitle || '';
     editing.specifications = v.specifications || '';
@@ -61,16 +64,23 @@ watch(editing, () => {
   dirty.value = true;
 }, { deep: true });
 
-function formatPrice(cents: number) {
+function formatCNY(cents: number) {
+  return `¥${(cents / 100).toFixed(2)}`;
+}
+
+function formatUSD(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
 const summaryLine = computed(() => {
   const parts: string[] = [];
-  parts.push(formatPrice(props.variant.priceCents));
+  parts.push(formatCNY(props.variant.priceCents));
+  if (props.variant.usdPriceCents) {
+    parts.push(formatUSD(props.variant.usdPriceCents));
+  }
   parts.push(`库存：${props.variant.stock}`);
   if (props.variant.sku) parts.push(`货号 ${props.variant.sku}`);
-  return parts.join(' \u00b7 ');
+  return parts.join(' · ');
 });
 
 async function handleSave() {
@@ -79,7 +89,8 @@ async function handleSave() {
     name: editing.name,
     sku: editing.sku || undefined,
     manufacturerSku: editing.manufacturerSku || undefined,
-    priceCents: Number(editing.priceCents),
+    priceCents: Math.round(editing.priceYuan * 100),
+    usdPriceCents: editing.usdPriceDollar > 0 ? Math.round(editing.usdPriceDollar * 100) : undefined,
     stock: Number(editing.stock),
     subtitle: editing.subtitle || undefined,
     specifications: editing.specifications || undefined,
@@ -136,9 +147,30 @@ async function handleSave() {
           </ElFormItem>
         </div>
 
-        <div class="form-grid form-grid--2">
-          <ElFormItem label="价格（分）" required>
-            <ElInputNumber v-model="editing.priceCents" :min="0" style="width: 100%" />
+        <div class="form-grid form-grid--3">
+          <ElFormItem label="价格（元）" required>
+            <ElInputNumber
+              v-model="editing.priceYuan"
+              :min="0"
+              :precision="2"
+              :step="0.01"
+              style="width: 100%"
+            >
+              <template #prefix>¥</template>
+            </ElInputNumber>
+            <div class="field-hint">人民币，如 299.99</div>
+          </ElFormItem>
+          <ElFormItem label="美元价格">
+            <ElInputNumber
+              v-model="editing.usdPriceDollar"
+              :min="0"
+              :precision="2"
+              :step="0.01"
+              style="width: 100%"
+            >
+              <template #prefix>$</template>
+            </ElInputNumber>
+            <div class="field-hint">选填，0 表示不设置</div>
           </ElFormItem>
           <ElFormItem label="库存">
             <ElInputNumber v-model="editing.stock" :min="0" style="width: 100%" />

@@ -95,7 +95,8 @@ model ProductVariant {
   versionCode     String?
   sku             String   @unique
   manufacturerSku String?
-  priceCents      Int
+  priceCents      Int              // CNY price in fen (分)
+  usdPriceCents   Int?             // USD price in cents (optional)
   stock           Int      @default(0)
   subtitle        String?
   specSummary     String?

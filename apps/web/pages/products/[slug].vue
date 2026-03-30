@@ -98,10 +98,13 @@ watch(lightboxOpen, (open) => {
 
 // ─── Price / Availability ────────────────────────────────
 const displayPrice = computed(() => {
-  if (selectedVariant.value?.priceCents !== undefined) {
-    return `$${(selectedVariant.value.priceCents / 100).toFixed(2)}`;
+  const v = selectedVariant.value;
+  if (!v) return '¥0.00';
+  const cny = `¥${(v.priceCents / 100).toFixed(2)}`;
+  if (v.usdPriceCents) {
+    return `${cny} / $${(v.usdPriceCents / 100).toFixed(2)}`;
   }
-  return '$0.00';
+  return cny;
 });
 
 const displayAvailability = computed(() => product.value?.displayAvailability);
@@ -283,7 +286,7 @@ function formatDate(iso: string | null | undefined) {
                     @click="selectVariant(v)"
                   >
                     <span class="pill-name">{{ v.name }}</span>
-                    <span class="pill-price">${{ (v.priceCents / 100).toFixed(2) }}</span>
+                    <span class="pill-price">¥{{ (v.priceCents / 100).toFixed(2) }}</span>
                     <span v-if="v.isSoldOut" class="pill-sold">Sold Out</span>
                     <span v-else-if="variantShipHint(v)" class="pill-ship">{{ variantShipHint(v) }}</span>
                   </button>

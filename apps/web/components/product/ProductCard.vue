@@ -5,13 +5,20 @@ const props = defineProps<{
   product: Product;
 }>();
 
-const displayPrice = computed(() => {
+const defaultVariant = computed(() => {
   const variants = props.product.variants;
-  if (variants?.length) {
-    const def = variants.find((v) => v.isDefault) || variants[0];
-    return def.priceCents / 100;
+  if (!variants?.length) return null;
+  return variants.find((v) => v.isDefault) || variants[0];
+});
+
+const displayPrice = computed(() => {
+  const v = defaultVariant.value;
+  if (!v) return '¥0.00';
+  const cny = `¥${(v.priceCents / 100).toFixed(2)}`;
+  if (v.usdPriceCents) {
+    return `${cny} / $${(v.usdPriceCents / 100).toFixed(2)}`;
   }
-  return 0;
+  return cny;
 });
 
 const hasMultipleVariants = computed(() => (props.product.variants?.length ?? 0) > 1);
@@ -39,7 +46,7 @@ const hasMultipleVariants = computed(() => (props.product.variants?.length ?? 0)
         <span v-if="product.scale" class="scale">{{ product.scale }}</span>
       </div>
       <span class="price">
-        <span v-if="hasMultipleVariants" class="from-label">From </span>${{ displayPrice.toFixed(2) }}
+        <span v-if="hasMultipleVariants" class="from-label">From </span>{{ displayPrice }}
       </span>
     </div>
   </NuxtLink>
