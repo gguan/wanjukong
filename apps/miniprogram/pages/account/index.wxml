@@ -1,47 +1,119 @@
 <!-- 我的 -->
 <view class="page">
-  <!-- 用户信息区 -->
-  <view class="user-section">
-    <!-- 已登录 -->
-    <view wx:if="{{loggedIn && user}}" class="user-info">
-      <view class="avatar">
-        <text class="avatar-text">{{user.name ? user.name[0] : '用'}}</text>
-      </view>
-      <view class="user-detail">
-        <text class="user-name">{{user.name || '用户'}}</text>
-        <text class="user-phone text-secondary text-sm" wx:if="{{user.phone}}">{{user.phone}}</text>
-        <text class="user-phone text-secondary text-sm" wx:elif="{{user.email}}">{{user.email}}</text>
+  <!-- Hero Background Image -->
+  <view class="hero" style="padding-top: {{statusBarHeight + 48}}px">
+    <image
+      class="hero-bg"
+      src="https://images.unsplash.com/photo-1578632292335-df3abbb0d586?w=800&q=80"
+      mode="aspectFill"
+    />
+    <!-- Capsule placeholder for safe area -->
+    <view class="hero-capsule" style="top: {{statusBarHeight}}px">
+      <view class="capsule-dot" />
+      <view class="capsule-dot" />
+    </view>
+  </view>
+
+  <!-- White Content Card (overlaps hero) -->
+  <view class="content-card">
+    <!-- Avatar (centered, overlapping hero) -->
+    <view class="avatar-wrapper">
+      <view class="avatar" bindtap="{{loggedIn ? '' : 'onTapLogin'}}">
+        <image
+          wx:if="{{loggedIn}}"
+          class="avatar-img"
+          src="https://thirdwx.qlogo.cn/mmopen/vi_32/placeholder/132"
+          mode="aspectFill"
+        />
+        <text wx:else class="avatar-placeholder-text">?</text>
       </view>
     </view>
 
-    <!-- 未登录 -->
-    <view wx:else class="login-prompt" bindtap="onTapLogin">
-      <view class="avatar avatar-placeholder">
-        <text class="avatar-text">?</text>
+    <!-- User Name + Edit -->
+    <view class="user-name-row" bindtap="{{loggedIn ? '' : 'onTapLogin'}}">
+      <text class="user-name">{{loggedIn && user ? (user.name || '用户') : '点击登录'}}</text>
+    </view>
+
+    <!-- Stats Row -->
+    <view class="stats-row">
+      <view class="stat-item">
+        <text class="stat-value">{{points}}</text>
+        <text class="stat-label">我的积分</text>
       </view>
-      <view class="user-detail">
-        <text class="user-name">点击登录</text>
-        <text class="text-secondary text-sm">登录后享受更多服务</text>
+      <view class="stat-divider" />
+      <view class="stat-item">
+        <text class="stat-value">{{coupons}}</text>
+        <text class="stat-label">优惠券</text>
+      </view>
+    </view>
+
+    <!-- Divider -->
+    <view class="section-divider" />
+
+    <!-- Quick Action Icons -->
+    <view class="quick-actions">
+      <view class="action-item" bindtap="onTapPendingPayment">
+        <view class="action-icon">
+          <text class="icon-text">💰</text>
+        </view>
+        <text class="action-label">待付款</text>
+      </view>
+      <view class="action-item" bindtap="onTapPendingShip">
+        <view class="action-icon">
+          <text class="icon-text">📦</text>
+        </view>
+        <text class="action-label">待发货</text>
+      </view>
+      <view class="action-item" bindtap="onTapPendingReceive">
+        <view class="action-icon">
+          <text class="icon-text">🚚</text>
+        </view>
+        <text class="action-label">待收货</text>
+      </view>
+      <view class="action-item">
+        <view class="action-icon">
+          <text class="icon-text">⭐</text>
+        </view>
+        <text class="action-label">积分订单</text>
+      </view>
+      <view class="action-item" bindtap="onTapAllOrders">
+        <view class="action-icon">
+          <text class="icon-text">📋</text>
+        </view>
+        <text class="action-label">订单</text>
+      </view>
+    </view>
+
+    <!-- Divider -->
+    <view class="section-divider" />
+
+    <!-- Menu List -->
+    <view class="menu-list">
+      <view class="menu-item" bindtap="onTapAddress">
+        <text class="menu-label">地址管理</text>
+        <text class="menu-arrow">›</text>
+      </view>
+      <view class="menu-item" bindtap="onTapService">
+        <text class="menu-label">客服中心</text>
+        <text class="menu-arrow">›</text>
+      </view>
+      <view class="menu-item" bindtap="onTapFollow">
+        <text class="menu-label">关注我们</text>
+        <text class="menu-arrow">›</text>
+      </view>
+      <view class="menu-item" bindtap="onTapBrandIntro">
+        <text class="menu-label">品牌介绍</text>
+        <text class="menu-arrow">›</text>
+      </view>
+      <view class="menu-item menu-item--last" bindtap="onTapAgreement">
+        <text class="menu-label">协议规则</text>
+        <text class="menu-arrow">›</text>
       </view>
     </view>
   </view>
 
-  <!-- 菜单列表 -->
-  <view class="card menu-card">
-    <view class="menu-item" bindtap="onTapOrders">
-      <text class="menu-label">我的订单</text>
-      <text class="menu-arrow">></text>
-    </view>
-    <view class="menu-item" bindtap="onTapAbout">
-      <text class="menu-label">关于我们</text>
-      <text class="menu-arrow">></text>
-    </view>
-  </view>
-
-  <!-- 退出登录 -->
+  <!-- Logout (outside card, at bottom) -->
   <view wx:if="{{loggedIn}}" class="logout-section">
-    <button class="btn btn-outline btn-block logout-btn" bindtap="onLogout">
-      退出登录
-    </button>
+    <button class="logout-btn" bindtap="onLogout">退出登录</button>
   </view>
 </view>
