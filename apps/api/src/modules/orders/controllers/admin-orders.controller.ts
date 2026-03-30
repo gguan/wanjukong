@@ -52,8 +52,8 @@ export class AdminOrdersController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.ordersService.findOne(id);
+  findOne(@Param('id') id: string, @Req() req: any) {
+    return this.ordersService.findOne(id, this.getBrandIds(req));
   }
 
   @Roles(AdminRole.SUPER_ADMIN, AdminRole.ADMIN, AdminRole.EDITOR)

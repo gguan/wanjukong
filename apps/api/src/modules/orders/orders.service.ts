@@ -307,7 +307,9 @@ export class OrdersService {
     const [data, total] = await Promise.all([
       this.prisma.order.findMany({
         where,
-        include: { items: true },
+        include: {
+          items: { include: { product: { select: { brandId: true } } } },
+        },
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
@@ -315,7 +317,12 @@ export class OrdersService {
       this.prisma.order.count({ where }),
     ]);
 
-    return { data, total, page, limit };
+    // Mask items for brand managers
+    const maskedData = query.brandIds?.length
+      ? data.map((order) => this.maskOrderItems(order, query.brandIds!))
+      : data;
+
+    return { data: maskedData, total, page, limit };
   }
 
   /**
@@ -406,18 +413,57 @@ export class OrdersService {
 
   /**
    * Admin: find order by internal ID.
+   * When brandIds is provided, masks items not belonging to those brands.
    */
-  async findOne(id: string) {
+  async findOne(id: string, brandIds?: string[]) {
     const order = await this.prisma.order.findUnique({
       where: { id },
-      include: { items: true, paymentIntents: true },
+      include: {
+        items: { include: { product: { select: { brandId: true } } } },
+        paymentIntents: true,
+      },
     });
 
     if (!order) {
       throw new NotFoundException('Order not found');
     }
 
+    if (brandIds?.length) {
+      return this.maskOrderItems(order, brandIds);
+    }
+
     return order;
+  }
+
+  /**
+   * Mask order items that don't belong to the given brands.
+   * Brand managers see "其他品牌商品" for items outside their scope.
+   */
+  maskOrderItems<T extends { items: Array<Record<string, unknown>> }>(
+    order: T,
+    brandIds: string[],
+  ): T {
+    const maskedItems = order.items.map((item: any) => {
+      const productBrandId = item.product?.brandId;
+      if (productBrandId && brandIds.includes(productBrandId)) {
+        return item; // belongs to allowed brand — show full details
+      }
+      // Mask: hide product details for other brands
+      return {
+        ...item,
+        productNameSnapshot: '其他品牌商品',
+        variantNameSnapshot: null,
+        skuSnapshot: null,
+        brandNameSnapshot: null,
+        categoryNameSnapshot: null,
+        coverImageUrlSnapshot: null,
+        scaleSnapshot: null,
+        unitPriceCents: 0,
+        totalPriceCents: 0,
+      };
+    });
+
+    return { ...order, items: maskedItems };
   }
 
   /**
