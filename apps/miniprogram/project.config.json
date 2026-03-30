@@ -2,7 +2,7 @@
   "miniprogramRoot": "./",
   "projectname": "wanjukong",
   "description": "Wanjukong - Premium Collectible Figures",
-  "appid": "",
+  "appid": "wxbd879aa09e2102bd",
   "setting": {
     "urlCheck": false,
     "es6": true,
@@ -17,8 +17,27 @@
       "ignore": [],
       "disablePlugins": [],
       "outputPath": ""
-    }
+    },
+    "compileWorklet": false,
+    "uglifyFileName": false,
+    "uploadWithSourceMap": true,
+    "packNpmManually": false,
+    "packNpmRelationList": [],
+    "minifyWXSS": true,
+    "minifyWXML": true,
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "useCompilerPlugins": ["typescript"],
+    "condition": false,
+    "swc": false,
+    "disableSWC": true
   },
   "compileType": "miniprogram",
-  "condition": {}
+  "condition": {},
+  "simulatorPluginLibVersion": {},
+  "packOptions": {
+    "ignore": [],
+    "include": []
+  },
+  "editorSetting": {}
 }
