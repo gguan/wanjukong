@@ -17,7 +17,9 @@ export function useAdminNav(): NavItem[] {
   ];
 
   if (store.isBrandManager) {
-    return allItems.filter((item) => item.to === '/products');
+    return allItems.filter(
+      (item) => item.to === '/' || item.to === '/products' || item.to === '/orders',
+    );
   }
 
   if (store.isAdminOrAbove) {

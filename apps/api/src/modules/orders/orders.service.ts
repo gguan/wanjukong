@@ -19,6 +19,8 @@ export interface FindAllOrdersQuery {
   search?: string;
   status?: string;
   paymentStatus?: string;
+  /** Filter orders to only those containing items from these brands */
+  brandIds?: string[];
 }
 
 @Injectable()
@@ -286,6 +288,14 @@ export class OrdersService {
       where.paymentStatus = query.paymentStatus as any;
     }
 
+    if (query.brandIds?.length) {
+      where.items = {
+        some: {
+          product: { brandId: { in: query.brandIds } },
+        },
+      };
+    }
+
     if (query.search) {
       where.OR = [
         { orderNo: { contains: query.search, mode: 'insensitive' } },
@@ -310,20 +320,40 @@ export class OrdersService {
 
   /**
    * Admin: dashboard stats — totals, breakdowns, low stock, recent orders.
+   * When brandIds is provided, scopes everything to orders/products of those brands.
    */
-  async getDashboardStats() {
+  async getDashboardStats(brandIds?: string[]) {
+    // Order filter: orders that contain at least one item from an allowed brand
+    const orderWhere: Prisma.OrderWhereInput = brandIds?.length
+      ? { items: { some: { product: { brandId: { in: brandIds } } } } }
+      : {};
+    const paidOrderWhere: Prisma.OrderWhereInput = {
+      ...orderWhere,
+      paymentStatus: 'PAID',
+    };
+
+    // Product/variant filter: only brands the admin manages
+    const variantWhere: Prisma.ProductVariantWhereInput = {
+      stock: { gt: 0, lte: 5 },
+      product: {
+        status: 'ACTIVE',
+        ...(brandIds?.length ? { brandId: { in: brandIds } } : {}),
+      },
+    };
+
     const [totalOrders, totalRevenue, byStatus, byPaymentStatus, lowStockVariants, recentOrders] = await Promise.all([
-      this.prisma.order.count(),
-      this.prisma.order.aggregate({ _sum: { totalPriceCents: true }, where: { paymentStatus: 'PAID' } }),
-      this.prisma.order.groupBy({ by: ['status'], _count: true }),
-      this.prisma.order.groupBy({ by: ['paymentStatus'], _count: true }),
+      this.prisma.order.count({ where: orderWhere }),
+      this.prisma.order.aggregate({ _sum: { totalPriceCents: true }, where: paidOrderWhere }),
+      this.prisma.order.groupBy({ by: ['status'], _count: true, where: orderWhere }),
+      this.prisma.order.groupBy({ by: ['paymentStatus'], _count: true, where: orderWhere }),
       this.prisma.productVariant.findMany({
-        where: { stock: { gt: 0, lte: 5 }, product: { status: 'ACTIVE' } },
+        where: variantWhere,
         include: { product: { include: { brand: true } } },
         orderBy: { stock: 'asc' },
         take: 10,
       }),
       this.prisma.order.findMany({
+        where: orderWhere,
         orderBy: { createdAt: 'desc' },
         take: 5,
         include: { items: true },

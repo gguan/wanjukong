@@ -19,14 +19,18 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   // Redirect logged-in users away from login page
   if (store.isLoggedIn && to.path === '/login') {
-    return navigateTo(store.isBrandManager ? '/products' : '/');
+    return navigateTo('/');
   }
 
-  // Brand managers can only access /products routes
+  // Brand managers can access dashboard, products, and orders (read-only)
   if (store.isBrandManager) {
-    const allowed = to.path.startsWith('/products') || to.path === '/login';
+    const allowed =
+      to.path === '/' ||
+      to.path.startsWith('/products') ||
+      to.path.startsWith('/orders') ||
+      to.path === '/login';
     if (!allowed) {
-      return navigateTo('/products');
+      return navigateTo('/');
     }
   }
 });
