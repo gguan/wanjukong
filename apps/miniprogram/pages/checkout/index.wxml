@@ -1,0 +1,89 @@
+<!-- 结算页 -->
+<view class="page">
+  <!-- 商品列表 -->
+  <view class="card">
+    <view class="card-header">商品明细</view>
+    <view class="card-body">
+      <view
+        wx:for="{{items}}"
+        wx:key="variantId"
+        class="checkout-item"
+      >
+        <image class="item-image" src="{{item.imageUrl}}" mode="aspectFill" />
+        <view class="item-info">
+          <text class="item-name">{{item.productName}}</text>
+          <text class="item-variant text-secondary text-sm">{{item.variantName}}</text>
+          <view class="item-price-row">
+            <text class="price price-sm">{{item.displayPrice}}</text>
+            <text class="text-secondary text-sm">x{{item.quantity}}</text>
+          </view>
+        </view>
+        <text class="price price-sm">{{item.lineTotal}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 优惠券 -->
+  <view class="card">
+    <view class="card-header">优惠券</view>
+    <view class="card-body">
+      <view wx:if="{{!couponApplied}}" class="coupon-row">
+        <input
+          class="coupon-input"
+          placeholder="输入优惠码"
+          value="{{couponCode}}"
+          bindinput="onCouponInput"
+          bindconfirm="onApplyCoupon"
+        />
+        <button class="btn btn-outline coupon-btn" bindtap="onApplyCoupon">使用</button>
+      </view>
+      <view wx:else class="coupon-applied">
+        <view class="coupon-info">
+          <text class="text-success font-medium">优惠券: {{couponCode}}</text>
+          <text class="text-success text-sm">{{discountDisplay}}</text>
+        </view>
+        <text class="coupon-remove" bindtap="onRemoveCoupon">移除</text>
+      </view>
+      <text wx:if="{{couponError}}" class="text-danger text-sm">{{couponError}}</text>
+    </view>
+  </view>
+
+  <!-- 价格明细 -->
+  <view class="card">
+    <view class="card-header">订单金额</view>
+    <view class="card-body">
+      <view class="price-line">
+        <text class="text-secondary">商品小计</text>
+        <text>{{subtotalDisplay}}</text>
+      </view>
+      <view wx:if="{{couponApplied}}" class="price-line">
+        <text class="text-secondary">优惠</text>
+        <text class="text-success">{{discountDisplay}}</text>
+      </view>
+      <view class="divider"></view>
+      <view class="price-line total-line">
+        <text class="font-semibold">合计</text>
+        <text class="price price-lg">{{totalDisplay}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部占位 -->
+  <view class="bottom-spacer"></view>
+
+  <!-- 支付按钮 -->
+  <view class="bottom-bar safe-bottom">
+    <view class="pay-total">
+      <text class="total-label">应付</text>
+      <text class="price price-lg">{{totalDisplay}}</text>
+    </view>
+    <button
+      class="btn btn-success pay-btn"
+      bindtap="onPay"
+      loading="{{paying}}"
+      disabled="{{paying}}"
+    >
+      微信支付
+    </button>
+  </view>
+</view>

@@ -1,0 +1,47 @@
+<!-- 我的 -->
+<view class="page">
+  <!-- 用户信息区 -->
+  <view class="user-section">
+    <!-- 已登录 -->
+    <view wx:if="{{loggedIn && user}}" class="user-info">
+      <view class="avatar">
+        <text class="avatar-text">{{user.name ? user.name[0] : '用'}}</text>
+      </view>
+      <view class="user-detail">
+        <text class="user-name">{{user.name || '用户'}}</text>
+        <text class="user-phone text-secondary text-sm" wx:if="{{user.phone}}">{{user.phone}}</text>
+        <text class="user-phone text-secondary text-sm" wx:elif="{{user.email}}">{{user.email}}</text>
+      </view>
+    </view>
+
+    <!-- 未登录 -->
+    <view wx:else class="login-prompt" bindtap="onTapLogin">
+      <view class="avatar avatar-placeholder">
+        <text class="avatar-text">?</text>
+      </view>
+      <view class="user-detail">
+        <text class="user-name">点击登录</text>
+        <text class="text-secondary text-sm">登录后享受更多服务</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 菜单列表 -->
+  <view class="card menu-card">
+    <view class="menu-item" bindtap="onTapOrders">
+      <text class="menu-label">我的订单</text>
+      <text class="menu-arrow">></text>
+    </view>
+    <view class="menu-item" bindtap="onTapAbout">
+      <text class="menu-label">关于我们</text>
+      <text class="menu-arrow">></text>
+    </view>
+  </view>
+
+  <!-- 退出登录 -->
+  <view wx:if="{{loggedIn}}" class="logout-section">
+    <button class="btn btn-outline btn-block logout-btn" bindtap="onLogout">
+      退出登录
+    </button>
+  </view>
+</view>

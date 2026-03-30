@@ -1,0 +1,51 @@
+<!-- 登录 -->
+<view class="page">
+  <view class="login-container">
+    <!-- Logo / 品牌 -->
+    <view class="brand-section">
+      <view class="brand-logo-text">万局控</view>
+      <text class="brand-tagline text-secondary">精选手办 · 全球收藏</text>
+    </view>
+
+    <!-- 未登录 -->
+    <view wx:if="{{!loggedIn}}" class="login-actions">
+      <button
+        class="btn btn-primary btn-block login-btn"
+        bindtap="onWechatLogin"
+        loading="{{loading}}"
+        disabled="{{loading}}"
+      >
+        微信一键登录
+      </button>
+      <text class="login-hint text-secondary text-sm">
+        点击登录即表示同意相关服务条款
+      </text>
+    </view>
+
+    <!-- 已登录但未绑定手机 -->
+    <view wx:elif="{{loggedIn && !phoneBound}}" class="login-actions">
+      <view class="login-success-text">
+        <text class="text-success font-medium">已登录</text>
+      </view>
+      <button
+        class="btn btn-success btn-block login-btn"
+        open-type="getPhoneNumber"
+        bindgetphonenumber="onGetPhoneNumber"
+        loading="{{loading}}"
+        disabled="{{loading}}"
+      >
+        绑定手机号
+      </button>
+      <text class="login-hint text-secondary text-sm">
+        绑定手机号以获得更好的服务体验
+      </text>
+    </view>
+
+    <!-- 已登录且已绑定 -->
+    <view wx:else class="login-actions">
+      <view class="login-success-text">
+        <text class="text-success font-medium">登录成功，正在跳转...</text>
+      </view>
+    </view>
+  </view>
+</view>

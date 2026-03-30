@@ -1,0 +1,55 @@
+<!-- 我的订单 -->
+<view class="page">
+  <!-- 订单列表 -->
+  <view wx:if="{{!loading && !isEmpty}}" class="order-list">
+    <view
+      wx:for="{{orders}}"
+      wx:key="id"
+      class="card order-card"
+      data-order-no="{{item.orderNo}}"
+      bindtap="onTapOrder"
+    >
+      <!-- 订单头 -->
+      <view class="order-header">
+        <view class="order-no">
+          <text class="text-secondary text-sm">订单号</text>
+          <text class="text-sm font-medium">{{item.orderNo}}</text>
+        </view>
+        <view class="badge {{item.statusClass}}">{{item.displayStatus}}</view>
+      </view>
+
+      <!-- 订单内容 -->
+      <view class="order-body">
+        <image
+          wx:if="{{item.firstImage}}"
+          class="order-image"
+          src="{{item.firstImage}}"
+          mode="aspectFill"
+        />
+        <view wx:else class="order-image-placeholder">
+          <text class="text-muted text-xs">无图</text>
+        </view>
+        <view class="order-info">
+          <text class="item-summary">
+            {{item.items[0].productNameSnapshot}}
+            <text wx:if="{{item.items.length > 1}}" class="text-secondary"> 等{{item.items.length}}件商品</text>
+          </text>
+          <view class="order-meta">
+            <text class="text-secondary text-sm">{{item.displayDate}}</text>
+            <text class="price font-semibold">{{item.displayTotal}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 加载中 -->
+  <view wx:if="{{loading}}" class="empty">
+    <text class="text-secondary">加载中...</text>
+  </view>
+
+  <!-- 空状态 -->
+  <view wx:elif="{{isEmpty}}" class="empty">
+    <text class="empty-text">暂无订单</text>
+  </view>
+</view>

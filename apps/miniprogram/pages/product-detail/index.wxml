@@ -1,0 +1,96 @@
+<!-- 商品详情 -->
+<view class="page" wx:if="{{!loading && product}}">
+  <!-- 图片轮播 -->
+  <swiper
+    class="image-swiper"
+    indicator-dots="{{swiperImages.length > 1}}"
+    indicator-color="rgba(255,255,255,0.4)"
+    indicator-active-color="#fff"
+    autoplay
+    circular
+  >
+    <swiper-item wx:for="{{swiperImages}}" wx:key="*this">
+      <image src="{{item}}" mode="aspectFill" class="swiper-image" />
+    </swiper-item>
+    <swiper-item wx:if="{{!swiperImages.length}}">
+      <view class="swiper-placeholder">
+        <text class="text-muted">暂无图片</text>
+      </view>
+    </swiper-item>
+  </swiper>
+
+  <!-- 基本信息 -->
+  <view class="card info-card">
+    <view class="card-body">
+      <view class="info-header">
+        <view class="brand-label">{{product.brand.name}}</view>
+        <view wx:if="{{availabilityText}}" class="badge {{availabilityClass}}">
+          {{availabilityText}}
+        </view>
+      </view>
+      <view class="product-name">{{product.name}}</view>
+      <view wx:if="{{product.scale}}" class="product-scale">比例: {{product.scale}}</view>
+
+      <!-- 价格 -->
+      <view class="price-section">
+        <text class="price price-lg">{{displayPriceCNY}}</text>
+        <text wx:if="{{displayPriceUSD}}" class="price-usd">{{displayPriceUSD}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 规格选择 -->
+  <view class="card" wx:if="{{product.variants.length > 1}}">
+    <view class="card-header">规格选择</view>
+    <view class="card-body">
+      <view class="variant-pills">
+        <view
+          wx:for="{{product.variants}}"
+          wx:key="id"
+          class="variant-pill {{selectedVariantId === item.id ? 'active' : ''}} {{item.isSoldOut ? 'disabled' : ''}}"
+          data-id="{{item.id}}"
+          bindtap="onTapVariant"
+        >
+          {{item.name}}
+        </view>
+      </view>
+      <view wx:if="{{currentVariant.specSummary}}" class="spec-summary">
+        {{currentVariant.specSummary}}
+      </view>
+    </view>
+  </view>
+
+  <!-- 商品描述 -->
+  <view class="card" wx:if="{{product.description}}">
+    <view class="card-header">商品描述</view>
+    <view class="card-body">
+      <view class="description">{{product.description}}</view>
+    </view>
+  </view>
+
+  <!-- 底部占位 -->
+  <view class="bottom-spacer"></view>
+
+  <!-- 底部操作栏 -->
+  <view class="bottom-bar safe-bottom">
+    <button
+      class="btn btn-outline bottom-btn"
+      disabled="{{isSoldOut}}"
+      bindtap="onAddToCart"
+    >
+      加入购物车
+    </button>
+    <button
+      class="btn btn-primary bottom-btn"
+      disabled="{{isSoldOut}}"
+      bindtap="onBuyNow"
+    >
+      {{isSoldOut ? '已售罄' : '立即购买'}}
+    </button>
+  </view>
+</view>
+
+<!-- 加载中 -->
+<view wx:if="{{loading}}" class="empty">
+  <text class="text-secondary">加载中...</text>
+</view>

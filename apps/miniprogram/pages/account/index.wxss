@@ -1,0 +1,95 @@
+.page { padding-bottom: 48rpx; }
+
+/* 用户信息区 */
+.user-section {
+  background: #1a1a1a;
+  padding: 48rpx 32rpx;
+}
+
+.user-info,
+.login-prompt {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+}
+
+.avatar {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 50%;
+  background: #303030;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.avatar-placeholder {
+  background: #616161;
+}
+
+.avatar-text {
+  color: #fff;
+  font-size: 36rpx;
+  font-weight: 700;
+}
+
+.user-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.user-name {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #fff;
+}
+
+.user-phone {
+  color: rgba(255,255,255,0.6);
+}
+
+/* 菜单 */
+.menu-card {
+  margin-top: 24rpx;
+  padding: 0;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28rpx 24rpx;
+  border-bottom: 2rpx solid #f0f0f0;
+}
+
+.menu-item:last-child {
+  border-bottom: none;
+}
+
+.menu-label {
+  font-size: 28rpx;
+  color: #303030;
+  font-weight: 500;
+}
+
+.menu-arrow {
+  font-size: 28rpx;
+  color: #b5b5b5;
+}
+
+/* 退出登录 */
+.logout-section {
+  margin: 48rpx 24rpx 0;
+}
+
+.logout-btn {
+  color: #e51c00;
+  border-color: #e51c00;
+  margin: 0;
+}
+
+.logout-btn:active {
+  background: #fde8e5;
+}

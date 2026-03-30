@@ -1,0 +1,48 @@
+<!-- 购物车 -->
+<view class="page">
+  <!-- 购物车列表 -->
+  <view wx:if="{{!isEmpty}}" class="cart-list">
+    <view
+      wx:for="{{items}}"
+      wx:key="variantId"
+      class="cart-item card"
+    >
+      <image class="item-image" src="{{item.imageUrl}}" mode="aspectFill" />
+      <view class="item-info">
+        <text class="item-name">{{item.productName}}</text>
+        <text class="item-variant text-secondary text-sm">{{item.variantName}}</text>
+        <view class="item-bottom">
+          <text class="price price-sm">{{item.displayPrice}}</text>
+          <view class="quantity-stepper">
+            <view class="stepper-btn" data-index="{{index}}" bindtap="onDecrease">-</view>
+            <text class="stepper-value">{{item.quantity}}</text>
+            <view class="stepper-btn" data-index="{{index}}" bindtap="onIncrease">+</view>
+          </view>
+        </view>
+      </view>
+      <view class="item-delete" data-index="{{index}}" bindtap="onDelete">
+        <text class="delete-text">删除</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view wx:if="{{isEmpty}}" class="empty">
+    <text class="empty-text">购物车是空的</text>
+    <button class="btn btn-outline go-shopping-btn" bindtap="onGoShopping">去逛逛</button>
+  </view>
+
+  <!-- 底部占位 -->
+  <view wx:if="{{!isEmpty}}" class="bottom-spacer"></view>
+
+  <!-- 底部结算栏 -->
+  <view wx:if="{{!isEmpty}}" class="bottom-bar safe-bottom">
+    <view class="total-section">
+      <text class="total-label">合计</text>
+      <text class="price price-lg">{{totalDisplay}}</text>
+    </view>
+    <button class="btn btn-primary checkout-btn" bindtap="onCheckout">
+      去结算 ({{items.length}})
+    </button>
+  </view>
+</view>

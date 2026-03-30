@@ -10,6 +10,7 @@
     "dev:web": "pnpm --filter @wanjukong/web dev",
     "dev:api": "pnpm --filter @wanjukong/api dev",
     "dev:admin": "pnpm --filter @wanjukong/admin dev",
+    "dev:miniprogram": "echo 'Open apps/miniprogram in WeChat DevTools'",
     "build": "pnpm -r run build",
     "lint": "eslint . --ext .ts,.js",
     "format": "prettier --write \"**/*.{ts,js,vue,json,md}\"",

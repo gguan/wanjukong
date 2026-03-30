@@ -1,0 +1,132 @@
+.page { padding-bottom: 0; }
+
+/* 图片轮播 */
+.image-swiper {
+  width: 100%;
+  height: 750rpx;
+}
+
+.swiper-image {
+  width: 100%;
+  height: 100%;
+}
+
+.swiper-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f6f6f7;
+}
+
+/* 基本信息 */
+.info-card { margin-top: 24rpx; }
+
+.info-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8rpx;
+}
+
+.brand-label {
+  font-size: 22rpx;
+  color: #8c9196;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+}
+
+.product-name {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #303030;
+  line-height: 1.3;
+  margin-bottom: 8rpx;
+}
+
+.product-scale {
+  font-size: 24rpx;
+  color: #8c9196;
+  margin-bottom: 16rpx;
+}
+
+.price-section {
+  display: flex;
+  align-items: baseline;
+  gap: 16rpx;
+  margin-top: 16rpx;
+}
+
+.price-usd {
+  font-size: 28rpx;
+  color: #8c9196;
+  font-weight: 500;
+}
+
+/* 规格选择 */
+.variant-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.variant-pill {
+  padding: 14rpx 28rpx;
+  border-radius: 12rpx;
+  font-size: 26rpx;
+  font-weight: 500;
+  color: #303030;
+  background: #f6f6f7;
+  border: 2rpx solid transparent;
+}
+
+.variant-pill.active {
+  border-color: #303030;
+  background: #fff;
+}
+
+.variant-pill.disabled {
+  opacity: 0.4;
+  text-decoration: line-through;
+}
+
+.spec-summary {
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  color: #8c9196;
+}
+
+/* 描述 */
+.description {
+  font-size: 28rpx;
+  color: #616161;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+/* 底部操作栏 */
+.bottom-spacer { height: 140rpx; }
+
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 16rpx;
+  padding: 16rpx 24rpx;
+  background: #fff;
+  border-top: 2rpx solid #f0f0f0;
+  z-index: 100;
+}
+
+.bottom-btn {
+  flex: 1;
+  margin: 0;
+}
+
+.bottom-btn[disabled] {
+  opacity: 0.5;
+}

@@ -1,0 +1,32 @@
+<view class="product-card">
+  <view class="card-image">
+    <image
+      wx:if="{{product.imageUrl}}"
+      src="{{product.imageUrl}}"
+      mode="aspectFill"
+      class="image"
+      lazy-load
+    />
+    <view wx:else class="placeholder">
+      <text class="text-muted text-sm">No Image</text>
+    </view>
+    <view wx:if="{{product.displayAvailability === 'PREORDER'}}" class="badge-overlay badge-warning">
+      预售
+    </view>
+    <view wx:elif="{{product.displayAvailability === 'SOLD_OUT'}}" class="badge-overlay badge-danger">
+      售罄
+    </view>
+  </view>
+  <view class="card-body">
+    <text class="brand-name">{{product.brand.name}}</text>
+    <text class="product-name">{{product.name}}</text>
+    <view class="meta" wx:if="{{product.category || product.scale}}">
+      <text wx:if="{{product.category}}" class="meta-tag">{{product.category.name}}</text>
+      <text wx:if="{{product.scale}}" class="meta-tag">{{product.scale}}</text>
+    </view>
+    <view class="price-row">
+      <text wx:if="{{hasMultipleVariants}}" class="from-label">起 </text>
+      <text class="price">{{displayPrice}}</text>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,125 @@
+.page { padding: 24rpx 0; }
+
+/* 商品明细 */
+.checkout-item {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 0;
+}
+
+.checkout-item + .checkout-item {
+  border-top: 2rpx solid #f0f0f0;
+}
+
+.item-image {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 8rpx;
+  flex-shrink: 0;
+  background: #f6f6f7;
+}
+
+.item-info {
+  flex: 1;
+  padding: 0 20rpx;
+}
+
+.item-name {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #303030;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.item-variant { margin-top: 4rpx; }
+
+.item-price-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-top: 8rpx;
+}
+
+/* 优惠券 */
+.coupon-row {
+  display: flex;
+  gap: 16rpx;
+}
+
+.coupon-input {
+  flex: 1;
+  height: 72rpx;
+  background: #f6f6f7;
+  border-radius: 12rpx;
+  padding: 0 20rpx;
+  font-size: 28rpx;
+}
+
+.coupon-btn {
+  min-width: 120rpx;
+  margin: 0;
+}
+
+.coupon-applied {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.coupon-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.coupon-remove {
+  font-size: 24rpx;
+  color: #e51c00;
+}
+
+/* 价格明细 */
+.price-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8rpx 0;
+  font-size: 28rpx;
+}
+
+.total-line { padding-top: 16rpx; }
+
+/* 底部支付栏 */
+.bottom-spacer { height: 140rpx; }
+
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16rpx 24rpx;
+  background: #fff;
+  border-top: 2rpx solid #f0f0f0;
+  z-index: 100;
+}
+
+.pay-total {
+  display: flex;
+  align-items: baseline;
+  gap: 8rpx;
+}
+
+.total-label {
+  font-size: 26rpx;
+  color: #8c9196;
+}
+
+.pay-btn {
+  min-width: 260rpx;
+  margin: 0;
+}

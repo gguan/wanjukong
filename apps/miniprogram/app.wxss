@@ -1,0 +1,178 @@
+/* ─── Wanjukong Mini Program Global Styles ───────────────── */
+
+page {
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue',
+    'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: 28rpx;
+  color: #303030;
+  background: #f6f6f7;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Typography ──────────────────────────────────────────── */
+
+.text-primary { color: #303030; }
+.text-secondary { color: #8c9196; }
+.text-muted { color: #b5b5b5; }
+.text-success { color: #008060; }
+.text-danger { color: #e51c00; }
+.text-warning { color: #b98900; }
+
+.text-xs { font-size: 22rpx; }
+.text-sm { font-size: 24rpx; }
+.text-base { font-size: 28rpx; }
+.text-md { font-size: 30rpx; }
+.text-lg { font-size: 32rpx; }
+.text-xl { font-size: 36rpx; }
+.text-2xl { font-size: 44rpx; }
+
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+
+/* ─── Spacing ─────────────────────────────────────────────── */
+
+.p-sm { padding: 16rpx; }
+.p-md { padding: 24rpx; }
+.p-lg { padding: 32rpx; }
+.px-md { padding-left: 24rpx; padding-right: 24rpx; }
+.py-md { padding-top: 24rpx; padding-bottom: 24rpx; }
+.mb-sm { margin-bottom: 16rpx; }
+.mb-md { margin-bottom: 24rpx; }
+.mb-lg { margin-bottom: 32rpx; }
+
+/* ─── Cards ───────────────────────────────────────────────── */
+
+.card {
+  background: #ffffff;
+  border-radius: 16rpx;
+  margin: 0 24rpx 24rpx;
+  overflow: hidden;
+}
+
+.card-body {
+  padding: 24rpx;
+}
+
+.card-header {
+  padding: 24rpx 24rpx 0;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #303030;
+}
+
+/* ─── Buttons ─────────────────────────────────────────────── */
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80rpx;
+  border-radius: 12rpx;
+  font-size: 28rpx;
+  font-weight: 500;
+  border: none;
+  line-height: 80rpx;
+  padding: 0 32rpx;
+}
+
+.btn::after { border: none; }
+
+.btn-primary {
+  background: #303030;
+  color: #ffffff;
+}
+
+.btn-primary:active {
+  background: #1a1a1a;
+}
+
+.btn-success {
+  background: #008060;
+  color: #ffffff;
+}
+
+.btn-success:active {
+  background: #006e52;
+}
+
+.btn-outline {
+  background: #ffffff;
+  color: #303030;
+  border: 2rpx solid #e3e3e3;
+}
+
+.btn-outline:active {
+  background: #f6f6f7;
+}
+
+.btn-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+/* ─── Badge ───────────────────────────────────────────────── */
+
+.badge {
+  display: inline-block;
+  padding: 4rpx 16rpx;
+  border-radius: 8rpx;
+  font-size: 22rpx;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.badge-success { background: #e6f5f1; color: #006e52; }
+.badge-warning { background: #f8f2e0; color: #92400e; }
+.badge-danger { background: #fde8e5; color: #991b1b; }
+.badge-info { background: #eef4fd; color: #1e40af; }
+
+/* ─── Divider ─────────────────────────────────────────────── */
+
+.divider {
+  height: 1rpx;
+  background: #e3e3e3;
+  margin: 24rpx 0;
+}
+
+/* ─── Empty State ─────────────────────────────────────────── */
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 80rpx 0;
+  color: #8c9196;
+}
+
+.empty-text {
+  margin-top: 16rpx;
+  font-size: 28rpx;
+}
+
+/* ─── Price ───────────────────────────────────────────────── */
+
+.price {
+  color: #303030;
+  font-weight: 700;
+}
+
+.price-lg {
+  font-size: 40rpx;
+}
+
+.price-sm {
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+/* ─── Safe Area ───────────────────────────────────────────── */
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}

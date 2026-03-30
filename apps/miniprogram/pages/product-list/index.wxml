@@ -1,0 +1,69 @@
+<!-- 商品列表 -->
+<view class="page">
+  <!-- 搜索栏 -->
+  <view class="search-bar">
+    <view class="search-input-wrap">
+      <image class="search-icon" src="/assets/icon-search.svg" mode="aspectFit" />
+      <input
+        class="search-input"
+        placeholder="搜索商品"
+        value="{{searchValue}}"
+        bindinput="onSearchInput"
+        bindconfirm="onSearchConfirm"
+        confirm-type="search"
+      />
+      <view wx:if="{{searchValue}}" class="search-clear" bindtap="onClearSearch">
+        <text class="clear-text">×</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 分类筛选 -->
+  <scroll-view wx:if="{{categories.length}}" scroll-x class="category-scroll">
+    <view
+      class="category-chip {{activeCategory === '' ? 'active' : ''}}"
+      bindtap="onTapCategory"
+      data-slug=""
+    >
+      全部
+    </view>
+    <view
+      wx:for="{{categories}}"
+      wx:key="id"
+      class="category-chip {{activeCategory === item.slug ? 'active' : ''}}"
+      data-slug="{{item.slug}}"
+      bindtap="onTapCategory"
+    >
+      {{item.name}}
+    </view>
+  </scroll-view>
+
+  <!-- 商品列表 -->
+  <view class="product-grid" wx:if="{{!loading && products.length}}">
+    <product-card
+      wx:for="{{products}}"
+      wx:key="id"
+      product="{{item}}"
+      data-slug="{{item.slug}}"
+      bindtap="onTapProduct"
+    />
+  </view>
+
+  <!-- 加载更多 -->
+  <view wx:if="{{loadingMore}}" class="loading-more">
+    <text class="text-secondary text-sm">加载中...</text>
+  </view>
+  <view wx:elif="{{!hasMore && products.length}}" class="loading-more">
+    <text class="text-muted text-sm">已加载全部商品</text>
+  </view>
+
+  <!-- 加载中 -->
+  <view wx:if="{{loading}}" class="empty">
+    <text class="text-secondary">加载中...</text>
+  </view>
+
+  <!-- 空状态 -->
+  <view wx:elif="{{!products.length}}" class="empty">
+    <text class="empty-text">暂无商品</text>
+  </view>
+</view>

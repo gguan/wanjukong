@@ -1,0 +1,47 @@
+<!-- 首页 -->
+<view class="page">
+  <!-- Banner -->
+  <view class="hero">
+    <view class="hero-title">万局控</view>
+    <view class="hero-subtitle">精选手办 · 全球收藏</view>
+  </view>
+
+  <!-- 品牌 -->
+  <view class="section" wx:if="{{brands.length}}">
+    <view class="section-header">
+      <text class="section-title">品牌</text>
+    </view>
+    <scroll-view scroll-x class="brands-scroll">
+      <view
+        wx:for="{{brands}}"
+        wx:key="id"
+        class="brand-chip"
+        data-slug="{{item.slug}}"
+        bindtap="onTapBrand"
+      >
+        <image wx:if="{{item.logo}}" src="{{item.logo}}" class="brand-logo" mode="aspectFit" />
+        <text>{{item.name}}</text>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 精选商品 -->
+  <view class="section">
+    <view class="section-header">
+      <text class="section-title">精选商品</text>
+      <text class="section-link" bindtap="onTapViewAll">查看全部</text>
+    </view>
+    <view class="product-grid" wx:if="{{!loading}}">
+      <product-card
+        wx:for="{{featured}}"
+        wx:key="id"
+        product="{{item}}"
+        data-slug="{{item.slug}}"
+        bindtap="onTapProduct"
+      />
+    </view>
+    <view class="empty" wx:if="{{loading}}">
+      <text class="text-secondary">加载中...</text>
+    </view>
+  </view>
+</view>

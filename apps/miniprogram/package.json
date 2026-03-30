@@ -1,0 +1,13 @@
+{
+  "name": "@wanjukong/miniprogram",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'Open project in WeChat DevTools at apps/miniprogram'",
+    "build": "tsc --project tsconfig.json"
+  },
+  "devDependencies": {
+    "miniprogram-api-typings": "^3.12.0",
+    "typescript": "^5.7.0"
+  }
+}
