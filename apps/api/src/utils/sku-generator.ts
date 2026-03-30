@@ -80,7 +80,7 @@ export function getModelCode(opts: {
   // 2. Extract alphanumeric model code from product name
   //    e.g. "Hot Toys MMS617 Spider-Man" → "MMS617"
   if (opts.productName) {
-    const match = opts.productName.match(/[A-Z]{2,}[\-]?\d{2,}/i);
+    const match = opts.productName.match(/[A-Z]{2,}-?\d{2,}/i);
     if (match) return match[0].toUpperCase().replace(/-/g, '');
   }
 
@@ -106,7 +106,7 @@ export function normalizeSku(raw: string): string {
     .trim()
     .toUpperCase()
     .replace(/[\s_]+/g, '-')      // spaces/underscores → hyphens
-    .replace(/[^A-Z0-9\-]/g, '')  // remove invalid chars
+    .replace(/[^A-Z0-9-]/g, '')   // remove invalid chars
     .replace(/-{2,}/g, '-')       // collapse duplicate hyphens
     .replace(/^-|-$/g, '');       // trim leading/trailing hyphens
 }

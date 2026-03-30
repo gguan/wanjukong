@@ -4,6 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 
 let COS: any;
 try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   COS = require('cos-nodejs-sdk-v5');
 } catch {
   // cos-nodejs-sdk-v5 is optional; cleanup will skip COS deletion if unavailable

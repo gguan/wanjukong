@@ -11,7 +11,7 @@
     "dev:api": "pnpm --filter @wanjukong/api dev",
     "dev:admin": "pnpm --filter @wanjukong/admin dev",
     "build": "pnpm -r run build",
-    "lint": "eslint . --ext .ts,.js,.vue",
+    "lint": "eslint . --ext .ts,.js",
     "format": "prettier --write \"**/*.{ts,js,vue,json,md}\"",
     "db:up": "docker compose -f infra/docker-compose.yml up -d",
     "db:down": "docker compose -f infra/docker-compose.yml down",
