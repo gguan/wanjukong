@@ -153,7 +153,7 @@ describe('AdminAuthService', () => {
 
       await expect(
         service.validateCredentials('admin@test.com', 'correctPassword'),
-      ).rejects.toThrow('Account temporarily locked');
+      ).rejects.toThrow('账号已被临时锁定，请稍后再试');
     });
 
     it('should log audit events', async () => {

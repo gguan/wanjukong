@@ -36,6 +36,14 @@ export class AdminUsersController {
     return this.usersService.update(id, dto);
   }
 
+  @Put(':id/reset-password')
+  resetPassword(
+    @Param('id') id: string,
+    @Body() dto: { newPassword: string },
+  ) {
+    return this.usersService.resetPassword(id, dto.newPassword);
+  }
+
   @Put(':id/brand-assignments')
   setBrandAssignments(
     @Param('id') id: string,

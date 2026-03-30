@@ -80,6 +80,23 @@ export class AdminUsersService {
     });
   }
 
+  /**
+   * Admin-to-admin password reset (no old password needed).
+   * Only SUPER_ADMIN / ADMIN should call this.
+   */
+  async resetPassword(id: string, newPassword: string) {
+    const user = await this.prisma.adminUser.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException('管理员不存在');
+
+    const passwordHash = await argon2.hash(newPassword);
+    await this.prisma.adminUser.update({
+      where: { id },
+      data: { passwordHash },
+    });
+
+    return { ok: true };
+  }
+
   async setBrandAssignments(adminUserId: string, brandIds: string[]) {
     const user = await this.prisma.adminUser.findUnique({
       where: { id: adminUserId },

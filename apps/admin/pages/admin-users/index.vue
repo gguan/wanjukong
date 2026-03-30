@@ -36,6 +36,20 @@ const assignDialogVisible = ref(false);
 const assignUser = ref<AdminUser | null>(null);
 const assignBrandIds = ref<string[]>([]);
 
+// Edit dialog
+const editDialogVisible = ref(false);
+const editUser = ref<AdminUser | null>(null);
+const editForm = ref({ name: '', email: '', role: '' });
+
+// Reset password dialog (admin resets another admin's password)
+const resetPwdDialogVisible = ref(false);
+const resetPwdUser = ref<AdminUser | null>(null);
+const resetPwdForm = ref({ newPassword: '', confirmPassword: '' });
+
+// Self change password dialog
+const changePwdDialogVisible = ref(false);
+const changePwdForm = ref({ oldPassword: '', newPassword: '', confirmPassword: '' });
+
 const roleOptions = [
   { label: '超级管理员', value: 'SUPER_ADMIN' },
   { label: '管理员', value: 'ADMIN' },
@@ -53,6 +67,8 @@ async function load() {
   brands.value = brandList;
   loading.value = false;
 }
+
+// ─── Create ─────────────────────────────────
 
 function openCreate() {
   createForm.value = { email: '', password: '', name: '', role: 'EDITOR' };
@@ -74,6 +90,31 @@ async function saveCreate() {
   }
 }
 
+// ─── Edit ───────────────────────────────────
+
+function openEdit(user: AdminUser) {
+  editUser.value = user;
+  editForm.value = { name: user.name, email: user.email, role: user.role };
+  editDialogVisible.value = true;
+}
+
+async function saveEdit() {
+  if (!editUser.value || !editForm.value.name || !editForm.value.email) {
+    ElMessage.error('请填写所有必填项');
+    return;
+  }
+  try {
+    await api.put(`/api/admin/users/${editUser.value.id}`, editForm.value);
+    editDialogVisible.value = false;
+    await load();
+    ElMessage.success('管理员信息已更新');
+  } catch (err: any) {
+    ElMessage.error(err?.message || '更新失败');
+  }
+}
+
+// ─── Brand Assignments ──────────────────────
+
 function openAssignBrands(user: AdminUser) {
   assignUser.value = user;
   assignBrandIds.value = user.brandAssignments?.map((a) => a.brandId) ?? [];
@@ -94,6 +135,8 @@ async function saveAssignments() {
   }
 }
 
+// ─── Toggle Active ──────────────────────────
+
 async function toggleActive(user: AdminUser) {
   try {
     await api.put(`/api/admin/users/${user.id}`, { isActive: !user.isActive });
@@ -101,6 +144,66 @@ async function toggleActive(user: AdminUser) {
     ElMessage.success(user.isActive ? '用户已停用' : '用户已启用');
   } catch (err: any) {
     ElMessage.error(err?.message || '更新用户失败');
+  }
+}
+
+// ─── Reset Password (admin → admin) ─────────
+
+function openResetPwd(user: AdminUser) {
+  resetPwdUser.value = user;
+  resetPwdForm.value = { newPassword: '', confirmPassword: '' };
+  resetPwdDialogVisible.value = true;
+}
+
+async function saveResetPwd() {
+  if (!resetPwdUser.value) return;
+  const { newPassword, confirmPassword } = resetPwdForm.value;
+  if (!newPassword || newPassword.length < 12) {
+    ElMessage.error('新密码至少12位');
+    return;
+  }
+  if (newPassword !== confirmPassword) {
+    ElMessage.error('两次密码不一致');
+    return;
+  }
+  try {
+    await api.put(`/api/admin/users/${resetPwdUser.value.id}/reset-password`, {
+      newPassword,
+    });
+    resetPwdDialogVisible.value = false;
+    ElMessage.success(`已重置 ${resetPwdUser.value.name} 的密码`);
+  } catch (err: any) {
+    ElMessage.error(err?.message || '重置密码失败');
+  }
+}
+
+// ─── Change Own Password ────────────────────
+
+function openChangePwd() {
+  changePwdForm.value = { oldPassword: '', newPassword: '', confirmPassword: '' };
+  changePwdDialogVisible.value = true;
+}
+
+async function saveChangePwd() {
+  const { oldPassword, newPassword, confirmPassword } = changePwdForm.value;
+  if (!oldPassword) {
+    ElMessage.error('请输入当前密码');
+    return;
+  }
+  if (!newPassword || newPassword.length < 12) {
+    ElMessage.error('新密码至少12位');
+    return;
+  }
+  if (newPassword !== confirmPassword) {
+    ElMessage.error('两次密码不一致');
+    return;
+  }
+  try {
+    await api.post('/api/admin/auth/change-password', { oldPassword, newPassword });
+    changePwdDialogVisible.value = false;
+    ElMessage.success('密码已修改');
+  } catch (err: any) {
+    ElMessage.error(err?.message || '修改密码失败');
   }
 }
 
@@ -115,6 +218,7 @@ onMounted(load);
   <div>
     <AdminPageHeader title="管理员">
       <template #actions>
+        <ElButton @click="openChangePwd">修改密码</ElButton>
         <ElButton type="primary" @click="openCreate">+ 新建管理员</ElButton>
       </template>
     </AdminPageHeader>
@@ -133,12 +237,7 @@ onMounted(load);
         </ElFormItem>
         <ElFormItem label="角色" required>
           <ElSelect v-model="createForm.role" style="width: 100%">
-            <ElOption
-              v-for="r in roleOptions"
-              :key="r.value"
-              :label="r.label"
-              :value="r.value"
-            />
+            <ElOption v-for="r in roleOptions" :key="r.value" :label="r.label" :value="r.value" />
           </ElSelect>
         </ElFormItem>
       </ElForm>
@@ -148,9 +247,68 @@ onMounted(load);
       </template>
     </ElDialog>
 
+    <!-- Edit Dialog -->
+    <ElDialog v-model="editDialogVisible" title="编辑管理员" width="480px" destroy-on-close>
+      <ElForm label-position="top" @submit.prevent="saveEdit">
+        <ElFormItem label="名称" required>
+          <ElInput v-model="editForm.name" />
+        </ElFormItem>
+        <ElFormItem label="邮箱" required>
+          <ElInput v-model="editForm.email" type="email" />
+        </ElFormItem>
+        <ElFormItem label="角色" required>
+          <ElSelect v-model="editForm.role" style="width: 100%">
+            <ElOption v-for="r in roleOptions" :key="r.value" :label="r.label" :value="r.value" />
+          </ElSelect>
+        </ElFormItem>
+      </ElForm>
+      <template #footer>
+        <ElButton @click="editDialogVisible = false">取消</ElButton>
+        <ElButton type="primary" @click="saveEdit">保存</ElButton>
+      </template>
+    </ElDialog>
+
+    <!-- Reset Password Dialog -->
+    <ElDialog v-model="resetPwdDialogVisible" title="重置密码" width="420px" destroy-on-close>
+      <p style="margin: 0 0 16px; color: var(--el-text-color-regular); font-size: 13px">
+        为 <strong>{{ resetPwdUser?.name }}</strong> ({{ resetPwdUser?.email }}) 设置新密码
+      </p>
+      <ElForm label-position="top" @submit.prevent="saveResetPwd">
+        <ElFormItem label="新密码" required>
+          <ElInput v-model="resetPwdForm.newPassword" type="password" show-password placeholder="至少12位" />
+        </ElFormItem>
+        <ElFormItem label="确认密码" required>
+          <ElInput v-model="resetPwdForm.confirmPassword" type="password" show-password />
+        </ElFormItem>
+      </ElForm>
+      <template #footer>
+        <ElButton @click="resetPwdDialogVisible = false">取消</ElButton>
+        <ElButton type="primary" @click="saveResetPwd">重置密码</ElButton>
+      </template>
+    </ElDialog>
+
+    <!-- Change Own Password Dialog -->
+    <ElDialog v-model="changePwdDialogVisible" title="修改密码" width="420px" destroy-on-close>
+      <ElForm label-position="top" @submit.prevent="saveChangePwd">
+        <ElFormItem label="当前密码" required>
+          <ElInput v-model="changePwdForm.oldPassword" type="password" show-password />
+        </ElFormItem>
+        <ElFormItem label="新密码" required>
+          <ElInput v-model="changePwdForm.newPassword" type="password" show-password placeholder="至少12位" />
+        </ElFormItem>
+        <ElFormItem label="确认新密码" required>
+          <ElInput v-model="changePwdForm.confirmPassword" type="password" show-password />
+        </ElFormItem>
+      </ElForm>
+      <template #footer>
+        <ElButton @click="changePwdDialogVisible = false">取消</ElButton>
+        <ElButton type="primary" @click="saveChangePwd">保存</ElButton>
+      </template>
+    </ElDialog>
+
     <!-- Brand Assignment Dialog -->
     <ElDialog v-model="assignDialogVisible" title="分配品牌" width="480px" destroy-on-close>
-      <p style="margin-bottom: 16px; color: #606266; font-size: 14px">
+      <p style="margin-bottom: 16px; color: var(--el-text-color-regular); font-size: 13px">
         选择 <strong>{{ assignUser?.name }}</strong> 可管理的品牌：
       </p>
       <ElCheckboxGroup v-model="assignBrandIds">
@@ -191,8 +349,8 @@ onMounted(load);
               {{ a.brand.name }}
             </ElTag>
           </template>
-          <span v-else-if="row.role === 'BRAND_MANAGER'" style="color: #909399; font-size: 12px">未分配品牌</span>
-          <span v-else style="color: #909399; font-size: 12px">全部</span>
+          <span v-else-if="row.role === 'BRAND_MANAGER'" class="text-subdued text-sm">未分配品牌</span>
+          <span v-else class="text-subdued text-sm">全部</span>
         </template>
       </ElTableColumn>
       <ElTableColumn label="状态" width="80">
@@ -202,14 +360,22 @@ onMounted(load);
           </ElTag>
         </template>
       </ElTableColumn>
-      <ElTableColumn label="操作" width="220" align="right">
+      <ElTableColumn label="操作" width="280" align="right">
         <template #default="{ row }">
+          <ElButton size="small" @click="openEdit(row)">编辑</ElButton>
           <ElButton
             v-if="row.role === 'BRAND_MANAGER'"
             size="small"
             @click="openAssignBrands(row)"
           >
             品牌
+          </ElButton>
+          <ElButton
+            size="small"
+            :disabled="row.id === store.user?.id"
+            @click="openResetPwd(row)"
+          >
+            重置密码
           </ElButton>
           <ElButton
             size="small"
