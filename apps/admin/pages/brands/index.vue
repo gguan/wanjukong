@@ -113,7 +113,7 @@ async function handleLogoUpload(event: Event) {
             uploadProgress.value = Math.round(info.percent * 100);
           },
         },
-        (err: Error | null) => (err ? reject(err) : resolve()),
+        (err: any) => (err ? reject(err) : resolve()),
       );
     });
 

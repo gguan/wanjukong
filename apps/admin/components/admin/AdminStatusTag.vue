@@ -3,13 +3,15 @@ const props = defineProps<{
   value: string;
 }>();
 
-const tagType = computed(() => {
-  const map: Record<string, string> = {
+type ElTagType = 'primary' | 'success' | 'warning' | 'danger' | 'info' | undefined;
+
+const tagType = computed<ElTagType>(() => {
+  const map: Record<string, ElTagType> = {
     ACTIVE: 'success',
     DRAFT: 'info',
     INACTIVE: 'warning',
     IN_STOCK: 'success',
-    PREORDER: '',
+    PREORDER: undefined,
     SOLD_OUT: 'danger',
     COMING_SOON: 'warning',
     // Order statuses

@@ -25,7 +25,7 @@ watch(
     if (!editor.value) return;
     const current = editor.value.getHTML();
     if (val !== current) {
-      editor.value.commands.setContent(val || '', false);
+      editor.value.commands.setContent(val || '', false as any);
     }
   },
 );

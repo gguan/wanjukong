@@ -318,7 +318,7 @@ export class OrdersService {
       this.prisma.order.groupBy({ by: ['status'], _count: true }),
       this.prisma.order.groupBy({ by: ['paymentStatus'], _count: true }),
       this.prisma.productVariant.findMany({
-        where: { stock: { gt: 0, lte: 5 }, status: 'ACTIVE' },
+        where: { stock: { gt: 0, lte: 5 }, product: { status: 'ACTIVE' } },
         include: { product: { include: { brand: true } } },
         orderBy: { stock: 'asc' },
         take: 10,

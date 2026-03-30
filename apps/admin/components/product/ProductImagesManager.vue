@@ -90,7 +90,7 @@ async function handleUpload(event: Event) {
               );
             },
           },
-          (err: Error | null) => (err ? reject(err) : resolve()),
+          (err: any) => (err ? reject(err) : resolve()),
         );
       });
 

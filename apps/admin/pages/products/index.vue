@@ -33,9 +33,10 @@ async function load() {
   params.set('page', String(page.value));
   params.set('limit', String(limit));
   const qs = params.toString();
-  const result = await api.get(`/api/admin/products?${qs}`);
-  products.value = result.data || result;
-  total.value = result.total ?? products.value.length;
+  const result = await api.get(`/api/admin/products?${qs}`) as { data?: Product[]; total?: number } | Product[];
+  const paginated = result as { data?: Product[]; total?: number };
+  products.value = paginated.data ?? (result as Product[]);
+  total.value = paginated.total ?? products.value.length;
   loading.value = false;
 }
 
