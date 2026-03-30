@@ -237,6 +237,178 @@ body,
   border-top: 1px solid var(--el-border-color);
 }
 
+/* ─── Text Helpers ───────────────────────────────────────── */
+
+.text-subdued { color: var(--el-text-color-secondary); }
+.text-muted { color: var(--el-text-color-placeholder); }
+.text-regular { color: var(--el-text-color-regular); }
+.text-primary { color: var(--el-text-color-primary); }
+.text-critical { color: var(--el-color-danger); }
+.text-success { color: var(--el-color-success); }
+.text-warning { color: var(--el-color-warning); }
+.text-link { color: var(--el-color-info); }
+.text-xs { font-size: 11px; }
+.text-sm { font-size: 12px; }
+.text-base { font-size: 13px; }
+.text-md { font-size: 14px; }
+.text-lg { font-size: 16px; }
+.text-xl { font-size: 20px; }
+.text-2xl { font-size: 24px; }
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+.uppercase { text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* ─── Polaris Card ───────────────────────────────────────── */
+
+.wk-card {
+  background: var(--wk-admin-panel-bg);
+  border: 1px solid var(--wk-admin-border);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(26, 26, 26, 0.05);
+}
+
+.wk-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--wk-admin-border);
+}
+
+.wk-card__header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wk-card__body {
+  padding: 16px 20px;
+}
+
+/* ─── Stat Card ──────────────────────────────────────────── */
+
+.wk-stat-card {
+  background: var(--wk-admin-panel-bg);
+  border: 1px solid var(--wk-admin-border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: 0 1px 2px rgba(26, 26, 26, 0.05);
+}
+
+.wk-stat-card__label {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  margin: 0 0 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+}
+
+.wk-stat-card__value {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--el-text-color-primary);
+}
+
+.wk-stat-card__value--warn { color: var(--el-color-warning); }
+.wk-stat-card__value--success { color: var(--el-color-success); }
+.wk-stat-card__value--critical { color: var(--el-color-danger); }
+
+/* ─── Mini Table ─────────────────────────────────────────── */
+
+.wk-mini-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.wk-mini-table th {
+  text-align: left;
+  padding: 8px 12px;
+  color: var(--el-text-color-secondary);
+  font-weight: 500;
+  font-size: 12px;
+  border-bottom: 1px solid var(--el-border-color-light);
+}
+
+.wk-mini-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+  color: var(--el-text-color-primary);
+  vertical-align: middle;
+}
+
+.wk-mini-table tr:last-child td { border-bottom: none; }
+
+.wk-mini-table tr:hover td { background: var(--el-fill-color-light); }
+
+/* ─── Badge ──────────────────────────────────────────────── */
+
+.wk-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--el-border-radius-small);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+}
+
+.wk-badge--pending  { background: var(--el-color-warning-light-9); color: #92400e; }
+.wk-badge--confirmed { background: var(--el-color-success-light-9); color: #065f46; }
+.wk-badge--cancelled { background: var(--el-color-danger-light-9); color: #991b1b; }
+.wk-badge--paid     { background: var(--el-color-success-light-9); color: #065f46; }
+.wk-badge--unpaid   { background: var(--el-color-warning-light-9); color: #92400e; }
+.wk-badge--failed   { background: var(--el-color-danger-light-9); color: #991b1b; }
+.wk-badge--low      { background: var(--el-color-warning-light-9); color: #92400e; }
+.wk-badge--critical { background: var(--el-color-danger-light-9); color: #991b1b; }
+.wk-badge--info     { background: var(--el-color-info-light-9); color: #1e40af; }
+
+/* ─── Link ───────────────────────────────────────────────── */
+
+.wk-link {
+  color: var(--el-text-color-primary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.15s;
+}
+
+.wk-link:hover { text-decoration: underline; }
+
+.wk-link--subdued {
+  color: var(--el-text-color-secondary);
+  font-weight: 400;
+  font-size: 12px;
+}
+
+.wk-link--subdued:hover { color: var(--el-text-color-primary); }
+
+/* ─── Stats Grid ─────────────────────────────────────────── */
+
+.wk-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+/* ─── Panels Grid ────────────────────────────────────────── */
+
+.wk-panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .wk-panels { grid-template-columns: 1fr; }
+}
+
 /* ─── Responsive ─────────────────────────────────────────── */
 
 @media (max-width: 960px) {
