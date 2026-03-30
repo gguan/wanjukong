@@ -6,9 +6,6 @@ on:
   pull_request:
     branches: [main]
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   lint-and-build:
     runs-on: ubuntu-latest
@@ -28,22 +25,25 @@ jobs:
         ports:
           - 5432:5432
 
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/wanjukong_test
+
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Generate Prisma client
-        run: npx prisma generate --schema=apps/api/prisma/schema.prisma
+        run: pnpm --filter @wanjukong/api db:generate
 
       - name: Lint
         run: pnpm lint
@@ -51,18 +51,28 @@ jobs:
       - name: Type check API
         working-directory: apps/api
         run: npx tsc --noEmit
-        continue-on-error: true
+
+      - name: Type check Web
+        working-directory: apps/web
+        run: npx nuxi typecheck
+
+      - name: Type check Admin
+        working-directory: apps/admin
+        run: npx nuxi typecheck
+
+      - name: Run API tests
+        run: pnpm --filter @wanjukong/api test
 
       - name: Build API
-        run: pnpm --filter api build
+        run: pnpm --filter @wanjukong/api build
 
       - name: Build Web
-        run: pnpm --filter web build
+        run: pnpm --filter @wanjukong/web build
         env:
           NUXT_PUBLIC_API_BASE: http://localhost:3001
           NUXT_PUBLIC_PAYPAL_CLIENT_ID: dummy
 
       - name: Build Admin
-        run: pnpm --filter admin build
+        run: pnpm --filter @wanjukong/admin build
         env:
           NUXT_PUBLIC_API_BASE_URL: http://localhost:3001
