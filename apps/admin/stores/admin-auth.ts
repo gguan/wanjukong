@@ -35,9 +35,11 @@ export const useAdminAuthStore = defineStore('admin-auth', {
 
   actions: {
     setUser(user: AdminUser) {
-      // Spread into a plain object to ensure SSR hydration compatibility
-      // ($fetch responses may lack Object.prototype methods that devalue expects)
-      this.user = { ...user };
+      // Deep-clone into plain objects to ensure SSR hydration compatibility.
+      // $fetch responses may produce objects via devalue that lack
+      // Object.prototype methods (e.g. hasOwnProperty), which Pinia's
+      // shouldHydrate() requires.
+      this.user = JSON.parse(JSON.stringify(user));
     },
     clear() {
       this.user = null;
