@@ -8,6 +8,7 @@ interface Variant {
   sku: string;
   manufacturerSku: string | null;
   priceCents: number;
+  usdPriceCents: number | null;
   stock: number;
   subtitle: string | null;
   specifications: string | null;

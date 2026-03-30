@@ -307,6 +307,8 @@ model Coupon {
 enum OrderStatus {
   PENDING
   CONFIRMED
+  SHIPPED
+  DELIVERED
   CANCELLED
 }
 
@@ -358,6 +360,7 @@ model Order {
 
   customer       Customer?       @relation(fields: [customerId], references: [id])
   items          OrderItem[]
+  shipments      Shipment[]
   paymentIntents PaymentIntent[]
 
   @@index([customerId])
@@ -385,12 +388,73 @@ model OrderItem {
   quantity              Int
   totalPriceCents       Int
 
-  order   Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product         @relation(fields: [productId], references: [id])
-  variant ProductVariant? @relation(fields: [variantId], references: [id])
+  order         Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product       Product         @relation(fields: [productId], references: [id])
+  variant       ProductVariant? @relation(fields: [variantId], references: [id])
+  shipmentItems ShipmentItem[]
 
   @@index([orderId])
   @@index([productId])
+}
+
+// ─── Shipment Models ─────────────────────────────────────
+
+enum ShipmentStatus {
+  PENDING
+  SHIPPED
+  IN_TRANSIT
+  DELIVERED
+  RETURNED
+}
+
+enum ShippingCarrier {
+  SF_EXPRESS
+  YTO
+  ZTO
+  STO
+  YUNDA
+  EMS
+  DHL
+  FEDEX
+  UPS
+  OTHER
+}
+
+model Shipment {
+  id                  String          @id @default(cuid())
+  orderId             String
+  carrier             ShippingCarrier
+  carrierName         String?         // when carrier=OTHER
+  trackingNumber      String
+  status              ShipmentStatus  @default(PENDING)
+
+  isInternational     Boolean         @default(false)
+  shippedAt           DateTime?
+  estimatedDeliveryAt DateTime?
+  deliveredAt         DateTime?
+  notes               String?
+
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  order               Order           @relation(fields: [orderId], references: [id])
+  items               ShipmentItem[]
+
+  @@index([orderId])
+  @@index([trackingNumber])
+}
+
+model ShipmentItem {
+  id          String @id @default(cuid())
+  shipmentId  String
+  orderItemId String
+  quantity    Int    @default(1)
+
+  shipment  Shipment  @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id])
+
+  @@unique([shipmentId, orderItemId])
+  @@index([shipmentId])
 }
 
 // ─── Admin Auth Models ───────────────────────────────────

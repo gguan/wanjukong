@@ -55,7 +55,7 @@ function fmtDate(iso: string) {
 }
 
 const statusLabel: Record<string, string> = {
-  PENDING: '待处理', CONFIRMED: '已确认', CANCELLED: '已取消',
+  PENDING: '待处理', CONFIRMED: '已确认', SHIPPED: '已发货', DELIVERED: '已签收', CANCELLED: '已取消',
 };
 const payStatusLabel: Record<string, string> = {
   UNPAID: '未付款', PAID: '已付款', FAILED: '失败', REFUNDED: '已退款',

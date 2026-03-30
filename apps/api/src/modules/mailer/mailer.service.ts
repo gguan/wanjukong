@@ -4,6 +4,7 @@ import { getVerificationEmailHtml } from './templates/customer-email-verificatio
 import { getPasswordResetEmailHtml } from './templates/customer-password-reset';
 import { getOrderConfirmationEmailHtml } from './templates/order-confirmation';
 import { getOrderStatusUpdateEmailHtml } from './templates/order-status-update';
+import { getShipmentNotificationEmailHtml } from './templates/shipment-notification';
 
 @Injectable()
 export class MailerService implements OnModuleInit {
@@ -155,6 +156,32 @@ export class MailerService implements OnModuleInit {
       from: this.fromAddress,
       to: params.email,
       subject: `Order Update — ${params.orderNo}`,
+      html,
+    });
+  }
+
+  async sendShipmentNotificationEmail(params: {
+    email: string;
+    name: string | null;
+    orderNo: string;
+    carrierLabel: string;
+    trackingNumber: string;
+    trackingUrl?: string;
+  }): Promise<void> {
+    if (!this.transporter) {
+      this.logger.log(
+        `[DEV] Shipment notification for ${params.email} — Order ${params.orderNo}, ` +
+        `${params.carrierLabel} ${params.trackingNumber}`,
+      );
+      return;
+    }
+
+    const html = getShipmentNotificationEmailHtml(params);
+
+    await this.transporter.sendMail({
+      from: this.fromAddress,
+      to: params.email,
+      subject: `Your order ${params.orderNo} has been shipped!`,
       html,
     });
   }

@@ -17,6 +17,8 @@ const tagType = computed<ElTagType>(() => {
     // Order statuses
     PENDING: 'warning',
     CONFIRMED: 'success',
+    SHIPPED: 'primary',
+    DELIVERED: 'success',
     CANCELLED: 'danger',
     // Payment statuses
     UNPAID: 'warning',
@@ -39,6 +41,8 @@ const label = computed(() => {
     // Order statuses
     PENDING: '待处理',
     CONFIRMED: '已确认',
+    SHIPPED: '已发货',
+    DELIVERED: '已签收',
     CANCELLED: '已取消',
     // Payment statuses
     UNPAID: '未付款',
