@@ -85,17 +85,6 @@ export class UploadsService {
    * Register a temporarily uploaded file in the database.
    * Expires after UPLOAD_TEMP_EXPIRE_HOURS (default 24h).
    */
-  /**
-   * COS image processing suffix — auto-converts to JPG on access.
-   * Appended to image URLs so webp/png/bmp are served as JPG.
-   */
-  private static readonly IMAGE_PROCESS_SUFFIX = '?imageMogr2/format/jpg/quality/90';
-
-  private static readonly IMAGE_MIME_TYPES = [
-    'image/webp', 'image/png', 'image/bmp', 'image/tiff', 'image/gif',
-    'image/jpeg', 'image/jpg',
-  ];
-
   async registerTempUpload(dto: RegisterTempUploadDto) {
     const { bucket, region } = this.config;
     const expireHours = parseInt(
@@ -104,23 +93,15 @@ export class UploadsService {
     );
     const expiresAt = new Date(Date.now() + expireHours * 60 * 60 * 1000);
 
-    // Auto-convert images to JPG via COS image processing
-    let fileUrl = dto.fileUrl;
-    const isImage = dto.mimeType && UploadsService.IMAGE_MIME_TYPES.includes(dto.mimeType);
-    const isAlreadyJpg = dto.mimeType === 'image/jpeg' || dto.mimeType === 'image/jpg';
-    if (isImage && !isAlreadyJpg && !fileUrl.includes('imageMogr2')) {
-      fileUrl = fileUrl + UploadsService.IMAGE_PROCESS_SUFFIX;
-    }
-
     return this.prisma.uploadFile.create({
       data: {
         provider: 'tencent-cos',
         bucket,
         region,
         objectKey: dto.objectKey,
-        fileUrl,
+        fileUrl: dto.fileUrl,
         originalFileName: dto.originalFileName,
-        mimeType: isImage ? 'image/jpeg' : dto.mimeType,
+        mimeType: dto.mimeType,
         sizeBytes: dto.sizeBytes,
         status: 'TEMP',
         expiresAt,

@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import COS from 'cos-js-sdk-v5';
-
 definePageMeta({ middleware: 'auth', layout: 'admin' });
 
 const api = useAdminApi();
+const { uploading, progress, uploadFiles } = useImageUpload({ maxSizeMB: 5 });
 
 interface Brand {
   id: string;
@@ -14,16 +13,6 @@ interface Brand {
   notes: string | null;
 }
 
-interface StsResponse {
-  tmpSecretId: string;
-  tmpSecretKey: string;
-  sessionToken: string;
-  bucket: string;
-  region: string;
-  publicBaseUrl: string;
-  keyPrefix: string;
-}
-
 const brands = ref<Brand[]>([]);
 const loading = ref(true);
 
@@ -32,8 +21,6 @@ const editing = ref<Brand | null>(null);
 const form = ref({ name: '', slug: '', code: '', logo: '', notes: '' });
 
 // Upload state
-const uploading = ref(false);
-const uploadProgress = ref(0);
 const logoFileInputRef = ref<HTMLInputElement | null>(null);
 
 async function load() {
@@ -77,65 +64,18 @@ function triggerLogoUpload() {
 
 async function handleLogoUpload(event: Event) {
   const input = event.target as HTMLInputElement;
-  const file = input.files?.[0];
-  if (!file) return;
-  if (!file.type.startsWith('image/')) {
-    ElMessage.error('请选择图片文件');
-    return;
-  }
-  if (file.size > 5 * 1024 * 1024) {
-    ElMessage.error('图片大小不能超过 5 MB');
-    return;
-  }
-
-  uploading.value = true;
-  uploadProgress.value = 0;
+  const files = input.files;
+  if (!files || files.length === 0) return;
 
   try {
-    const sts = await api.get<StsResponse>('/api/admin/uploads/cos-sts?prefix=brands');
-    const cos = new COS({
-      SecretId: sts.tmpSecretId,
-      SecretKey: sts.tmpSecretKey,
-      SecurityToken: sts.sessionToken,
-    });
-
-    const ext = file.name.split('.').pop() || 'jpg';
-    const key = `${sts.keyPrefix}${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`;
-
-    await new Promise<void>((resolve, reject) => {
-      cos.putObject(
-        {
-          Bucket: sts.bucket,
-          Region: sts.region,
-          Key: key,
-          Body: file,
-          onProgress: (info: { percent: number }) => {
-            uploadProgress.value = Math.round(info.percent * 100);
-          },
-        },
-        (err: any) => (err ? reject(err) : resolve()),
-      );
-    });
-
-    const publicUrl = sts.publicBaseUrl
-      ? `${sts.publicBaseUrl.replace(/\/$/, '')}/${key}`
-      : `https://${sts.bucket}.cos.${sts.region}.myqcloud.com/${key}`;
-
-    await api.post('/api/admin/uploads/register-temp', {
-      objectKey: key,
-      fileUrl: publicUrl,
-      originalFileName: file.name,
-      mimeType: file.type,
-      sizeBytes: file.size,
-    });
-
-    form.value.logo = publicUrl;
-    ElMessage.success('品牌标志上传成功');
+    const results = await uploadFiles(files);
+    if (results.length > 0) {
+      form.value.logo = results[0].imageUrl;
+      ElMessage.success('品牌标志上传成功');
+    }
   } catch (err: any) {
     ElMessage.error(err?.message || '上传失败');
   } finally {
-    uploading.value = false;
-    uploadProgress.value = 0;
     input.value = '';
   }
 }
@@ -230,11 +170,11 @@ onMounted(load);
                 :loading="uploading"
                 @click="triggerLogoUpload"
               >
-                {{ uploading ? `上传中 ${uploadProgress}%` : form.logo ? '替换标志' : '上传标志' }}
+                {{ uploading ? `上传中 ${progress}%` : form.logo ? '替换标志' : '上传标志' }}
               </ElButton>
               <ElProgress
                 v-if="uploading"
-                :percentage="uploadProgress"
+                :percentage="progress"
                 :stroke-width="4"
                 style="flex: 1"
               />

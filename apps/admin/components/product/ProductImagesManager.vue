@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import COS from 'cos-js-sdk-v5';
-
 const props = defineProps<{
   productId: string;
 }>();
 
 const api = useAdminApi();
+const { uploading, progress, uploadFiles } = useImageUpload();
 
 interface ProductImage {
   id: string;
@@ -16,20 +15,8 @@ interface ProductImage {
   uploadFileId: string | null;
 }
 
-interface StsResponse {
-  tmpSecretId: string;
-  tmpSecretKey: string;
-  sessionToken: string;
-  bucket: string;
-  region: string;
-  publicBaseUrl: string;
-  keyPrefix: string;
-}
-
 const images = ref<ProductImage[]>([]);
 const loading = ref(false);
-const uploading = ref(false);
-const uploadProgress = ref(0);
 const error = ref('');
 const fileInputRef = ref<HTMLInputElement | null>(null);
 
@@ -55,79 +42,25 @@ async function handleUpload(event: Event) {
   const files = input.files;
   if (!files || files.length === 0) return;
 
-  uploading.value = true;
-  uploadProgress.value = 0;
   error.value = '';
 
   try {
-    const sts = await api.get<StsResponse>('/api/admin/uploads/cos-sts');
-    const cos = new COS({
-      SecretId: sts.tmpSecretId,
-      SecretKey: sts.tmpSecretKey,
-      SecurityToken: sts.sessionToken,
-    });
+    const results = await uploadFiles(files);
 
-    const newImages: { imageUrl: string; uploadFileId?: string }[] = [];
-
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      if (!file.type.startsWith('image/')) continue;
-      if (file.size > 10 * 1024 * 1024) continue;
-
-      const ext = file.name.split('.').pop() || 'jpg';
-      const key = `${sts.keyPrefix}${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`;
-
-      await new Promise<void>((resolve, reject) => {
-        cos.putObject(
-          {
-            Bucket: sts.bucket,
-            Region: sts.region,
-            Key: key,
-            Body: file,
-            onProgress: (info: { percent: number }) => {
-              uploadProgress.value = Math.round(
-                ((i + info.percent) / files.length) * 100,
-              );
-            },
-          },
-          (err: any) => (err ? reject(err) : resolve()),
-        );
-      });
-
-      const publicUrl = sts.publicBaseUrl
-        ? `${sts.publicBaseUrl.replace(/\/$/, '')}/${key}`
-        : `https://${sts.bucket}.cos.${sts.region}.myqcloud.com/${key}`;
-
-      const uploadRecord = await api.post<{ id: string }>(
-        '/api/admin/uploads/register-temp',
-        {
-          objectKey: key,
-          fileUrl: publicUrl,
-          originalFileName: file.name,
-          mimeType: file.type,
-          sizeBytes: file.size,
-        },
-      );
-
-      newImages.push({
-        imageUrl: publicUrl,
-        uploadFileId: uploadRecord.id,
-      });
-    }
-
-    if (newImages.length > 0) {
+    if (results.length > 0) {
       await api.post(`/api/admin/products/${props.productId}/images`, {
-        images: newImages,
+        images: results.map((r) => ({
+          imageUrl: r.imageUrl,
+          uploadFileId: r.uploadFileId,
+        })),
       });
-      ElMessage.success(`已上传 ${newImages.length} 张图片`);
+      ElMessage.success(`已上传 ${results.length} 张图片`);
       await loadImages();
     }
   } catch (err: any) {
     error.value = err?.message || '上传失败';
-    ElMessage.error('上传失败');
+    ElMessage.error(err?.message || '上传失败');
   } finally {
-    uploading.value = false;
-    uploadProgress.value = 0;
     input.value = '';
   }
 }
@@ -181,12 +114,13 @@ onMounted(loadImages);
   <div>
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px">
       <ElButton :loading="uploading" type="primary" size="small" @click="triggerUpload">
-        {{ uploading ? `上传中 ${uploadProgress}%` : '+ 上传图片' }}
+        {{ uploading ? `上传中 ${progress}%` : '+ 上传图片' }}
       </ElButton>
+      <span class="text-subdued text-sm">支持 JPG/PNG/WebP/GIF/BMP，最大 10MB，自动转为 JPG</span>
       <input
         ref="fileInputRef"
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp,image/gif,image/bmp"
         multiple
         :disabled="uploading"
         style="display: none"
@@ -194,7 +128,7 @@ onMounted(loadImages);
       />
     </div>
 
-    <ElProgress v-if="uploading" :percentage="uploadProgress" :stroke-width="4" style="margin-bottom: 12px" />
+    <ElProgress v-if="uploading" :percentage="progress" :stroke-width="4" style="margin-bottom: 12px" />
 
     <ElAlert v-if="error" :title="error" type="error" closable style="margin-bottom: 12px" @close="error = ''" />
 
