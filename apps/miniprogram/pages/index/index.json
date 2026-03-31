@@ -2,5 +2,7 @@
   "usingComponents": {
     "product-card": "/components/product-card/index"
   },
-  "navigationStyle": "custom"
+  "navigationStyle": "custom",
+  "enablePullDownRefresh": true,
+  "onReachBottomDistance": 100
 }

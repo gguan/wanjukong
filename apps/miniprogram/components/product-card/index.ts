@@ -1,13 +1,10 @@
-import { formatPrice } from '../../utils/format';
-
 Component({
   properties: {
     product: { type: Object, value: {} },
   },
 
   data: {
-    displayPrice: '',
-    hasMultipleVariants: false,
+    priceDisplay: '0',
   },
 
   observers: {
@@ -16,14 +13,15 @@ Component({
       const variants = val.variants as Array<{
         isDefault: boolean;
         priceCents: number;
-        usdPriceCents: number | null;
       }>;
       const def = variants.find((v) => v.isDefault) || variants[0];
       if (def) {
-        this.setData({
-          displayPrice: formatPrice(def.priceCents, def.usdPriceCents),
-          hasMultipleVariants: variants.length > 1,
-        });
+        // Show integer if no decimals, otherwise 2 decimal places
+        const yuan = def.priceCents / 100;
+        const display = yuan === Math.floor(yuan)
+          ? String(Math.floor(yuan))
+          : yuan.toFixed(2);
+        this.setData({ priceDisplay: display });
       }
     },
   },

@@ -1,14 +1,12 @@
 .product-card {
-  background: #fff;
-  border-radius: 12rpx;
-  overflow: hidden;
-  border: 2rpx solid #e3e3e3;
+  background: #f5f5f5;
 }
 
 .card-image {
   position: relative;
   width: 100%;
-  padding-top: 100%; /* 1:1 aspect ratio */
+  padding-top: 125%; /* 4:5 aspect ratio — taller image */
+  background: #ebebeb;
 }
 
 .card-image .image {
@@ -24,27 +22,49 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f6f6f7;
+  background: #ebebeb;
 }
 
-.badge-overlay {
+.placeholder-text {
+  font-size: 24rpx;
+  color: #b5b5b5;
+}
+
+/* Sold Out — top right, dark bg */
+.badge-sold {
   position: absolute;
-  top: 12rpx; left: 12rpx;
-  padding: 4rpx 12rpx;
-  border-radius: 6rpx;
+  top: 16rpx;
+  right: 16rpx;
+  padding: 6rpx 16rpx;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
   font-size: 20rpx;
   font-weight: 600;
+  letter-spacing: 0.06em;
+  border-radius: 4rpx;
 }
 
-.badge-warning { background: #fef3c7; color: #92400e; }
-.badge-danger { background: #fee2e2; color: #991b1b; }
+/* Preorder — top right */
+.badge-preorder {
+  position: absolute;
+  top: 16rpx;
+  right: 16rpx;
+  padding: 6rpx 16rpx;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  font-size: 20rpx;
+  font-weight: 600;
+  border-radius: 4rpx;
+}
 
-.card-body { padding: 16rpx 20rpx 20rpx; }
+.card-body {
+  padding: 16rpx 20rpx 24rpx;
+}
 
 .brand-name {
   display: block;
   font-size: 20rpx;
-  color: #8c9196;
+  color: #999;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-bottom: 4rpx;
@@ -53,9 +73,9 @@
 .product-name {
   display: block;
   font-size: 26rpx;
-  font-weight: 600;
-  color: #303030;
-  margin-bottom: 8rpx;
+  color: #333;
+  line-height: 1.4;
+  margin-bottom: 12rpx;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -63,20 +83,10 @@
   -webkit-box-orient: vertical;
 }
 
-.meta {
-  display: flex;
-  gap: 8rpx;
-  margin-bottom: 12rpx;
+.price {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #c75c2a;
+  letter-spacing: 0.02em;
 }
-
-.meta-tag {
-  font-size: 20rpx;
-  color: #616161;
-  background: #f6f6f7;
-  padding: 4rpx 10rpx;
-  border-radius: 6rpx;
-}
-
-.price-row { display: flex; align-items: baseline; }
-.from-label { font-size: 22rpx; color: #8c9196; }
-.price { font-size: 28rpx; font-weight: 700; color: #303030; }

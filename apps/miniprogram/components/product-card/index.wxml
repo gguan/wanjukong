@@ -8,25 +8,18 @@
       lazy-load
     />
     <view wx:else class="placeholder">
-      <text class="text-muted text-sm">No Image</text>
+      <text class="placeholder-text">No Image</text>
     </view>
-    <view wx:if="{{product.displayAvailability === 'PREORDER'}}" class="badge-overlay badge-warning">
+    <view wx:if="{{product.displayAvailability === 'SOLD_OUT'}}" class="badge-sold">
+      SOLD OUT
+    </view>
+    <view wx:elif="{{product.displayAvailability === 'PREORDER'}}" class="badge-preorder">
       预售
-    </view>
-    <view wx:elif="{{product.displayAvailability === 'SOLD_OUT'}}" class="badge-overlay badge-danger">
-      售罄
     </view>
   </view>
   <view class="card-body">
     <text class="brand-name">{{product.brand.name}}</text>
     <text class="product-name">{{product.name}}</text>
-    <view class="meta" wx:if="{{product.category || product.scale}}">
-      <text wx:if="{{product.category}}" class="meta-tag">{{product.category.name}}</text>
-      <text wx:if="{{product.scale}}" class="meta-tag">{{product.scale}}</text>
-    </view>
-    <view class="price-row">
-      <text wx:if="{{hasMultipleVariants}}" class="from-label">起 </text>
-      <text class="price">{{displayPrice}}</text>
-    </view>
+    <text class="price">¥ {{priceDisplay}}</text>
   </view>
 </view>
