@@ -25,14 +25,14 @@
 
 .product-grid product-card {
   display: block;
-  width: calc(50% - 1rpx);
+  width: calc(50% - 2rpx);
   box-sizing: border-box;
-  margin-bottom: 2rpx;
+  margin-bottom: 4rpx;
 }
 
 /* Right column — offset by gap */
 .product-grid product-card:nth-child(even) {
-  margin-left: 2rpx;
+  margin-left: 4rpx;
 }
 
 /* Loading States */
