@@ -19,6 +19,7 @@ const images = ref<ProductImage[]>([]);
 const loading = ref(false);
 const error = ref('');
 const fileInputRef = ref<HTMLInputElement | null>(null);
+const dragging = ref(false);
 
 function triggerUpload() {
   fileInputRef.value?.click();
@@ -37,16 +38,10 @@ async function loadImages() {
   }
 }
 
-async function handleUpload(event: Event) {
-  const input = event.target as HTMLInputElement;
-  const files = input.files;
-  if (!files || files.length === 0) return;
-
+async function doUpload(files: FileList | File[]) {
   error.value = '';
-
   try {
     const results = await uploadFiles(files);
-
     if (results.length > 0) {
       await api.post(`/api/admin/products/${props.productId}/images`, {
         images: results.map((r) => ({
@@ -60,9 +55,45 @@ async function handleUpload(event: Event) {
   } catch (err: any) {
     error.value = err?.message || '上传失败';
     ElMessage.error(err?.message || '上传失败');
-  } finally {
-    input.value = '';
   }
+}
+
+async function handleUpload(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const files = input.files;
+  if (!files || files.length === 0) return;
+  await doUpload(files);
+  input.value = '';
+}
+
+// ─── Drag & Drop ────────────────────────────
+
+function onDragEnter(e: DragEvent) {
+  e.preventDefault();
+  dragging.value = true;
+}
+
+function onDragOver(e: DragEvent) {
+  e.preventDefault();
+  dragging.value = true;
+}
+
+function onDragLeave(e: DragEvent) {
+  e.preventDefault();
+  // Only unset if leaving the drop zone itself (not a child)
+  const relatedTarget = e.relatedTarget as Node | null;
+  const currentTarget = e.currentTarget as Node;
+  if (!currentTarget.contains(relatedTarget)) {
+    dragging.value = false;
+  }
+}
+
+async function onDrop(e: DragEvent) {
+  e.preventDefault();
+  dragging.value = false;
+  const files = e.dataTransfer?.files;
+  if (!files || files.length === 0) return;
+  await doUpload(files);
 }
 
 async function setPrimary(imageId: string) {
@@ -112,11 +143,29 @@ onMounted(loadImages);
 
 <template>
   <div>
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px">
-      <ElButton :loading="uploading" type="primary" size="small" @click="triggerUpload">
-        {{ uploading ? `上传中 ${progress}%` : '+ 上传图片' }}
-      </ElButton>
-      <span class="text-subdued text-sm">支持 JPG/PNG/WebP/GIF/BMP，最大 10MB，自动转为 JPG</span>
+    <!-- Drop Zone -->
+    <div
+      class="drop-zone"
+      :class="{ 'drop-zone--active': dragging, 'drop-zone--uploading': uploading }"
+      @dragenter="onDragEnter"
+      @dragover="onDragOver"
+      @dragleave="onDragLeave"
+      @drop="onDrop"
+      @click="triggerUpload"
+    >
+      <div v-if="uploading" class="drop-zone__content">
+        <span class="drop-zone__icon">&#8635;</span>
+        <span class="drop-zone__text">上传中 {{ progress }}%</span>
+      </div>
+      <div v-else-if="dragging" class="drop-zone__content">
+        <span class="drop-zone__icon">&#8615;</span>
+        <span class="drop-zone__text">松开即可上传</span>
+      </div>
+      <div v-else class="drop-zone__content">
+        <span class="drop-zone__icon">&#43;</span>
+        <span class="drop-zone__text">点击或拖拽图片到此处上传</span>
+        <span class="drop-zone__hint">支持 JPG/PNG/WebP/GIF/BMP，最大 10MB，自动转为 JPG</span>
+      </div>
       <input
         ref="fileInputRef"
         type="file"
@@ -128,26 +177,24 @@ onMounted(loadImages);
       />
     </div>
 
-    <ElProgress v-if="uploading" :percentage="progress" :stroke-width="4" style="margin-bottom: 12px" />
+    <ElProgress v-if="uploading" :percentage="progress" :stroke-width="4" style="margin: 12px 0" />
 
     <ElAlert v-if="error" :title="error" type="error" closable style="margin-bottom: 12px" @close="error = ''" />
 
     <div v-if="loading" v-loading="true" style="height: 100px" />
 
-    <ElEmpty v-else-if="images.length === 0" description="暂无图片，请先上传。" />
+    <ElEmpty v-else-if="images.length === 0" description="暂无图片，拖拽或点击上方区域上传。" />
 
-    <div v-else style="display: flex; flex-direction: column; gap: 8px">
+    <div v-else class="image-list">
       <div
         v-for="(img, idx) in images"
         :key="img.id"
-        style="display: flex; align-items: center; gap: 12px; padding: 8px; border: 1px solid var(--wk-admin-border); border-radius: 6px"
-        :style="img.isPrimary ? { borderColor: '#409EFF', background: '#ecf5ff' } : {}"
+        class="image-item"
+        :class="{ 'image-item--primary': img.isPrimary }"
       >
-        <div style="position: relative; width: 72px; height: 72px; flex-shrink: 0; border-radius: 4px; overflow: hidden; background: #f5f7fa">
-          <img :src="img.imageUrl" :alt="img.altText || '商品图片'" style="width: 100%; height: 100%; object-fit: cover" />
-          <ElTag v-if="img.isPrimary" type="primary" size="small" style="position: absolute; bottom: 0; left: 0; right: 0; text-align: center; border-radius: 0">
-            主图
-          </ElTag>
+        <div class="image-item__thumb">
+          <img :src="img.imageUrl" :alt="img.altText || '商品图片'" />
+          <span v-if="img.isPrimary" class="image-item__badge">主图</span>
         </div>
         <ElSpace wrap>
           <ElButton v-if="!img.isPrimary" size="small" @click="setPrimary(img.id)">★ 设为主图</ElButton>
@@ -159,3 +206,110 @@ onMounted(loadImages);
     </div>
   </div>
 </template>
+
+<style scoped>
+.drop-zone {
+  border: 2px dashed var(--el-border-color);
+  border-radius: 8px;
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 12px;
+  background: var(--el-fill-color-lighter);
+}
+
+.drop-zone:hover {
+  border-color: var(--el-border-color-dark);
+  background: var(--el-fill-color-light);
+}
+
+.drop-zone--active {
+  border-color: #005bd3;
+  background: #eef4fd;
+  border-style: solid;
+}
+
+.drop-zone--uploading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.drop-zone__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.drop-zone__icon {
+  font-size: 28px;
+  color: var(--el-text-color-secondary);
+  line-height: 1;
+}
+
+.drop-zone--active .drop-zone__icon {
+  color: #005bd3;
+}
+
+.drop-zone__text {
+  font-size: 13px;
+  color: var(--el-text-color-primary);
+  font-weight: 500;
+}
+
+.drop-zone__hint {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+/* Image List */
+.image-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.image-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border: 1px solid var(--el-border-color);
+  border-radius: 6px;
+}
+
+.image-item--primary {
+  border-color: #409EFF;
+  background: #ecf5ff;
+}
+
+.image-item__thumb {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #f5f7fa;
+}
+
+.image-item__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-item__badge {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 500;
+  color: #fff;
+  background: #409EFF;
+  padding: 1px 0;
+}
+</style>
