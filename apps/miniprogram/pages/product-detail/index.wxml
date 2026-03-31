@@ -30,12 +30,6 @@
     <!-- Product Name -->
     <view class="product-name">{{product.name}}</view>
 
-    <!-- Variant Name / Subtitle -->
-    <view wx:if="{{currentVariant && currentVariant.name}}" class="variant-subtitle">
-      {{currentVariant.name}}
-      <text wx:if="{{currentVariant.specSummary}}" class="variant-spec-hint"> · {{currentVariant.specSummary}}</text>
-    </view>
-
     <!-- Variant Selection (on dark bg) -->
     <view wx:if="{{product.variants.length > 1}}" class="variants-section">
       <view class="variant-pills">
