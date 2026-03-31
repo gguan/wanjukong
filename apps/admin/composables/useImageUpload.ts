@@ -24,6 +24,8 @@ interface UploadOptions {
   jpgQuality?: number;
   /** Allowed mime types (default: common image types) */
   allowedTypes?: string[];
+  /** COS key prefix / directory (default: 'products') */
+  prefix?: string;
 }
 
 const DEFAULT_ALLOWED_TYPES = [
@@ -106,6 +108,7 @@ export function useImageUpload(options: UploadOptions = {}) {
     maxDimension = 4096,
     jpgQuality = 0.9,
     allowedTypes = DEFAULT_ALLOWED_TYPES,
+    prefix = 'products',
   } = options;
 
   const api = useAdminApi();
@@ -138,7 +141,7 @@ export function useImageUpload(options: UploadOptions = {}) {
 
     try {
       // Get STS credentials
-      const sts = await api.get<StsResponse>('/api/admin/uploads/cos-sts');
+      const sts = await api.get<StsResponse>(`/api/admin/uploads/cos-sts?prefix=${prefix}`);
       const cos = new COS({
         SecretId: sts.tmpSecretId,
         SecretKey: sts.tmpSecretKey,

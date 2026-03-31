@@ -2,7 +2,7 @@
 definePageMeta({ middleware: 'auth', layout: 'admin' });
 
 const api = useAdminApi();
-const { uploading, progress, uploadFiles } = useImageUpload({ maxSizeMB: 5 });
+const { uploading, progress, uploadFiles } = useImageUpload({ maxSizeMB: 5, prefix: 'brands' });
 
 interface Brand {
   id: string;
