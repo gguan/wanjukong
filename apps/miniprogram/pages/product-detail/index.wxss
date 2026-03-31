@@ -1,71 +1,98 @@
-.page { padding-bottom: 0; }
-
-/* 图片轮播 */
-.image-swiper {
-  width: 100%;
-  height: 750rpx;
+.page {
+  background: #000;
+  min-height: 100vh;
 }
 
-.swiper-image {
-  width: 100%;
-  height: 100%;
+/* ─── Custom Navbar ─────────────────────────────────────── */
+
+.custom-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  padding-left: 16rpx;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
 }
 
-.swiper-placeholder {
-  width: 100%;
-  height: 100%;
+.nav-back {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f6f6f7;
 }
 
-/* 基本信息 */
-.info-card { margin-top: 24rpx; }
-
-.info-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8rpx;
+.nav-back-icon {
+  color: #fff;
+  font-size: 40rpx;
+  font-weight: 300;
+  margin-top: -4rpx;
 }
 
-.brand-label {
-  font-size: 22rpx;
-  color: #8c9196;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-weight: 500;
+/* ─── Hero Image ────────────────────────────────────────── */
+
+.hero {
+  width: 100%;
+  height: 900rpx;
 }
 
-.product-name {
-  font-size: 36rpx;
-  font-weight: 700;
-  color: #303030;
-  line-height: 1.3;
-  margin-bottom: 8rpx;
+.hero-image {
+  width: 100%;
+  height: 100%;
 }
 
-.product-scale {
-  font-size: 24rpx;
-  color: #8c9196;
-  margin-bottom: 16rpx;
+.hero-placeholder {
+  width: 100%;
+  height: 100%;
+  background: #1a1a1a;
 }
 
-.price-section {
+/* ─── Info Section (dark) ───────────────────────────────── */
+
+.info-section {
+  background: #000;
+  padding: 32rpx 32rpx 36rpx;
+}
+
+.price-row {
   display: flex;
   align-items: baseline;
   gap: 16rpx;
-  margin-top: 16rpx;
+  margin-bottom: 16rpx;
+}
+
+.price-main {
+  font-size: 48rpx;
+  font-weight: 800;
+  color: #c75c2a;
+  letter-spacing: 0.02em;
 }
 
 .price-usd {
   font-size: 28rpx;
-  color: #8c9196;
+  color: rgba(255, 255, 255, 0.45);
   font-weight: 500;
 }
 
-/* 规格选择 */
+.product-name {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.35;
+  margin-bottom: 8rpx;
+}
+
+/* ─── Variant Pills (on dark bg) ────────────────────────── */
+
+.variants-section {
+  margin-top: 24rpx;
+}
+
 .variant-pills {
   display: flex;
   flex-wrap: wrap;
@@ -74,40 +101,83 @@
 
 .variant-pill {
   padding: 14rpx 28rpx;
-  border-radius: 12rpx;
+  border-radius: 8rpx;
   font-size: 26rpx;
   font-weight: 500;
-  color: #303030;
-  background: #f6f6f7;
-  border: 2rpx solid transparent;
+  color: rgba(255, 255, 255, 0.7);
+  background: transparent;
+  border: 2rpx solid rgba(255, 255, 255, 0.3);
 }
 
 .variant-pill.active {
-  border-color: #303030;
+  color: #000;
   background: #fff;
+  border-color: #fff;
 }
 
 .variant-pill.disabled {
-  opacity: 0.4;
+  opacity: 0.3;
   text-decoration: line-through;
 }
 
-.spec-summary {
-  margin-top: 16rpx;
-  font-size: 24rpx;
-  color: #8c9196;
+/* ─── Image Gallery ─────────────────────────────────────── */
+
+.gallery {
+  background: #000;
+  padding: 8rpx 24rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
 }
 
-/* 描述 */
-.description {
+.gallery-image {
+  width: 100%;
+  display: block;
+  border-radius: 0;
+}
+
+/* ─── Specifications Section ────────────────────────────── */
+
+.specs-section {
+  background: #fff;
+  padding: 48rpx 32rpx 64rpx;
+}
+
+.specs-block {
+  margin-bottom: 32rpx;
+}
+
+.specs-block:last-child {
+  margin-bottom: 0;
+}
+
+.specs-title {
+  font-size: 44rpx;
+  font-weight: 800;
+  color: #000;
+  margin-bottom: 24rpx;
+  letter-spacing: 0.02em;
+}
+
+.description-content {
   font-size: 28rpx;
-  color: #616161;
-  line-height: 1.7;
+  color: #333;
+  line-height: 1.8;
   white-space: pre-wrap;
 }
 
-/* 底部操作栏 */
-.bottom-spacer { height: 140rpx; }
+.specs-content {
+  font-size: 28rpx;
+  color: #333;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+/* ─── Bottom Bar ────────────────────────────────────────── */
+
+.bottom-spacer {
+  height: 140rpx;
+}
 
 .bottom-bar {
   position: fixed;
@@ -115,18 +185,78 @@
   left: 0;
   right: 0;
   display: flex;
-  gap: 16rpx;
+  align-items: center;
+  gap: 0;
   padding: 16rpx 24rpx;
   background: #fff;
-  border-top: 2rpx solid #f0f0f0;
+  border-top: 1rpx solid #e8e8e8;
   z-index: 100;
 }
 
-.bottom-btn {
-  flex: 1;
-  margin: 0;
+.bar-cart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 120rpx;
+  flex-shrink: 0;
 }
 
-.bottom-btn[disabled] {
-  opacity: 0.5;
+.bar-cart-icon {
+  font-size: 40rpx;
+  line-height: 1;
+}
+
+.bar-cart-label {
+  font-size: 20rpx;
+  color: #333;
+  margin-top: 4rpx;
+}
+
+.bar-btn {
+  flex: 1;
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  font-size: 30rpx;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  border-radius: 8rpx;
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+
+.bar-btn::after {
+  border: none;
+}
+
+.bar-btn--buy {
+  background: #000;
+  color: #fff;
+}
+
+.bar-btn--buy:active {
+  background: #333;
+}
+
+.bar-btn--sold {
+  background: #fff;
+  color: #000;
+  border: 2rpx solid #000;
+}
+
+/* ─── Loading ───────────────────────────────────────────── */
+
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: #000;
+}
+
+.loading-text {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 28rpx;
 }

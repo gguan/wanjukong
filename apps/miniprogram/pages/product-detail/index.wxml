@@ -1,48 +1,37 @@
 <!-- 商品详情 -->
 <view class="page" wx:if="{{!loading && product}}">
-  <!-- 图片轮播 -->
-  <swiper
-    class="image-swiper"
-    indicator-dots="{{swiperImages.length > 1}}"
-    indicator-color="rgba(255,255,255,0.4)"
-    indicator-active-color="#fff"
-    autoplay
-    circular
-  >
-    <swiper-item wx:for="{{swiperImages}}" wx:key="*this">
-      <image src="{{item}}" mode="aspectFill" class="swiper-image" />
-    </swiper-item>
-    <swiper-item wx:if="{{!swiperImages.length}}">
-      <view class="swiper-placeholder">
-        <text class="text-muted">暂无图片</text>
-      </view>
-    </swiper-item>
-  </swiper>
 
-  <!-- 基本信息 -->
-  <view class="card info-card">
-    <view class="card-body">
-      <view class="info-header">
-        <view class="brand-label">{{product.brand.name}}</view>
-        <view wx:if="{{availabilityText}}" class="badge {{availabilityClass}}">
-          {{availabilityText}}
-        </view>
-      </view>
-      <view class="product-name">{{product.name}}</view>
-      <view wx:if="{{product.scale}}" class="product-scale">比例: {{product.scale}}</view>
-
-      <!-- 价格 -->
-      <view class="price-section">
-        <text class="price price-lg">{{displayPriceCNY}}</text>
-        <text wx:if="{{displayPriceUSD}}" class="price-usd">{{displayPriceUSD}}</text>
-      </view>
+  <!-- ─── Custom Navbar (transparent, over hero) ─── -->
+  <view class="custom-nav" style="padding-top: {{statusBarHeight}}px">
+    <view class="nav-back" bindtap="onTapBack">
+      <text class="nav-back-icon">‹</text>
     </view>
   </view>
 
-  <!-- 规格选择 -->
-  <view class="card" wx:if="{{product.variants.length > 1}}">
-    <view class="card-header">规格选择</view>
-    <view class="card-body">
+  <!-- ─── Hero Image ─── -->
+  <view class="hero">
+    <image
+      wx:if="{{heroImage}}"
+      src="{{heroImage}}"
+      mode="aspectFill"
+      class="hero-image"
+    />
+    <view wx:else class="hero-placeholder" />
+  </view>
+
+  <!-- ─── Info Section (dark bg) ─── -->
+  <view class="info-section">
+    <!-- Price Row -->
+    <view class="price-row">
+      <text class="price-main">{{displayPriceCNY}}</text>
+      <text wx:if="{{displayPriceUSD}}" class="price-usd">{{displayPriceUSD}}</text>
+    </view>
+
+    <!-- Product Name -->
+    <view class="product-name">{{product.name}}</view>
+
+    <!-- Variant Selection (on dark bg) -->
+    <view wx:if="{{product.variants.length > 1}}" class="variants-section">
       <view class="variant-pills">
         <view
           wx:for="{{product.variants}}"
@@ -54,43 +43,59 @@
           {{item.name}}
         </view>
       </view>
-      <view wx:if="{{currentVariant.specSummary}}" class="spec-summary">
-        {{currentVariant.specSummary}}
-      </view>
     </view>
   </view>
 
-  <!-- 商品描述 -->
-  <view class="card" wx:if="{{product.description}}">
-    <view class="card-header">商品描述</view>
-    <view class="card-body">
-      <view class="description">{{product.description}}</view>
+  <!-- ─── Image Gallery (vertical, all images) ─── -->
+  <view class="gallery" wx:if="{{galleryImages.length}}">
+    <image
+      wx:for="{{galleryImages}}"
+      wx:key="*this"
+      src="{{item}}"
+      mode="widthFix"
+      class="gallery-image"
+      lazy-load
+    />
+  </view>
+
+  <!-- ─── Specifications (white bg) ─── -->
+  <view wx:if="{{product.description || (currentVariant && currentVariant.specifications)}}" class="specs-section">
+    <view wx:if="{{product.description}}" class="specs-block">
+      <view class="description-content">{{product.description}}</view>
+    </view>
+    <view wx:if="{{currentVariant && currentVariant.specifications}}" class="specs-block">
+      <view class="specs-title">INCLUDED</view>
+      <view class="specs-content">{{currentVariant.specifications}}</view>
     </view>
   </view>
 
-  <!-- 底部占位 -->
-  <view class="bottom-spacer"></view>
+  <!-- ─── Bottom Spacer ─── -->
+  <view class="bottom-spacer" />
 
-  <!-- 底部操作栏 -->
+  <!-- ─── Bottom Bar ─── -->
   <view class="bottom-bar safe-bottom">
+    <view class="bar-cart" bindtap="onTapCart">
+      <text class="bar-cart-icon">🛍</text>
+      <text class="bar-cart-label">购物袋</text>
+    </view>
     <button
-      class="btn btn-outline bottom-btn"
-      disabled="{{isSoldOut}}"
-      bindtap="onAddToCart"
+      wx:if="{{isSoldOut}}"
+      class="bar-btn bar-btn--sold"
+      disabled
     >
-      加入购物车
+      SOLD OUT
     </button>
     <button
-      class="btn btn-primary bottom-btn"
-      disabled="{{isSoldOut}}"
+      wx:else
+      class="bar-btn bar-btn--buy"
       bindtap="onBuyNow"
     >
-      {{isSoldOut ? '已售罄' : '立即购买'}}
+      立即购买
     </button>
   </view>
 </view>
 
-<!-- 加载中 -->
-<view wx:if="{{loading}}" class="empty">
-  <text class="text-secondary">加载中...</text>
+<!-- Loading -->
+<view wx:if="{{loading}}" class="loading-state">
+  <text class="loading-text">加载中...</text>
 </view>

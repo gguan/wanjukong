@@ -1,5 +1,5 @@
 import { fetchProductBySlug } from '../../utils/api';
-import { formatCNY, formatUSD, formatPrice } from '../../utils/format';
+import { formatCNY, formatUSD } from '../../utils/format';
 import { getCart, setCart } from '../../utils/storage';
 import type { Product, ProductVariant } from '../../utils/api';
 import type { CartItem } from '../../utils/storage';
@@ -9,16 +9,19 @@ Page({
     product: null as Product | null,
     currentVariant: null as ProductVariant | null,
     selectedVariantId: '',
-    swiperImages: [] as string[],
+    heroImage: '',
+    galleryImages: [] as string[],
     displayPriceCNY: '',
     displayPriceUSD: '',
-    availabilityText: '',
-    availabilityClass: '',
     isSoldOut: false,
     loading: true,
+    statusBarHeight: 44,
   },
 
   onLoad(query: Record<string, string | undefined>) {
+    const sysInfo = wx.getWindowInfo();
+    this.setData({ statusBarHeight: sysInfo.statusBarHeight || 44 });
+
     const slug = query.slug;
     if (!slug) {
       wx.showToast({ title: '商品不存在', icon: 'error' });
@@ -41,19 +44,25 @@ Page({
     this.setData({ loading: true });
     try {
       const product = await fetchProductBySlug(slug);
-      const images: string[] = [];
+
+      // Build image lists
+      const allImages: string[] = [];
       if (product.images?.length) {
-        product.images.forEach((img) => images.push(img.imageUrl));
+        product.images.forEach((img) => allImages.push(img.imageUrl));
       } else if (product.imageUrl) {
-        images.push(product.imageUrl);
+        allImages.push(product.imageUrl);
       }
+
+      const heroImage = allImages[0] || '';
+      const galleryImages = allImages; // all images including hero shown in gallery
 
       const defaultVariant =
         product.variants?.find((v) => v.isDefault) || product.variants?.[0] || null;
 
       this.setData({
         product,
-        swiperImages: images,
+        heroImage,
+        galleryImages,
         loading: false,
       });
 
@@ -68,35 +77,27 @@ Page({
   },
 
   selectVariant(variant: ProductVariant) {
-    const availabilityMap: Record<string, { text: string; cls: string }> = {
-      IN_STOCK: { text: '现货', cls: 'badge-success' },
-      PREORDER: { text: '预售', cls: 'badge-warning' },
-      SOLD_OUT: { text: '售罄', cls: 'badge-danger' },
-    };
-
-    const availability = this.data.product?.displayAvailability || '';
-    const isSoldOut = variant.isSoldOut;
-    const info = isSoldOut
-      ? { text: '售罄', cls: 'badge-danger' }
-      : availabilityMap[availability] || { text: '', cls: '' };
-
     this.setData({
       currentVariant: variant,
       selectedVariantId: variant.id,
       displayPriceCNY: formatCNY(variant.priceCents),
       displayPriceUSD: variant.usdPriceCents ? formatUSD(variant.usdPriceCents) : '',
-      availabilityText: info.text,
-      availabilityClass: info.cls,
-      isSoldOut,
+      isSoldOut: variant.isSoldOut,
     });
   },
 
   onTapVariant(e: WechatMiniprogram.TouchEvent) {
     const variantId = e.currentTarget.dataset.id as string;
     const variant = this.data.product?.variants?.find((v) => v.id === variantId);
-    if (variant) {
-      this.selectVariant(variant);
-    }
+    if (variant) this.selectVariant(variant);
+  },
+
+  onTapBack() {
+    wx.navigateBack({ fail: () => wx.switchTab({ url: '/pages/index/index' }) });
+  },
+
+  onTapCart() {
+    wx.switchTab({ url: '/pages/cart/index' });
   },
 
   onAddToCart() {
