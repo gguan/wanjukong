@@ -71,7 +71,7 @@ async function handleLogoUpload(event: Event) {
     const results = await uploadFiles(files);
     if (results.length > 0) {
       form.value.logo = results[0].imageUrl;
-      ElMessage.success('品牌标志上传成功');
+      ElMessage.success('LOGO 上传成功');
     }
   } catch (err: any) {
     ElMessage.error(err?.message || '上传失败');
@@ -82,6 +82,29 @@ async function handleLogoUpload(event: Event) {
 
 function clearLogo() {
   form.value.logo = '';
+}
+
+const logoDragging = ref(false);
+
+function onLogoDragLeave(e: DragEvent) {
+  const related = e.relatedTarget as Node | null;
+  const current = e.currentTarget as Node;
+  if (!current.contains(related)) logoDragging.value = false;
+}
+
+async function onLogoDrop(e: DragEvent) {
+  logoDragging.value = false;
+  const files = e.dataTransfer?.files;
+  if (!files || files.length === 0) return;
+  try {
+    const results = await uploadFiles(files);
+    if (results.length > 0) {
+      form.value.logo = results[0].imageUrl;
+      ElMessage.success('LOGO 上传成功');
+    }
+  } catch (err: any) {
+    ElMessage.error(err?.message || '上传失败');
+  }
 }
 
 async function save() {
@@ -147,45 +170,54 @@ onMounted(load);
         </ElFormItem>
 
         <!-- Logo upload -->
-        <ElFormItem label="品牌标志">
-          <div style="display: flex; flex-direction: column; gap: 10px; width: 100%">
+        <ElFormItem label="品牌 LOGO">
+          <div style="width: 100%">
             <!-- Preview -->
             <div
               v-if="form.logo"
-              style="display: flex; align-items: center; gap: 12px; padding: 10px; background: #f5f7fa; border-radius: 6px; border: 1px solid #e4e7ed"
+              class="logo-preview"
             >
-              <div style="width: 56px; height: 56px; background: #fff; border-radius: 4px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid #eee; flex-shrink: 0">
-                <img :src="form.logo" alt="品牌标志" style="max-width: 100%; max-height: 100%; object-fit: contain" />
+              <div class="logo-preview__image">
+                <img :src="form.logo" alt="品牌 LOGO" />
               </div>
-              <div style="flex: 1; min-width: 0">
-                <div style="font-size: 12px; color: #606266; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{ form.logo }}</div>
+              <div class="logo-preview__info">
+                <div class="logo-preview__url">{{ form.logo }}</div>
               </div>
               <ElButton size="small" type="danger" plain @click="clearLogo">移除</ElButton>
             </div>
 
-            <!-- Upload button -->
-            <div style="display: flex; align-items: center; gap: 8px">
-              <ElButton
-                size="small"
-                :loading="uploading"
-                @click="triggerLogoUpload"
-              >
-                {{ uploading ? `上传中 ${progress}%` : form.logo ? '替换标志' : '上传标志' }}
-              </ElButton>
-              <ElProgress
-                v-if="uploading"
-                :percentage="progress"
-                :stroke-width="4"
-                style="flex: 1"
-              />
-              <input
-                ref="logoFileInputRef"
-                type="file"
-                accept="image/*"
-                style="display: none"
-                @change="handleLogoUpload"
-              />
+            <!-- Drop Zone -->
+            <div
+              class="logo-drop-zone"
+              :class="{ 'logo-drop-zone--active': logoDragging, 'logo-drop-zone--uploading': uploading }"
+              @dragenter.prevent="logoDragging = true"
+              @dragover.prevent="logoDragging = true"
+              @dragleave.prevent="onLogoDragLeave"
+              @drop.prevent="onLogoDrop"
+              @click="triggerLogoUpload"
+            >
+              <div v-if="uploading" class="logo-drop-zone__content">
+                <span class="logo-drop-zone__icon">&#8635;</span>
+                <span class="logo-drop-zone__text">上传中 {{ progress }}%</span>
+              </div>
+              <div v-else-if="logoDragging" class="logo-drop-zone__content">
+                <span class="logo-drop-zone__icon">&#8615;</span>
+                <span class="logo-drop-zone__text">松开即可上传</span>
+              </div>
+              <div v-else class="logo-drop-zone__content">
+                <span class="logo-drop-zone__icon">&#43;</span>
+                <span class="logo-drop-zone__text">{{ form.logo ? '替换 LOGO' : '点击或拖拽上传 LOGO' }}</span>
+                <span class="logo-drop-zone__hint">支持 JPG/PNG/WebP，最大 5MB，自动转为 JPG</span>
+              </div>
             </div>
+            <input
+              ref="logoFileInputRef"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif,image/bmp"
+              style="display: none"
+              @change="handleLogoUpload"
+            />
+            <ElProgress v-if="uploading" :percentage="progress" :stroke-width="4" style="margin-top: 8px" />
           </div>
         </ElFormItem>
 
@@ -208,7 +240,7 @@ onMounted(load);
 
     <!-- Table -->
     <ElTable v-loading="loading" :data="brands" stripe>
-      <ElTableColumn label="标志" width="72">
+      <ElTableColumn label="LOGO" width="72">
         <template #default="{ row }">
           <div style="width: 40px; height: 40px; background: #f5f7fa; border-radius: 4px; display: flex; align-items: center; justify-content: center; overflow: hidden">
             <img
@@ -245,3 +277,102 @@ onMounted(load);
     </ElTable>
   </div>
 </template>
+
+<style scoped>
+.logo-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  background: var(--el-fill-color-lighter);
+  border-radius: 6px;
+  border: 1px solid var(--el-border-color);
+  margin-bottom: 10px;
+}
+
+.logo-preview__image {
+  width: 56px;
+  height: 56px;
+  background: #fff;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid var(--el-border-color-light);
+  flex-shrink: 0;
+}
+
+.logo-preview__image img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.logo-preview__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.logo-preview__url {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.logo-drop-zone {
+  border: 2px dashed var(--el-border-color);
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--el-fill-color-lighter);
+}
+
+.logo-drop-zone:hover {
+  border-color: var(--el-border-color-dark);
+  background: var(--el-fill-color-light);
+}
+
+.logo-drop-zone--active {
+  border-color: #005bd3;
+  background: #eef4fd;
+  border-style: solid;
+}
+
+.logo-drop-zone--uploading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.logo-drop-zone__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.logo-drop-zone__icon {
+  font-size: 24px;
+  color: var(--el-text-color-secondary);
+  line-height: 1;
+}
+
+.logo-drop-zone--active .logo-drop-zone__icon {
+  color: #005bd3;
+}
+
+.logo-drop-zone__text {
+  font-size: 13px;
+  color: var(--el-text-color-primary);
+  font-weight: 500;
+}
+
+.logo-drop-zone__hint {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+</style>
