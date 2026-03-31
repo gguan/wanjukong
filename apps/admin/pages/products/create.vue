@@ -28,10 +28,11 @@ const defaultVariant = ref({
   name: '标准版',
   sku: '',
   manufacturerSku: '',
-  priceCents: 0,
+  priceYuan: 0,
   stock: 0,
 });
 
+const isBrandManager = computed(() => useAdminAuthStore().isBrandManager);
 const isPreorder = computed(() => form.value.saleType === 'PREORDER');
 
 onMounted(async () => {
@@ -60,10 +61,10 @@ async function save() {
     const payload: Record<string, unknown> = {
       ...form.value,
       defaultVariant: {
-        ...defaultVariant.value,
+        name: defaultVariant.value.name,
         sku: defaultVariant.value.sku || undefined,
         manufacturerSku: defaultVariant.value.manufacturerSku || undefined,
-        priceCents: Number(defaultVariant.value.priceCents),
+        priceCents: Math.round(defaultVariant.value.priceYuan * 100),
         stock: Number(defaultVariant.value.stock),
       },
     };
@@ -134,8 +135,9 @@ async function save() {
               <ElFormItem label="厂商货号">
                 <ElInput v-model="defaultVariant.manufacturerSku" placeholder="例如：MMS617" />
               </ElFormItem>
-              <ElFormItem label="价格（分）" required>
-                <ElInputNumber v-model="defaultVariant.priceCents" :min="0" style="width: 100%" />
+              <ElFormItem label="价格（元）" required>
+                <ElInputNumber v-model="defaultVariant.priceYuan" :min="0" :precision="0" :step="1" style="width: 100%" />
+                <div class="field-hint">人民币，整数</div>
               </ElFormItem>
               <ElFormItem label="库存" required>
                 <ElInputNumber v-model="defaultVariant.stock" :min="0" style="width: 100%" />
@@ -144,38 +146,7 @@ async function save() {
           </ElForm>
         </AdminProductEditorSection>
 
-        <!-- Product Details -->
-        <AdminProductEditorSection title="商品详情">
-          <ElForm label-position="top">
-            <div class="form-grid form-grid--2">
-              <ElFormItem label="品牌" required>
-                <ElSelect v-model="form.brandId" placeholder="请选择品牌" style="width: 100%">
-                  <ElOption
-                    v-for="b in brands"
-                    :key="b.id"
-                    :label="b.name"
-                    :value="b.id"
-                  />
-                </ElSelect>
-              </ElFormItem>
-              <ElFormItem label="分类" required>
-                <ElSelect v-model="form.categoryId" placeholder="请选择分类" style="width: 100%">
-                  <ElOption
-                    v-for="c in categories"
-                    :key="c.id"
-                    :label="c.name"
-                    :value="c.id"
-                  />
-                </ElSelect>
-              </ElFormItem>
-            </div>
-            <div class="form-grid form-grid--2">
-              <ElFormItem label="比例">
-                <ElInput v-model="form.scale" placeholder="例如：1/6" />
-              </ElFormItem>
-            </div>
-          </ElForm>
-        </AdminProductEditorSection>
+        <!-- Product Details section removed: brand/category/scale already in sidebar -->
       </div>
 
       <!-- ═══ Sidebar ═══ -->
@@ -184,12 +155,15 @@ async function save() {
         <AdminSidebarCard title="状态">
           <ElForm label-position="top">
             <ElFormItem label="商品状态">
-              <ElSelect v-model="form.status" style="width: 100%">
+              <ElSelect v-model="form.status" style="width: 100%" :disabled="isBrandManager">
                 <ElOption label="草稿" value="DRAFT" />
-                <ElOption label="上架" value="ACTIVE" />
+                <ElOption label="上架" value="ACTIVE" :disabled="isBrandManager" />
                 <ElOption label="下架" value="INACTIVE" />
               </ElSelect>
-              <div class="field-hint">控制商品在前台的可见性</div>
+              <div class="field-hint">
+                <template v-if="isBrandManager">品牌管理员提交后需超级管理员审核上架</template>
+                <template v-else>控制商品在前台的可见性</template>
+              </div>
             </ElFormItem>
           </ElForm>
           <AdminStatusBadge :value="form.status" />

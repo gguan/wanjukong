@@ -27,9 +27,10 @@ const form = ref({
 });
 
 const updatedAt = ref('');
+const store = useAdminAuthStore();
+const isBrandManager = computed(() => store.isBrandManager);
 
 onMounted(async () => {
-  const store = useAdminAuthStore();
 
   const fetches: Promise<unknown>[] = [
     api.get<Record<string, unknown>>(`/api/admin/products/${route.params.id}`),
@@ -150,38 +151,7 @@ async function save() {
           <ProductVariantsManager :product-id="(route.params.id as string)" />
         </AdminProductEditorSection>
 
-        <!-- Product Details -->
-        <AdminProductEditorSection title="商品详情">
-          <ElForm label-position="top">
-            <div class="form-grid form-grid--2">
-              <ElFormItem label="品牌" required>
-                <ElSelect v-model="form.brandId" placeholder="请选择品牌" style="width: 100%">
-                  <ElOption
-                    v-for="b in brands"
-                    :key="b.id"
-                    :label="b.name"
-                    :value="b.id"
-                  />
-                </ElSelect>
-              </ElFormItem>
-              <ElFormItem label="分类" required>
-                <ElSelect v-model="form.categoryId" placeholder="请选择分类" style="width: 100%">
-                  <ElOption
-                    v-for="c in categories"
-                    :key="c.id"
-                    :label="c.name"
-                    :value="c.id"
-                  />
-                </ElSelect>
-              </ElFormItem>
-            </div>
-            <div class="form-grid form-grid--2">
-              <ElFormItem label="比例">
-                <ElInput v-model="form.scale" placeholder="例如：1/6" />
-              </ElFormItem>
-            </div>
-          </ElForm>
-        </AdminProductEditorSection>
+        <!-- Product Details section removed: brand/category/scale already in sidebar -->
       </div>
 
       <!-- ═══ Sidebar ═══ -->
@@ -190,12 +160,15 @@ async function save() {
         <AdminSidebarCard title="状态">
           <ElForm label-position="top">
             <ElFormItem label="商品状态">
-              <ElSelect v-model="form.status" style="width: 100%">
+              <ElSelect v-model="form.status" style="width: 100%" :disabled="isBrandManager">
                 <ElOption label="草稿" value="DRAFT" />
-                <ElOption label="上架" value="ACTIVE" />
+                <ElOption label="上架" value="ACTIVE" :disabled="isBrandManager" />
                 <ElOption label="下架" value="INACTIVE" />
               </ElSelect>
-              <div class="field-hint">控制商品在前台的可见性</div>
+              <div class="field-hint">
+                <template v-if="isBrandManager">品牌管理员提交后需超级管理员审核上架</template>
+                <template v-else>控制商品在前台的可见性</template>
+              </div>
             </ElFormItem>
           </ElForm>
           <AdminStatusBadge :value="form.status" />

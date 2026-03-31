@@ -28,6 +28,8 @@ const local = computed({
   set: (v) => emit('update:form', v),
 });
 
+const store = useAdminAuthStore();
+const isBrandManager = computed(() => store.isBrandManager);
 </script>
 
 <template>
@@ -37,8 +39,11 @@ const local = computed({
     </ElFormItem>
 
     <ElFormItem label="URL 标识" required>
-      <ElInput v-model="local.slug" placeholder="请输入 URL 标识" />
-      <div class="field-hint">用于生成商品链接地址</div>
+      <ElInput v-model="local.slug" placeholder="请输入 URL 标识" :disabled="isBrandManager" />
+      <div class="field-hint">
+        <template v-if="isBrandManager">URL 标识由管理员设置</template>
+        <template v-else>用于生成商品链接地址</template>
+      </div>
     </ElFormItem>
 
   </ElForm>

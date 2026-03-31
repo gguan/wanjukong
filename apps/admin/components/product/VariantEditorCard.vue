@@ -36,7 +36,6 @@ const editing = reactive({
   subtitle: '',
   specifications: '',
   sortOrder: 0,
-  coverImageUrl: '',
 });
 
 const dirty = ref(false);
@@ -54,7 +53,6 @@ watch(
     editing.subtitle = v.subtitle || '';
     editing.specifications = v.specifications || '';
     editing.sortOrder = v.sortOrder;
-    editing.coverImageUrl = v.coverImageUrl || '';
     dirty.value = false;
   },
   { immediate: true },
@@ -95,7 +93,6 @@ async function handleSave() {
     subtitle: editing.subtitle || undefined,
     specifications: editing.specifications || undefined,
     sortOrder: Number(editing.sortOrder),
-    coverImageUrl: editing.coverImageUrl || undefined,
   } as any);
   await nextTick();
   saving.value = false;
@@ -152,24 +149,20 @@ async function handleSave() {
             <ElInputNumber
               v-model="editing.priceYuan"
               :min="0"
-              :precision="2"
-              :step="0.01"
+              :precision="0"
+              :step="1"
               style="width: 100%"
-            >
-              <template #prefix>¥</template>
-            </ElInputNumber>
-            <div class="field-hint">人民币，如 299.99</div>
+            />
+            <div class="field-hint">人民币，整数</div>
           </ElFormItem>
           <ElFormItem label="美元价格">
             <ElInputNumber
               v-model="editing.usdPriceDollar"
               :min="0"
-              :precision="2"
-              :step="0.01"
+              :precision="0"
+              :step="1"
               style="width: 100%"
-            >
-              <template #prefix>$</template>
-            </ElInputNumber>
+            />
             <div class="field-hint">选填，0 表示不设置</div>
           </ElFormItem>
           <ElFormItem label="库存">
@@ -179,10 +172,6 @@ async function handleSave() {
 
         <ElFormItem label="副标题">
           <ElInput v-model="editing.subtitle" placeholder="例如：含额外配件..." />
-        </ElFormItem>
-
-        <ElFormItem label="封面图链接">
-          <ElInput v-model="editing.coverImageUrl" placeholder="可选的版本专属图片" />
         </ElFormItem>
 
         <ElFormItem label="说明信息">
