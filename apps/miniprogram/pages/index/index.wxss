@@ -2,7 +2,7 @@
 
 .hero {
   background: #1a1a1a;
-  padding: 60rpx 32rpx 48rpx;
+  padding: 120rpx 32rpx 48rpx;
   color: #fff;
 }
 .hero-title { font-size: 48rpx; font-weight: 700; margin-bottom: 8rpx; }
@@ -40,9 +40,11 @@
   display: flex;
   flex-wrap: wrap;
   padding: 0 16rpx;
-  gap: 16rpx;
 }
 
-.product-grid > product-card {
-  width: calc(50% - 8rpx);
+.product-grid product-card {
+  display: block;
+  width: 50%;
+  box-sizing: border-box;
+  padding: 8rpx;
 }

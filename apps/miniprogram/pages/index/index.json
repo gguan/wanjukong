@@ -2,5 +2,5 @@
   "usingComponents": {
     "product-card": "/components/product-card/index"
   },
-  "navigationBarTitleText": "万局控"
+  "navigationStyle": "custom"
 }

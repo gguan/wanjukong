@@ -6,10 +6,10 @@ App({
   },
 
   onLaunch() {
-    // Silent login on launch if not already logged in
+    // Silent login — skip in DevTools if API not reachable
     if (!isLoggedIn()) {
-      login().catch((err) => {
-        console.warn('Auto login failed:', err.message);
+      login().catch(() => {
+        // Expected to fail in DevTools without backend — silently ignore
       });
     }
   },
