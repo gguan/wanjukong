@@ -3,6 +3,7 @@ dist
 .output
 .nuxt
 .env
+.env.deploy
 *.log
 .DS_Store
 coverage
