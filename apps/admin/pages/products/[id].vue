@@ -77,6 +77,40 @@ function toLocalDatetime(iso: string): string {
 }
 
 const isPreorder = computed(() => form.value.saleType === 'PREORDER');
+const statusUpdating = ref(false);
+
+const statusHint = computed(() => {
+  const map: Record<string, string> = {
+    DRAFT: '草稿，尚未提交',
+    PENDING_REVIEW: '等待管理员审核',
+    ACTIVE: '前台可见',
+    INACTIVE: '已下架',
+  };
+  return map[form.value.status] || '';
+});
+
+async function doStatusAction(action: string) {
+  statusUpdating.value = true;
+  try {
+    const result = await api.post<Record<string, string>>(
+      `/api/admin/products/${route.params.id}/${action}`,
+      {},
+    );
+    form.value.status = (result.status as string) || form.value.status;
+    ElMessage.success('状态已更新');
+  } catch (e: any) {
+    ElMessage.error(e?.message || '操作失败');
+  } finally {
+    statusUpdating.value = false;
+  }
+}
+
+function submitForReview() { doStatusAction('submit-review'); }
+function withdrawReview() { doStatusAction('withdraw-review'); }
+function approve() { doStatusAction('approve'); }
+function reject() { doStatusAction('reject'); }
+function deactivate() { doStatusAction('deactivate'); }
+function reactivate() { doStatusAction('reactivate'); }
 
 async function save() {
   saving.value = true;
@@ -158,20 +192,97 @@ async function save() {
       <aside class="product-editor__sidebar">
         <!-- Status / Publishing -->
         <AdminSidebarCard title="状态">
-          <ElForm label-position="top">
-            <ElFormItem label="商品状态">
-              <ElSelect v-model="form.status" style="width: 100%" :disabled="isBrandManager">
-                <ElOption label="草稿" value="DRAFT" />
-                <ElOption label="上架" value="ACTIVE" :disabled="isBrandManager" />
-                <ElOption label="下架" value="INACTIVE" />
-              </ElSelect>
-              <div class="field-hint">
-                <template v-if="isBrandManager">品牌管理员提交后需超级管理员审核上架</template>
-                <template v-else>控制商品在前台的可见性</template>
-              </div>
-            </ElFormItem>
-          </ElForm>
-          <AdminStatusBadge :value="form.status" />
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px">
+            <AdminStatusBadge :value="form.status" />
+            <span style="font-size: 12px; color: var(--el-text-color-secondary)">
+              {{ statusHint }}
+            </span>
+          </div>
+
+          <!-- Brand Manager Actions -->
+          <template v-if="isBrandManager">
+            <ElButton
+              v-if="form.status === 'DRAFT'"
+              type="success"
+              size="small"
+              style="width: 100%"
+              :loading="statusUpdating"
+              @click="submitForReview"
+            >
+              提交审核
+            </ElButton>
+            <ElButton
+              v-else-if="form.status === 'PENDING_REVIEW'"
+              size="small"
+              style="width: 100%"
+              :loading="statusUpdating"
+              @click="withdrawReview"
+            >
+              撤回审核
+            </ElButton>
+            <ElButton
+              v-if="form.status === 'ACTIVE'"
+              type="warning"
+              size="small"
+              style="width: 100%"
+              :loading="statusUpdating"
+              @click="deactivate"
+            >
+              主动下架
+            </ElButton>
+          </template>
+
+          <!-- Admin Actions -->
+          <template v-else>
+            <div style="display: flex; flex-direction: column; gap: 8px">
+              <ElButton
+                v-if="form.status === 'PENDING_REVIEW'"
+                type="success"
+                size="small"
+                :loading="statusUpdating"
+                @click="approve"
+              >
+                审核通过
+              </ElButton>
+              <ElButton
+                v-if="form.status === 'PENDING_REVIEW'"
+                type="danger"
+                size="small"
+                :loading="statusUpdating"
+                @click="reject"
+              >
+                驳回
+              </ElButton>
+              <ElButton
+                v-if="form.status === 'DRAFT'"
+                type="success"
+                size="small"
+                :loading="statusUpdating"
+                @click="approve"
+              >
+                直接上架
+              </ElButton>
+              <ElButton
+                v-if="form.status === 'ACTIVE'"
+                type="warning"
+                size="small"
+                :loading="statusUpdating"
+                @click="deactivate"
+              >
+                下架
+              </ElButton>
+              <ElButton
+                v-if="form.status === 'INACTIVE'"
+                type="success"
+                size="small"
+                :loading="statusUpdating"
+                @click="reactivate"
+              >
+                重新上架
+              </ElButton>
+            </div>
+          </template>
+
           <template #footer>
             <div v-if="updatedAt" style="font-size: 12px; color: var(--el-text-color-secondary)">
               最后更新：{{ updatedAt }}

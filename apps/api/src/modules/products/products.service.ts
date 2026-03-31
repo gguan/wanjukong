@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Prisma, ProductStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -127,9 +127,12 @@ export class ProductsService {
     });
   }
 
-  update(id: string, dto: UpdateProductDto) {
+  /**
+   * Update product. If edited by a brand manager while ACTIVE or PENDING_REVIEW,
+   * auto-reverts status to DRAFT (requires re-review).
+   */
+  async update(id: string, dto: UpdateProductDto, isBrandManager = false) {
     const data: Prisma.ProductUncheckedUpdateInput = { ...dto };
-    // Convert date strings to Date objects or null
     if (dto.preorderStartAt !== undefined) {
       data.preorderStartAt = dto.preorderStartAt ? new Date(dto.preorderStartAt) : null;
     }
@@ -139,14 +142,124 @@ export class ProductsService {
     if (dto.estimatedShipAt !== undefined) {
       data.estimatedShipAt = dto.estimatedShipAt ? new Date(dto.estimatedShipAt) : null;
     }
-    // Clear preorder dates if sale type is IN_STOCK
     if (dto.saleType === 'IN_STOCK') {
       data.preorderStartAt = null;
       data.preorderEndAt = null;
     }
+
+    // Brand manager editing → revert to DRAFT for re-review
+    if (isBrandManager) {
+      const product = await this.prisma.product.findUnique({ where: { id } });
+      if (product && (product.status === 'ACTIVE' || product.status === 'PENDING_REVIEW')) {
+        data.status = 'DRAFT';
+      }
+      // Brand manager cannot set status directly
+      delete (data as Record<string, unknown>).status;
+      data.status = 'DRAFT';
+    }
+
     return this.prisma.product.update({
       where: { id },
       data,
+      include: includeRelations,
+    });
+  }
+
+  // ─── Review Workflow ─────────────────────────────────────
+
+  /**
+   * Brand manager submits product for review: DRAFT → PENDING_REVIEW
+   */
+  async submitForReview(id: string) {
+    const product = await this.prisma.product.findUnique({ where: { id } });
+    if (!product) throw new NotFoundException('商品不存在');
+    if (product.status !== 'DRAFT') {
+      throw new BadRequestException('只有草稿状态的商品可以提交审核');
+    }
+    return this.prisma.product.update({
+      where: { id },
+      data: { status: 'PENDING_REVIEW' },
+      include: includeRelations,
+    });
+  }
+
+  /**
+   * Brand manager withdraws review: PENDING_REVIEW → DRAFT
+   */
+  async withdrawReview(id: string) {
+    const product = await this.prisma.product.findUnique({ where: { id } });
+    if (!product) throw new NotFoundException('商品不存在');
+    if (product.status !== 'PENDING_REVIEW') {
+      throw new BadRequestException('只有待审核状态的商品可以撤回');
+    }
+    return this.prisma.product.update({
+      where: { id },
+      data: { status: 'DRAFT' },
+      include: includeRelations,
+    });
+  }
+
+  /**
+   * Admin approves: PENDING_REVIEW → ACTIVE (or DRAFT → ACTIVE for admins)
+   */
+  async approve(id: string) {
+    const product = await this.prisma.product.findUnique({ where: { id } });
+    if (!product) throw new NotFoundException('商品不存在');
+    if (product.status !== 'PENDING_REVIEW' && product.status !== 'DRAFT') {
+      throw new BadRequestException('该商品状态不能直接上架');
+    }
+    return this.prisma.product.update({
+      where: { id },
+      data: { status: 'ACTIVE' },
+      include: includeRelations,
+    });
+  }
+
+  /**
+   * Admin rejects: PENDING_REVIEW → DRAFT
+   */
+  async reject(id: string) {
+    const product = await this.prisma.product.findUnique({ where: { id } });
+    if (!product) throw new NotFoundException('商品不存在');
+    if (product.status !== 'PENDING_REVIEW') {
+      throw new BadRequestException('只有待审核状态的商品可以驳回');
+    }
+    return this.prisma.product.update({
+      where: { id },
+      data: { status: 'DRAFT' },
+      include: includeRelations,
+    });
+  }
+
+  /**
+   * Take product offline: ACTIVE → INACTIVE
+   * Both admins and brand managers (for their own products) can do this.
+   */
+  async deactivate(id: string) {
+    const product = await this.prisma.product.findUnique({ where: { id } });
+    if (!product) throw new NotFoundException('商品不存在');
+    if (product.status !== 'ACTIVE') {
+      throw new BadRequestException('只有已上架的商品可以下架');
+    }
+    return this.prisma.product.update({
+      where: { id },
+      data: { status: 'INACTIVE' },
+      include: includeRelations,
+    });
+  }
+
+  /**
+   * Admin re-activates: INACTIVE → ACTIVE
+   */
+  async reactivate(id: string) {
+    const product = await this.prisma.product.findUnique({ where: { id } });
+    if (!product) throw new NotFoundException('商品不存在');
+    if (product.status !== 'INACTIVE') {
+      throw new BadRequestException('只有已下架的商品可以重新上架');
+    }
+    return this.prisma.product.update({
+      where: { id },
+      data: { status: 'ACTIVE' },
       include: includeRelations,
     });
   }

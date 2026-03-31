@@ -9,7 +9,8 @@ const tagType = computed<ElTagType>(() => {
   const map: Record<string, ElTagType> = {
     ACTIVE: 'success',
     DRAFT: 'info',
-    INACTIVE: 'warning',
+    PENDING_REVIEW: 'warning',
+    INACTIVE: 'danger',
     IN_STOCK: 'success',
     PREORDER: undefined,
     SOLD_OUT: 'danger',
@@ -31,9 +32,10 @@ const tagType = computed<ElTagType>(() => {
 
 const label = computed(() => {
   const map: Record<string, string> = {
-    ACTIVE: '上架',
+    ACTIVE: '已上架',
     DRAFT: '草稿',
-    INACTIVE: '下架',
+    PENDING_REVIEW: '待审核',
+    INACTIVE: '已下架',
     IN_STOCK: '现货',
     PREORDER: '预售',
     SOLD_OUT: '售罄',

@@ -6,7 +6,7 @@ import {
 type StorefrontVariant = { stock: number };
 
 type StorefrontProduct<TVariant extends StorefrontVariant> = {
-  status: 'DRAFT' | 'ACTIVE' | 'INACTIVE';
+  status: 'DRAFT' | 'PENDING_REVIEW' | 'ACTIVE' | 'INACTIVE';
   saleType: 'IN_STOCK' | 'PREORDER';
   preorderStartAt: Date | null;
   preorderEndAt: Date | null;

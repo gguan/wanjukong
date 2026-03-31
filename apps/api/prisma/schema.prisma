@@ -24,6 +24,7 @@ model HealthCheckLog {
 
 enum ProductStatus {
   DRAFT
+  PENDING_REVIEW
   ACTIVE
   INACTIVE
 }

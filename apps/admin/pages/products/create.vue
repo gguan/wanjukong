@@ -173,20 +173,12 @@ async function save() {
       <aside class="product-editor__sidebar">
         <!-- Status -->
         <AdminSidebarCard title="状态">
-          <ElForm label-position="top">
-            <ElFormItem label="商品状态">
-              <ElSelect v-model="form.status" style="width: 100%" :disabled="isBrandManager">
-                <ElOption label="草稿" value="DRAFT" />
-                <ElOption label="上架" value="ACTIVE" :disabled="isBrandManager" />
-                <ElOption label="下架" value="INACTIVE" />
-              </ElSelect>
-              <div class="field-hint">
-                <template v-if="isBrandManager">品牌管理员提交后需超级管理员审核上架</template>
-                <template v-else>控制商品在前台的可见性</template>
-              </div>
-            </ElFormItem>
-          </ElForm>
-          <AdminStatusBadge :value="form.status" />
+          <div style="display: flex; align-items: center; gap: 8px">
+            <AdminStatusBadge value="DRAFT" />
+            <span style="font-size: 12px; color: var(--el-text-color-secondary)">
+              新商品默认为草稿，保存后可提交审核
+            </span>
+          </div>
         </AdminSidebarCard>
 
         <!-- Sales -->

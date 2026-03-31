@@ -60,13 +60,52 @@ export class ProductsAdminController {
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateProductDto) {
-    return this.productsService.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateProductDto, @Req() req: Request) {
+    const isBrandManager = (req as any).session?.adminRole === 'BRAND_MANAGER';
+    return this.productsService.update(id, dto, isBrandManager);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.productsService.remove(id);
+  }
+
+  // ── Review Workflow ─────────────────────────────────────
+
+  /** Brand manager: DRAFT → PENDING_REVIEW */
+  @Post(':id/submit-review')
+  submitForReview(@Param('id') id: string) {
+    return this.productsService.submitForReview(id);
+  }
+
+  /** Brand manager: PENDING_REVIEW → DRAFT */
+  @Post(':id/withdraw-review')
+  withdrawReview(@Param('id') id: string) {
+    return this.productsService.withdrawReview(id);
+  }
+
+  /** Admin: PENDING_REVIEW|DRAFT → ACTIVE */
+  @Post(':id/approve')
+  approve(@Param('id') id: string) {
+    return this.productsService.approve(id);
+  }
+
+  /** Admin: PENDING_REVIEW → DRAFT */
+  @Post(':id/reject')
+  reject(@Param('id') id: string) {
+    return this.productsService.reject(id);
+  }
+
+  /** Admin or brand manager: ACTIVE → INACTIVE */
+  @Post(':id/deactivate')
+  deactivate(@Param('id') id: string) {
+    return this.productsService.deactivate(id);
+  }
+
+  /** Admin: INACTIVE → ACTIVE */
+  @Post(':id/reactivate')
+  reactivate(@Param('id') id: string) {
+    return this.productsService.reactivate(id);
   }
 
   // ── Product Images ──────────────────────────────────────

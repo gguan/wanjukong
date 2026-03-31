@@ -61,8 +61,9 @@ async function remove(id: string) {
 const statusOptions = [
   { label: '全部状态', value: '' },
   { label: '草稿', value: 'DRAFT' },
-  { label: '上架', value: 'ACTIVE' },
-  { label: '下架', value: 'INACTIVE' },
+  { label: '待审核', value: 'PENDING_REVIEW' },
+  { label: '已上架', value: 'ACTIVE' },
+  { label: '已下架', value: 'INACTIVE' },
 ];
 
 onMounted(load);

@@ -6,9 +6,10 @@ const props = defineProps<{
 
 const config = computed(() => {
   const map: Record<string, { label: string; color: string; bg: string }> = {
-    ACTIVE: { label: '上架', color: '#16a34a', bg: '#f0fdf4' },
+    ACTIVE: { label: '已上架', color: '#16a34a', bg: '#f0fdf4' },
     DRAFT: { label: '草稿', color: '#6b7280', bg: '#f3f4f6' },
-    INACTIVE: { label: '下架', color: '#d97706', bg: '#fffbeb' },
+    PENDING_REVIEW: { label: '待审核', color: '#d97706', bg: '#fffbeb' },
+    INACTIVE: { label: '已下架', color: '#dc2626', bg: '#fef2f2' },
     IN_STOCK: { label: '现货', color: '#16a34a', bg: '#f0fdf4' },
     PREORDER: { label: '预售', color: '#7c3aed', bg: '#f5f3ff' },
     SOLD_OUT: { label: '售罄', color: '#dc2626', bg: '#fef2f2' },
