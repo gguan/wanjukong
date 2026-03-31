@@ -26,9 +26,11 @@ const form = ref({
 
 const defaultVariant = ref({
   name: '标准版',
+  subtitle: '',
   sku: '',
   manufacturerSku: '',
   priceYuan: 0,
+  usdPriceYuan: 0,
   stock: 0,
 });
 
@@ -62,9 +64,11 @@ async function save() {
       ...form.value,
       defaultVariant: {
         name: defaultVariant.value.name,
+        subtitle: defaultVariant.value.subtitle || undefined,
         sku: defaultVariant.value.sku || undefined,
         manufacturerSku: defaultVariant.value.manufacturerSku || undefined,
         priceCents: Math.round(defaultVariant.value.priceYuan * 100),
+        usdPriceCents: defaultVariant.value.usdPriceYuan > 0 ? Math.round(defaultVariant.value.usdPriceYuan * 100) : undefined,
         stock: Number(defaultVariant.value.stock),
       },
     };
@@ -126,18 +130,34 @@ async function save() {
               <ElFormItem label="版本名称" required>
                 <ElInput v-model="defaultVariant.name" />
               </ElFormItem>
+              <ElFormItem label="排序值" />
+            </div>
+
+            <ElFormItem label="版本描述">
+              <ElInput v-model="defaultVariant.subtitle" placeholder="例如：含额外配件..." />
+            </ElFormItem>
+
+            <div class="form-grid form-grid--2">
               <ElFormItem label="货号">
-                <ElInput v-model="defaultVariant.sku" placeholder="留空自动生成" />
-                <div class="field-hint">留空后系统自动生成</div>
+                <ElInput v-model="defaultVariant.sku" placeholder="留空自动生成" :disabled="isBrandManager" />
+                <div class="field-hint">
+                  <template v-if="isBrandManager">货号由管理员设置</template>
+                  <template v-else>留空后系统自动生成</template>
+                </div>
+              </ElFormItem>
+              <ElFormItem label="厂商货号">
+                <ElInput v-model="defaultVariant.manufacturerSku" placeholder="例如：MMS617" :disabled="isBrandManager" />
               </ElFormItem>
             </div>
+
             <div class="form-grid form-grid--3">
-              <ElFormItem label="厂商货号">
-                <ElInput v-model="defaultVariant.manufacturerSku" placeholder="例如：MMS617" />
-              </ElFormItem>
               <ElFormItem label="价格（元）" required>
                 <ElInputNumber v-model="defaultVariant.priceYuan" :min="0" :precision="0" :step="1" style="width: 100%" />
                 <div class="field-hint">人民币，整数</div>
+              </ElFormItem>
+              <ElFormItem label="美元价格">
+                <ElInputNumber v-model="defaultVariant.usdPriceYuan" :min="0" :precision="0" :step="1" style="width: 100%" />
+                <div class="field-hint">选填，0 表示不设置</div>
               </ElFormItem>
               <ElFormItem label="库存" required>
                 <ElInputNumber v-model="defaultVariant.stock" :min="0" style="width: 100%" />
