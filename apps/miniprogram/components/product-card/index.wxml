@@ -14,7 +14,7 @@
       SOLD OUT
     </view>
     <view wx:elif="{{product.displayAvailability === 'PREORDER'}}" class="badge-preorder">
-      预售
+      PRE ORDER
     </view>
   </view>
   <view class="card-body">

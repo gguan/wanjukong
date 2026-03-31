@@ -1,11 +1,12 @@
 .product-card {
   background: #f5f5f5;
+  overflow: hidden;
 }
 
 .card-image {
   position: relative;
   width: 100%;
-  padding-top: 125%; /* 4:5 aspect ratio — taller image */
+  padding-top: 125%; /* 4:5 aspect ratio */
   background: #ebebeb;
 }
 
@@ -30,35 +31,38 @@
   color: #b5b5b5;
 }
 
-/* Sold Out — top right, dark bg */
+/* SOLD OUT — top right, solid black, rounded */
 .badge-sold {
   position: absolute;
   top: 16rpx;
   right: 16rpx;
-  padding: 6rpx 16rpx;
-  background: rgba(0, 0, 0, 0.75);
+  padding: 8rpx 18rpx;
+  background: #000000;
   color: #fff;
   font-size: 20rpx;
   font-weight: 600;
   letter-spacing: 0.06em;
-  border-radius: 4rpx;
+  border-radius: 8rpx;
 }
 
-/* Preorder — top right */
+/* PRE ORDER — top right, solid black, rounded */
 .badge-preorder {
   position: absolute;
   top: 16rpx;
   right: 16rpx;
-  padding: 6rpx 16rpx;
-  background: rgba(0, 0, 0, 0.75);
+  padding: 8rpx 18rpx;
+  background: #000000;
   color: #fff;
   font-size: 20rpx;
   font-weight: 600;
-  border-radius: 4rpx;
+  letter-spacing: 0.04em;
+  border-radius: 8rpx;
 }
 
+/* Card body — white background */
 .card-body {
-  padding: 16rpx 20rpx 24rpx;
+  padding: 20rpx 20rpx 28rpx;
+  background: #ffffff;
 }
 
 .brand-name {
@@ -67,15 +71,15 @@
   color: #999;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  margin-bottom: 4rpx;
+  margin-bottom: 6rpx;
 }
 
 .product-name {
   display: block;
-  font-size: 26rpx;
+  font-size: 28rpx;
   color: #333;
   line-height: 1.4;
-  margin-bottom: 12rpx;
+  margin-bottom: 14rpx;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -85,7 +89,7 @@
 
 .price {
   display: block;
-  font-size: 30rpx;
+  font-size: 32rpx;
   font-weight: 700;
   color: #c75c2a;
   letter-spacing: 0.02em;

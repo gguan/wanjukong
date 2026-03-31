@@ -1,11 +1,12 @@
 .page {
-  background: #fff;
+  background: #f5f5f5;
   min-height: 100vh;
 }
 
 /* Section Header */
 .section-header {
   padding: 100rpx 32rpx 24rpx;
+  background: #fff;
 }
 
 .section-title {
@@ -15,22 +16,23 @@
   letter-spacing: 0.02em;
 }
 
-/* Product Grid — flush 2-column, thin separator */
+/* Product Grid — 2-column with gap between columns */
 .product-grid {
   display: flex;
   flex-wrap: wrap;
+  padding: 0;
 }
 
 .product-grid product-card {
   display: block;
-  width: 50%;
+  width: calc(50% - 1rpx);
   box-sizing: border-box;
-  border-bottom: 2rpx solid #e8e8e8;
+  margin-bottom: 2rpx;
 }
 
-/* Right column gets left border */
+/* Right column — offset by gap */
 .product-grid product-card:nth-child(even) {
-  border-left: 2rpx solid #e8e8e8;
+  margin-left: 2rpx;
 }
 
 /* Loading States */
