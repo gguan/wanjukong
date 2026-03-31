@@ -87,6 +87,16 @@
   margin-bottom: 8rpx;
 }
 
+.variant-subtitle {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 4rpx;
+}
+
+.variant-spec-hint {
+  color: rgba(255, 255, 255, 0.35);
+}
+
 /* ─── Variant Pills (on dark bg) ────────────────────────── */
 
 .variants-section {
@@ -136,15 +146,15 @@
   border-radius: 0;
 }
 
-/* ─── Specifications Section ────────────────────────────── */
+/* ─── Description & Specifications Section ──────────────── */
 
 .specs-section {
-  background: #fff;
+  background: #ffffff;
   padding: 48rpx 32rpx 64rpx;
 }
 
 .specs-block {
-  margin-bottom: 32rpx;
+  margin-bottom: 40rpx;
 }
 
 .specs-block:last-child {
@@ -159,18 +169,64 @@
   letter-spacing: 0.02em;
 }
 
-.description-content {
+/* Rich text content — styles applied via rich-text component */
+.rich-content {
   font-size: 28rpx;
   color: #333;
   line-height: 1.8;
-  white-space: pre-wrap;
+  word-break: break-word;
 }
 
-.specs-content {
-  font-size: 28rpx;
-  color: #333;
-  line-height: 1.8;
-  white-space: pre-wrap;
+/* Override common HTML tags inside rich-text */
+.rich-content img {
+  max-width: 100% !important;
+  height: auto !important;
+  display: block;
+  margin: 16rpx 0;
+}
+
+.rich-content p {
+  margin: 0 0 16rpx;
+}
+
+.rich-content h1,
+.rich-content h2,
+.rich-content h3 {
+  font-weight: 700;
+  color: #000;
+  margin: 24rpx 0 12rpx;
+}
+
+.rich-content h1 { font-size: 40rpx; }
+.rich-content h2 { font-size: 36rpx; }
+.rich-content h3 { font-size: 32rpx; }
+
+.rich-content ul,
+.rich-content ol {
+  padding-left: 32rpx;
+  margin: 12rpx 0;
+}
+
+.rich-content li {
+  margin-bottom: 8rpx;
+}
+
+.rich-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16rpx 0;
+}
+
+.rich-content td,
+.rich-content th {
+  padding: 12rpx 16rpx;
+  border: 1rpx solid #e8e8e8;
+  font-size: 26rpx;
+}
+
+.rich-content strong,
+.rich-content b {
+  font-weight: 700;
 }
 
 /* ─── Bottom Bar ────────────────────────────────────────── */

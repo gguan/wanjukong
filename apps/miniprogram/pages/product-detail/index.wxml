@@ -30,6 +30,12 @@
     <!-- Product Name -->
     <view class="product-name">{{product.name}}</view>
 
+    <!-- Variant Name / Subtitle -->
+    <view wx:if="{{currentVariant && currentVariant.name}}" class="variant-subtitle">
+      {{currentVariant.name}}
+      <text wx:if="{{currentVariant.specSummary}}" class="variant-spec-hint"> · {{currentVariant.specSummary}}</text>
+    </view>
+
     <!-- Variant Selection (on dark bg) -->
     <view wx:if="{{product.variants.length > 1}}" class="variants-section">
       <view class="variant-pills">
@@ -58,14 +64,14 @@
     />
   </view>
 
-  <!-- ─── Specifications (white bg) ─── -->
+  <!-- ─── Description & Specifications (white bg, rich text) ─── -->
   <view wx:if="{{product.description || (currentVariant && currentVariant.specifications)}}" class="specs-section">
     <view wx:if="{{product.description}}" class="specs-block">
-      <view class="description-content">{{product.description}}</view>
+      <rich-text nodes="{{product.description}}" class="rich-content" />
     </view>
     <view wx:if="{{currentVariant && currentVariant.specifications}}" class="specs-block">
       <view class="specs-title">INCLUDED</view>
-      <view class="specs-content">{{currentVariant.specifications}}</view>
+      <rich-text nodes="{{currentVariant.specifications}}" class="rich-content" />
     </view>
   </view>
 
