@@ -58,10 +58,4 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
           script: |
-            cd /opt/wanjukong
-            git pull origin main
-            docker compose pull
-            docker compose up -d --remove-orphans
-            docker compose exec -T api npx prisma migrate deploy
-            docker image prune -f
-            echo "Deploy complete: $(date)"
+            cd /opt/wanjukong && bash deploy/deploy.sh all
