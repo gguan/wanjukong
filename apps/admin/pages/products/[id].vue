@@ -15,6 +15,7 @@ const error = ref<string | null>(null);
 
 const form = ref({
   name: '',
+  nameI18n: {} as Record<string, string>,
   slug: '',
   scale: '',
   status: 'DRAFT',
@@ -24,6 +25,8 @@ const form = ref({
   preorderStartAt: '',
   preorderEndAt: '',
   estimatedShipAt: '',
+  description: '',
+  descriptionI18n: {} as Record<string, string>,
 });
 
 const updatedAt = ref('');
@@ -51,6 +54,7 @@ onMounted(async () => {
 
   form.value = {
     name: product.name as string,
+    nameI18n: (product.nameI18n as Record<string, string>) || {},
     slug: product.slug as string,
     scale: (product.scale as string) || '',
     status: product.status as string,
@@ -60,6 +64,8 @@ onMounted(async () => {
     preorderStartAt: product.preorderStartAt ? toLocalDatetime(product.preorderStartAt as string) : '',
     preorderEndAt: product.preorderEndAt ? toLocalDatetime(product.preorderEndAt as string) : '',
     estimatedShipAt: product.estimatedShipAt ? toLocalDatetime(product.estimatedShipAt as string) : '',
+    description: (product.description as string) || '',
+    descriptionI18n: (product.descriptionI18n as Record<string, string>) || {},
   };
 
   if (product.updatedAt) {

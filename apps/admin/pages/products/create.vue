@@ -13,6 +13,7 @@ const error = ref<string | null>(null);
 
 const form = ref({
   name: '',
+  nameI18n: {} as Record<string, string>,
   slug: '',
   scale: '1/6',
   status: 'DRAFT',
@@ -22,6 +23,8 @@ const form = ref({
   preorderStartAt: '',
   preorderEndAt: '',
   estimatedShipAt: '',
+  description: '',
+  descriptionI18n: {} as Record<string, string>,
 });
 
 const defaultVariant = ref({

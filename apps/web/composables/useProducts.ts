@@ -68,6 +68,7 @@ export interface PaginatedProducts {
 
 export function useProducts() {
   const { get } = usePublicApi();
+  const { lang } = useLang();
 
   function fetchProducts(filters?: Record<string, string>) {
     const params = new URLSearchParams();
@@ -76,16 +77,17 @@ export function useProducts() {
         if (val) params.set(key, val);
       }
     }
+    params.set('lang', lang.value);
     const qs = params.toString();
     return get<PaginatedProducts>(`/public/products${qs ? `?${qs}` : ''}`);
   }
 
   function fetchProductBySlug(slug: string) {
-    return get<Product>(`/public/products/${slug}`);
+    return get<Product>(`/public/products/${slug}?lang=${lang.value}`);
   }
 
   function fetchCategories() {
-    return get<Category[]>('/public/categories');
+    return get<Category[]>(`/public/categories?lang=${lang.value}`);
   }
 
   return { fetchProducts, fetchProductBySlug, fetchCategories };

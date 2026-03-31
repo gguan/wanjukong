@@ -31,13 +31,16 @@ const emit = defineEmits<{
 
 const editing = reactive({
   name: '',
+  nameI18n: {} as Record<string, string>,
   sku: '',
   manufacturerSku: '',
-  priceYuan: 0,       // ¥ display (元)
-  usdPriceDollar: 0,  // $ display (dollars)
+  priceYuan: 0,
+  usdPriceDollar: 0,
   stock: 0,
   subtitle: '',
+  subtitleI18n: {} as Record<string, string>,
   specifications: '',
+  specificationsI18n: {} as Record<string, string>,
   sortOrder: 0,
 });
 
@@ -48,13 +51,16 @@ watch(
   () => props.variant,
   (v) => {
     editing.name = v.name;
+    editing.nameI18n = (v as any).nameI18n || {};
     editing.sku = v.sku;
     editing.manufacturerSku = v.manufacturerSku || '';
     editing.priceYuan = v.priceCents / 100;
     editing.usdPriceDollar = (v.usdPriceCents ?? 0) / 100;
     editing.stock = v.stock;
     editing.subtitle = v.subtitle || '';
+    editing.subtitleI18n = (v as any).subtitleI18n || {};
     editing.specifications = v.specifications || '';
+    editing.specificationsI18n = (v as any).specificationsI18n || {};
     editing.sortOrder = v.sortOrder;
     dirty.value = false;
   },
@@ -88,13 +94,16 @@ async function handleSave() {
   saving.value = true;
   emit('save', {
     name: editing.name,
+    nameI18n: editing.nameI18n,
     sku: editing.sku || undefined,
     manufacturerSku: editing.manufacturerSku || undefined,
     priceCents: Math.round(editing.priceYuan * 100),
     usdPriceCents: editing.usdPriceDollar > 0 ? Math.round(editing.usdPriceDollar * 100) : undefined,
     stock: Number(editing.stock),
     subtitle: editing.subtitle || undefined,
+    subtitleI18n: editing.subtitleI18n,
     specifications: editing.specifications || undefined,
+    specificationsI18n: editing.specificationsI18n,
     sortOrder: Number(editing.sortOrder),
   } as any);
   await nextTick();
@@ -131,6 +140,7 @@ async function handleSave() {
         <div class="form-grid form-grid--2">
           <ElFormItem label="版本名称" required>
             <ElInput v-model="editing.name" />
+            <AdminI18nInput v-model="editing.nameI18n" label="版本名称" />
           </ElFormItem>
           <ElFormItem label="排序值">
             <ElInputNumber v-model="editing.sortOrder" :min="0" style="width: 100%" />
@@ -139,6 +149,7 @@ async function handleSave() {
 
         <ElFormItem label="版本描述">
           <ElInput v-model="editing.subtitle" placeholder="例如：含额外配件..." />
+          <AdminI18nInput v-model="editing.subtitleI18n" label="版本描述" />
         </ElFormItem>
 
         <div class="form-grid form-grid--2">

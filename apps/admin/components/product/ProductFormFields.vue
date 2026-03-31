@@ -4,7 +4,10 @@ interface Option { id: string; name: string }
 const props = defineProps<{
   form: {
     name: string;
+    nameI18n?: Record<string, string>;
     slug: string;
+    description?: string;
+    descriptionI18n?: Record<string, string>;
     scale: string;
     status: string;
     brandId: string;
@@ -36,6 +39,11 @@ const isBrandManager = computed(() => store.isBrandManager);
   <ElForm label-position="top">
     <ElFormItem label="商品名称" required>
       <ElInput v-model="local.name" placeholder="例如：钢铁侠 Mark XLVII" @blur="emit('blur-name')" />
+      <AdminI18nInput
+        :model-value="local.nameI18n || {}"
+        label="商品名称"
+        @update:model-value="local.nameI18n = $event"
+      />
     </ElFormItem>
 
     <ElFormItem label="URL 标识" required>

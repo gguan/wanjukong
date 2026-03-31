@@ -37,6 +37,7 @@ enum SaleType {
 model Brand {
   id        String   @id @default(cuid())
   name      String   @unique
+  nameI18n  Json?    @default("{}")  // {"en":"...","zh-TW":"...","ja":"..."}
   slug      String   @unique
   code      String?
   logo      String?
@@ -50,6 +51,7 @@ model Brand {
 model Category {
   id        String   @id @default(cuid())
   name      String   @unique
+  nameI18n  Json?    @default("{}")  // {"en":"...","zh-TW":"...","ja":"..."}
   slug      String   @unique
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
@@ -61,8 +63,10 @@ model Category {
 model Product {
   id               String        @id @default(cuid())
   name             String
+  nameI18n         Json?         @default("{}")
   slug             String        @unique
   description      String?       @db.Text
+  descriptionI18n  Json?         @default("{}")
   scale            String?
   status           ProductStatus @default(DRAFT)
   imageUrl         String?
@@ -93,6 +97,7 @@ model ProductVariant {
   id              String   @id @default(cuid())
   productId       String
   name            String
+  nameI18n        Json?    @default("{}")
   versionCode     String?
   sku             String   @unique
   manufacturerSku String?
@@ -100,8 +105,11 @@ model ProductVariant {
   usdPriceCents   Int?             // USD price in cents (optional)
   stock           Int      @default(0)
   subtitle        String?
+  subtitleI18n    Json?    @default("{}")
   specSummary     String?
+  specSummaryI18n Json?    @default("{}")
   specifications  String?  @db.Text
+  specificationsI18n Json? @default("{}")
   weightGrams     Int?
   isDefault       Boolean  @default(false)
   sortOrder       Int      @default(0)

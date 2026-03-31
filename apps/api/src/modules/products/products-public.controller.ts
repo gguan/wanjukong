@@ -6,13 +6,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
+import { localizeProduct, Lang, DEFAULT_LANG } from '../../utils/i18n';
 
 @Controller('public/products')
 export class ProductsPublicController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Get()
-  findAll(
+  async findAll(
     @Query('brand') brand?: string,
     @Query('category') category?: string,
     @Query('scale') scale?: string,
@@ -20,8 +21,9 @@ export class ProductsPublicController {
     @Query('search') search?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('lang') lang?: string,
   ) {
-    return this.productsService.findAllActive({
+    const result = await this.productsService.findAllActive({
       brand,
       category,
       scale,
@@ -30,6 +32,12 @@ export class ProductsPublicController {
       page: page ? parseInt(page, 10) : undefined,
       limit: limit ? parseInt(limit, 10) : undefined,
     });
+
+    const l = (lang as Lang) || DEFAULT_LANG;
+    return {
+      ...result,
+      data: result.data.map((p: Record<string, unknown>) => localizeProduct(p, l)),
+    };
   }
 
   @Get('variants/:variantId/stock')
@@ -38,11 +46,15 @@ export class ProductsPublicController {
   }
 
   @Get(':slug')
-  async findBySlug(@Param('slug') slug: string) {
+  async findBySlug(
+    @Param('slug') slug: string,
+    @Query('lang') lang?: string,
+  ) {
     const product = await this.productsService.findBySlug(slug);
     if (!product) {
       throw new NotFoundException(`Product "${slug}" not found`);
     }
-    return product;
+    const l = (lang as Lang) || DEFAULT_LANG;
+    return localizeProduct(product as unknown as Record<string, unknown>, l);
   }
 }
