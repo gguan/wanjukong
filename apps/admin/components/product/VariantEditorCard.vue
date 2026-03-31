@@ -1,4 +1,7 @@
 <script setup lang="ts">
+const store = useAdminAuthStore();
+const isBrandManager = computed(() => store.isBrandManager);
+
 interface Variant {
   id: string;
   name: string;
@@ -134,13 +137,20 @@ async function handleSave() {
           </ElFormItem>
         </div>
 
+        <ElFormItem label="版本描述">
+          <ElInput v-model="editing.subtitle" placeholder="例如：含额外配件..." />
+        </ElFormItem>
+
         <div class="form-grid form-grid--2">
           <ElFormItem label="货号">
-            <ElInput v-model="editing.sku" placeholder="留空自动生成" />
-            <div class="field-hint">留空后系统自动生成</div>
+            <ElInput v-model="editing.sku" placeholder="留空自动生成" :disabled="isBrandManager" />
+            <div class="field-hint">
+              <template v-if="isBrandManager">货号由管理员设置</template>
+              <template v-else>留空后系统自动生成</template>
+            </div>
           </ElFormItem>
           <ElFormItem label="厂商货号">
-            <ElInput v-model="editing.manufacturerSku" placeholder="例如：MMS617" />
+            <ElInput v-model="editing.manufacturerSku" placeholder="例如：MMS617" :disabled="isBrandManager" />
           </ElFormItem>
         </div>
 
@@ -169,10 +179,6 @@ async function handleSave() {
             <ElInputNumber v-model="editing.stock" :min="0" style="width: 100%" />
           </ElFormItem>
         </div>
-
-        <ElFormItem label="副标题">
-          <ElInput v-model="editing.subtitle" placeholder="例如：含额外配件..." />
-        </ElFormItem>
 
         <ElFormItem label="说明信息">
           <ProductRichTextEditor v-model="editing.specifications" />
