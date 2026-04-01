@@ -46,6 +46,7 @@ interface CreateWechatOrderInput {
   items: CartItemInput[];
   openid: string;
   couponCode?: string;
+  addressId?: string;
 }
 
 @Injectable()
@@ -201,7 +202,7 @@ export class PaymentsService {
   async createWechatOrder(
     input: CreateWechatOrderInput,
   ): Promise<Record<string, string>> {
-    const { items: cartItems, openid, couponCode } = input;
+    const { items: cartItems, openid, couponCode, addressId } = input;
 
     if (!cartItems?.length) throw new BadRequestException('Cart is empty');
 
@@ -227,6 +228,27 @@ export class PaymentsService {
       openid,
     });
 
+    // Snapshot shipping address if provided
+    let shippingAddressJson: string | null = null;
+    if (addressId) {
+      const addr = await this.prisma.customerAddress.findUnique({
+        where: { id: addressId },
+      });
+      if (addr) {
+        shippingAddressJson = JSON.stringify({
+          fullName: addr.fullName,
+          phone: addr.phone,
+          country: addr.country,
+          stateOrProvince: addr.stateOrProvince,
+          city: addr.city,
+          district: addr.district,
+          addressLine1: addr.addressLine1,
+          addressLine2: addr.addressLine2,
+          postalCode: addr.postalCode,
+        });
+      }
+    }
+
     await this.prisma.paymentIntent.create({
       data: {
         provider: 'WECHAT_PAY',
@@ -235,6 +257,7 @@ export class PaymentsService {
         currency: 'CNY',
         amountCents,
         cartSnapshotJson: JSON.stringify(cartItems),
+        shippingAddressJson,
         status: 'CREATED',
       },
     });
@@ -288,7 +311,6 @@ export class PaymentsService {
       },
     });
 
-    // WeChat Pay orders are fulfilled without a shipping address — admin will contact buyer
     const cartItems: CartItemInput[] = JSON.parse(pi.cartSnapshotJson);
     const openid = transaction.payer.openid;
 
@@ -297,17 +319,25 @@ export class PaymentsService {
       where: { wechatOpenId: openid },
     });
 
+    // Use snapshotted shipping address if available
+    const shippingAddr = pi.shippingAddressJson
+      ? JSON.parse(pi.shippingAddressJson) as Record<string, string | null>
+      : null;
+
     const order = await this.ordersService.createCartOrder({
       items: cartItems,
-      fullName: customer?.name || openid,
+      fullName: shippingAddr?.fullName || customer?.name || openid,
       email: customer?.email || `wechat+${openid}@noreply.wanjukong.com`,
+      phone: shippingAddr?.phone || customer?.phone || undefined,
       currency: 'CNY',
       wechatTransactionId: transaction.transaction_id,
       customerId: customer?.id,
-      // Shipping address filled in later by customer/admin
-      country: 'CN',
-      city: '',
-      addressLine1: '',
+      country: shippingAddr?.country || 'CN',
+      stateOrProvince: shippingAddr?.stateOrProvince || undefined,
+      city: shippingAddr?.city || '',
+      addressLine1: shippingAddr?.addressLine1 || '',
+      addressLine2: shippingAddr?.addressLine2 || undefined,
+      postalCode: shippingAddr?.postalCode || undefined,
     });
 
     await this.prisma.paymentIntent.update({

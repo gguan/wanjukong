@@ -1,0 +1,48 @@
+<!-- 地址管理 -->
+<view class="page">
+
+  <!-- 加载中 -->
+  <view wx:if="{{loading}}" class="loading-wrap">
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 地址列表 -->
+  <view wx:elif="{{addresses.length > 0}}">
+    <view
+      wx:for="{{addresses}}"
+      wx:key="id"
+      class="address-card"
+      data-id="{{item.id}}"
+      bindtap="onSelectAddress"
+    >
+      <view class="address-body">
+        <view class="address-top-row">
+          <text class="address-line">{{item.displayAddress}}</text>
+          <view class="edit-btn" data-id="{{item.id}}" catchtap="onEditAddress">
+            <text class="edit-icon">✎</text>
+          </view>
+        </view>
+        <text class="address-contact">{{item.fullName}} {{item.phone}}</text>
+        <view wx:if="{{item.isDefault}}" class="default-badge">
+          <text class="default-badge-text">默认</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view wx:elif="{{!loading}}" class="empty-wrap">
+    <text class="empty-text">暂无收货地址</text>
+  </view>
+
+  <!-- 底部占位 -->
+  <view class="bottom-spacer" />
+
+  <!-- 底部按钮 -->
+  <view class="bottom-bar">
+    <view class="add-btn" bindtap="onAddAddress">
+      <text class="add-btn-text">+ 添加收货地址</text>
+    </view>
+  </view>
+
+</view>

@@ -1,19 +1,31 @@
-import { createWechatOrder, validateCoupon } from '../../utils/api';
+import { createWechatOrder, validateCoupon, fetchAddresses } from '../../utils/api';
 import { requestPayment } from '../../utils/payment';
 import { requireAuth } from '../../utils/auth';
 import { getCart, clearCart, getUserInfo, getCheckoutItems, clearCheckoutItems, removeCartItems } from '../../utils/storage';
 import { formatCNY } from '../../utils/format';
 import type { CartItem } from '../../utils/storage';
+import type { Address } from '../../utils/api';
+
+const SELECTED_ADDRESS_KEY = 'wk_selected_address';
+
+function formatAddress(addr: Address): string {
+  return [addr.stateOrProvince, addr.city, addr.district, addr.addressLine1]
+    .filter(Boolean)
+    .join(' ');
+}
 
 Page({
   data: {
     items: [] as (CartItem & { displayPrice: string; lineTotal: string })[],
+    address: null as (Address & { displayAddress: string }) | null,
     subtotalCents: 0,
     discountCents: 0,
     totalCents: 0,
     subtotalDisplay: '',
     discountDisplay: '',
     totalDisplay: '',
+    totalQty: 0,
+    earnedPoints: 0,
     couponCode: '',
     couponApplied: false,
     couponError: '',
@@ -55,13 +67,50 @@ Page({
       0,
     );
 
+    const totalQty = rawItems.reduce((sum, item) => sum + item.quantity, 0);
+    const earnedPoints = Math.round(subtotalCents / 1000);
+
     this.setData({
       items,
       subtotalCents,
       totalCents: subtotalCents,
       subtotalDisplay: formatCNY(subtotalCents),
       totalDisplay: formatCNY(subtotalCents),
+      totalQty,
+      earnedPoints,
     });
+
+    this.loadAddress();
+  },
+
+  onShow() {
+    // Pick up any address selected from address list page
+    const stored = wx.getStorageSync(SELECTED_ADDRESS_KEY);
+    if (stored) {
+      wx.removeStorageSync(SELECTED_ADDRESS_KEY);
+      const addr = JSON.parse(stored) as Address;
+      this.setData({
+        address: { ...addr, displayAddress: formatAddress(addr) },
+      });
+    }
+  },
+
+  async loadAddress() {
+    try {
+      const list = await fetchAddresses();
+      if (!list.length) return;
+      // Use default address, or first one
+      const addr = list.find((a) => a.isDefault) || list[0];
+      this.setData({
+        address: { ...addr, displayAddress: formatAddress(addr) },
+      });
+    } catch {
+      // No address loaded — user can add one
+    }
+  },
+
+  onGoToAddress() {
+    wx.navigateTo({ url: '/pages/address/index?from=checkout' });
   },
 
   onCouponInput(e: WechatMiniprogram.Input) {
@@ -110,6 +159,12 @@ Page({
 
   async onPay() {
     if (this.data.paying) return;
+
+    if (!this.data.address) {
+      wx.showToast({ title: '请先添加收货地址', icon: 'none' });
+      return;
+    }
+
     this.setData({ paying: true });
 
     try {
@@ -130,6 +185,7 @@ Page({
         items: orderItems,
         openid: user.id,
         couponCode: this.data.couponApplied ? this.data.couponCode : undefined,
+        addressId: this.data.address?.id,
       });
 
       await requestPayment(payParams);

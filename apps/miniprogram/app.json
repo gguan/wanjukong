@@ -8,7 +8,9 @@
     "pages/orders/index",
     "pages/order-detail/index",
     "pages/login/index",
-    "pages/account/index"
+    "pages/account/index",
+    "pages/address/index",
+    "pages/address-edit/index"
   ],
   "window": {
     "navigationBarBackgroundColor": "#1a1a1a",

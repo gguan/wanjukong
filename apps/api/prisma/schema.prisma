@@ -205,7 +205,8 @@ model CustomerAddress {
   country         String
   stateOrProvince String?
   city            String
-  addressLine1    String
+  district        String?  // 区/县 — used for Chinese addresses; null for international
+  addressLine1    String   // Street / detailed address
   addressLine2    String?
   postalCode      String?
   isDefault       Boolean  @default(false)
@@ -270,12 +271,13 @@ model PaymentIntent {
   wechatOutTradeNo    String?             @unique
   wechatTransactionId String?
 
-  customerId       String?
-  email            String?
-  currency         String              @default("USD")
-  amountCents      Int
-  cartSnapshotJson String              @db.Text
-  status           PaymentIntentStatus @default(CREATED)
+  customerId            String?
+  email                 String?
+  currency              String              @default("USD")
+  amountCents           Int
+  cartSnapshotJson      String              @db.Text
+  shippingAddressJson   String?             @db.Text
+  status                PaymentIntentStatus @default(CREATED)
   capturedAt       DateTime?
   orderId          String?
   createdAt        DateTime            @default(now())

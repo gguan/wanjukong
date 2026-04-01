@@ -41,6 +41,9 @@ class CreateWechatOrderDto {
 
   @IsString() @IsOptional() couponCode?: string;
 
+  /** Customer's saved address ID — used to snapshot shipping address on the order */
+  @IsString() @IsOptional() addressId?: string;
+
   @IsInt() @Min(0) @IsOptional() subtotalCents?: number;
 }
 
@@ -65,6 +68,7 @@ export class WechatPayController {
       items: dto.items,
       openid: dto.openid,
       couponCode: dto.couponCode,
+      addressId: dto.addressId,
     });
   }
 

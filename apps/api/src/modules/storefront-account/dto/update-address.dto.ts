@@ -27,6 +27,10 @@ export class UpdateAddressDto {
 
   @IsString()
   @IsOptional()
+  district?: string;
+
+  @IsString()
+  @IsOptional()
   addressLine1?: string;
 
   @IsString()

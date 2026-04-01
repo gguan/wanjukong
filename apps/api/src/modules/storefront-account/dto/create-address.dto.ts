@@ -23,6 +23,10 @@ export class CreateAddressDto {
   city!: string;
 
   @IsString()
+  @IsOptional()
+  district?: string;
+
+  @IsString()
   addressLine1!: string;
 
   @IsString()

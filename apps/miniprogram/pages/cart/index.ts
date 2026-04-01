@@ -4,6 +4,7 @@ import type { CartItem } from '../../utils/storage';
 
 interface CartItemDisplay extends CartItem {
   displayPrice: string;
+  preorderUpcoming: boolean;
 }
 
 Page({
@@ -34,9 +35,11 @@ Page({
 
   refreshCart() {
     const raw = getCart();
+    const now = Date.now();
     const items: CartItemDisplay[] = raw.map((item) => ({
       ...item,
       displayPrice: formatCNY(item.priceCents),
+      preorderUpcoming: !!(item.preorderStartAt && new Date(item.preorderStartAt).getTime() > now),
     }));
 
     const prevSelected = this.data.selected;
@@ -65,6 +68,20 @@ Page({
 
   onToggleSelect(e: WechatMiniprogram.TouchEvent) {
     const idx = e.currentTarget.dataset.index as number;
+    const item = this.data.items[idx];
+    const now = Date.now();
+    if (item.preorderStartAt && new Date(item.preorderStartAt).getTime() > now) {
+      const d = new Date(item.preorderStartAt);
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      const timeStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+      wx.showModal({
+        title: '预售商品',
+        content: `预售时间为：${timeStr}`,
+        showCancel: false,
+        confirmText: '确定',
+      });
+      return;
+    }
     const selected = [...this.data.selected];
     selected[idx] = !selected[idx];
     this.setData({ selected });

@@ -123,6 +123,7 @@ export function createWechatOrder(data: {
   items: Array<{ productId: string; variantId: string; quantity: number }>;
   openid: string;
   couponCode?: string;
+  addressId?: string;
 }) {
   return request<WechatPayParams>(
     '/miniprogram/payment/wechat/create-order',
@@ -268,6 +269,7 @@ export interface Address {
   country: string;
   stateOrProvince: string | null;
   city: string;
+  district: string | null;
   addressLine1: string;
   addressLine2: string | null;
   postalCode: string | null;
@@ -281,6 +283,7 @@ export interface AddressInput {
   country: string;
   stateOrProvince?: string;
   city: string;
+  district?: string;
   addressLine1: string;
   addressLine2?: string;
   postalCode?: string;

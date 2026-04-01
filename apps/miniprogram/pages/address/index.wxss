@@ -1,0 +1,111 @@
+/* ─── 页面 ────────────────────────────────────────────────── */
+
+.page {
+  background: #fff;
+  min-height: 100vh;
+}
+
+/* ─── 加载 / 空状态 ──────────────────────────────────────── */
+
+.loading-wrap,
+.empty-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 0;
+}
+
+.loading-text,
+.empty-text {
+  font-size: 28rpx;
+  color: #999;
+}
+
+/* ─── 地址卡片 ───────────────────────────────────────────── */
+
+.address-card {
+  padding: 32rpx;
+  border-bottom: 1rpx solid #ebebeb;
+}
+
+.address-card:active {
+  background: #f9f9f9;
+}
+
+.address-body {
+  flex: 1;
+}
+
+.address-top-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.address-line {
+  flex: 1;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #111;
+  line-height: 1.5;
+}
+
+.edit-btn {
+  padding: 4rpx 8rpx;
+  flex-shrink: 0;
+}
+
+.edit-icon {
+  font-size: 34rpx;
+  color: #bbb;
+}
+
+.address-contact {
+  display: block;
+  font-size: 28rpx;
+  color: #999;
+  margin-top: 8rpx;
+}
+
+.default-badge {
+  display: inline-flex;
+  margin-top: 12rpx;
+  padding: 4rpx 14rpx;
+  border: 1rpx solid #111;
+}
+
+.default-badge-text {
+  font-size: 22rpx;
+  color: #111;
+}
+
+/* ─── 底部 ───────────────────────────────────────────────── */
+
+.bottom-spacer {
+  height: 140rpx;
+}
+
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0;
+  z-index: 100;
+}
+
+.add-btn {
+  background: #000;
+  height: 96rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.add-btn-text {
+  color: #fff;
+  font-size: 32rpx;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}

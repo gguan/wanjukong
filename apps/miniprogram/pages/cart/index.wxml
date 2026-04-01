@@ -33,7 +33,7 @@
       </view>
       <view class="item-right">
         <view
-          class="item-checkbox {{selected[index] ? 'checked' : ''}}"
+          class="item-checkbox {{selected[index] ? 'checked' : ''}} {{item.preorderUpcoming ? 'disabled' : ''}}"
           data-index="{{index}}"
           bindtap="onToggleSelect"
         >

@@ -1,89 +1,99 @@
-<!-- 结算页 -->
+<!-- 订单结算 -->
 <view class="page">
-  <!-- 商品列表 -->
-  <view class="card">
-    <view class="card-header">商品明细</view>
-    <view class="card-body">
-      <view
-        wx:for="{{items}}"
-        wx:key="variantId"
-        class="checkout-item"
-      >
-        <image class="item-image" src="{{item.imageUrl}}" mode="aspectFill" />
-        <view class="item-info">
-          <text class="item-name">{{item.productName}}</text>
-          <text class="item-variant text-secondary text-sm">{{item.variantName}}</text>
-          <view class="item-price-row">
-            <text class="price price-sm">{{item.displayPrice}}</text>
-            <text class="text-secondary text-sm">x{{item.quantity}}</text>
-          </view>
-        </view>
-        <text class="price price-sm">{{item.lineTotal}}</text>
+
+  <!-- ─── 配送地址 ─── -->
+  <view class="section" bindtap="onGoToAddress">
+    <view class="section-header-row">
+      <text class="section-title">配送地址</text>
+      <view class="section-link">
+        <text class="section-link-text">编辑</text>
+        <text class="section-link-arrow">›</text>
       </view>
+    </view>
+    <view wx:if="{{address}}">
+      <text class="address-detail">{{address.displayAddress}}</text>
+      <text class="address-contact">{{address.fullName}} {{address.phone}}</text>
+    </view>
+    <view wx:else class="address-empty">
+      <text class="address-empty-text">请添加收货地址</text>
+      <text class="section-link-arrow">›</text>
     </view>
   </view>
 
-  <!-- 优惠券 -->
-  <view class="card">
-    <view class="card-header">优惠券</view>
-    <view class="card-body">
-      <view wx:if="{{!couponApplied}}" class="coupon-row">
-        <input
-          class="coupon-input"
-          placeholder="输入优惠码"
-          value="{{couponCode}}"
-          bindinput="onCouponInput"
-          bindconfirm="onApplyCoupon"
-        />
-        <button class="btn btn-outline coupon-btn" bindtap="onApplyCoupon">使用</button>
+  <!-- ─── 订单明细 ─── -->
+  <view class="section">
+    <text class="section-title">订单明细</text>
+    <view
+      wx:for="{{items}}"
+      wx:key="variantId"
+      class="order-item"
+    >
+      <image class="item-image" src="{{item.imageUrl}}" mode="aspectFill" />
+      <view class="item-info">
+        <text class="item-name">{{item.productName}}</text>
+        <text class="item-variant">{{item.variantName}}</text>
+        <text class="item-price">{{item.displayPrice}}</text>
       </view>
-      <view wx:else class="coupon-applied">
-        <view class="coupon-info">
-          <text class="text-success font-medium">优惠券: {{couponCode}}</text>
-          <text class="text-success text-sm">{{discountDisplay}}</text>
-        </view>
-        <text class="coupon-remove" bindtap="onRemoveCoupon">移除</text>
-      </view>
-      <text wx:if="{{couponError}}" class="text-danger text-sm">{{couponError}}</text>
+      <text class="item-qty">x{{item.quantity}}</text>
     </view>
   </view>
 
-  <!-- 价格明细 -->
-  <view class="card">
-    <view class="card-header">订单金额</view>
-    <view class="card-body">
-      <view class="price-line">
-        <text class="text-secondary">商品小计</text>
-        <text>{{subtotalDisplay}}</text>
+  <!-- ─── 优惠券 ─── -->
+  <view class="section">
+    <text class="section-title">优惠券</text>
+    <view wx:if="{{!couponApplied}}" class="coupon-input-row">
+      <input
+        class="coupon-input"
+        placeholder="输入优惠码"
+        placeholder-class="coupon-placeholder"
+        value="{{couponCode}}"
+        bindinput="onCouponInput"
+        bindconfirm="onApplyCoupon"
+      />
+      <view class="coupon-apply-btn" bindtap="onApplyCoupon">
+        <text class="coupon-apply-text">使用</text>
       </view>
-      <view wx:if="{{couponApplied}}" class="price-line">
-        <text class="text-secondary">优惠</text>
-        <text class="text-success">{{discountDisplay}}</text>
+    </view>
+    <view wx:else class="coupon-applied-row">
+      <view class="coupon-applied-info">
+        <text class="coupon-code-text">{{couponCode}}</text>
+        <text class="coupon-discount-text">{{discountDisplay}}</text>
       </view>
-      <view class="divider"></view>
-      <view class="price-line total-line">
-        <text class="font-semibold">合计</text>
-        <text class="price price-lg">{{totalDisplay}}</text>
-      </view>
+      <text class="coupon-remove-text" bindtap="onRemoveCoupon">移除</text>
+    </view>
+    <text wx:if="{{couponError}}" class="coupon-error">{{couponError}}</text>
+  </view>
+
+  <!-- ─── 价格清单 ─── -->
+  <view class="section">
+    <text class="section-title">价格清单</text>
+    <view class="price-row">
+      <text class="price-label">运费</text>
+      <text class="price-value">¥ 0.00</text>
+    </view>
+    <view class="price-row">
+      <text class="price-label">获得积分</text>
+      <text class="price-value price-orange">+{{earnedPoints}}</text>
+    </view>
+    <view class="price-row">
+      <text class="price-label">商品总价</text>
+      <text class="price-value price-dark">{{subtotalDisplay}}</text>
     </view>
   </view>
 
   <!-- 底部占位 -->
-  <view class="bottom-spacer"></view>
+  <view class="bottom-spacer" />
 
-  <!-- 支付按钮 -->
-  <view class="bottom-bar safe-bottom">
-    <view class="pay-total">
-      <text class="total-label">应付</text>
-      <text class="price price-lg">{{totalDisplay}}</text>
+  <!-- ─── 底部结算栏 ─── -->
+  <view class="bottom-bar">
+    <view class="bar-left">
+      <text class="bar-count">共{{totalQty}}件</text>
+      <text class="bar-total-label">合计：</text>
+      <text class="bar-total-price">{{totalDisplay}}</text>
     </view>
-    <button
-      class="btn btn-success pay-btn"
-      bindtap="onPay"
-      loading="{{paying}}"
-      disabled="{{paying}}"
-    >
-      微信支付
-    </button>
+    <view class="settle-btn" bindtap="onPay">
+      <text class="settle-text">结算</text>
+    </view>
   </view>
+
 </view>
