@@ -59,9 +59,12 @@ async function autoTranslate() {
   expanded.value = true;
 
   try {
+    // Auto-detect HTML content (from TipTap rich text editor)
+    const isHtml = /<[a-z][\s\S]*>/i.test(text);
+
     const result = await api.post<Record<string, string>>(
       '/api/admin/translate',
-      { text, targetLangs: langs.map((l) => l.code) },
+      { text, targetLangs: langs.map((l) => l.code), isHtml },
     );
 
     // Merge: only fill empty fields, don't overwrite existing translations

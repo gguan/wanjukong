@@ -1,1 +1,0 @@
-ALTER TYPE "ProductStatus" ADD VALUE 'PENDING_REVIEW';

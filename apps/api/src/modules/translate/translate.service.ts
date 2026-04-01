@@ -1,10 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-interface TranslateResult {
-  text: string;
-  lang: string;
-}
-
 const DEEPL_LANG_MAP: Record<string, string> = {
   en: 'EN',
   'zh-TW': 'ZH-HANT',
@@ -20,35 +15,34 @@ export class TranslateService {
   }
 
   private get deeplBaseUrl(): string {
-    // Free API uses api-free.deepl.com, Pro uses api.deepl.com
     const key = this.deeplApiKey;
-    if (key.endsWith(':fx')) {
-      return 'https://api-free.deepl.com';
-    }
-    return 'https://api.deepl.com';
+    return key.endsWith(':fx')
+      ? 'https://api-free.deepl.com'
+      : 'https://api.deepl.com';
   }
 
   /**
    * Translate text from zh-CN to multiple target languages.
-   * Returns { en: "...", "zh-TW": "...", ja: "..." }
+   * @param isHtml  When true, preserves HTML tags during translation (for rich text).
    */
   async translateToAll(
     text: string,
     targetLangs: string[] = ['en', 'zh-TW', 'ja'],
+    isHtml = false,
   ): Promise<Record<string, string>> {
     if (!text?.trim()) return {};
 
     if (this.deeplApiKey) {
-      return this.translateWithDeepL(text, targetLangs);
+      return this.translateWithDeepL(text, targetLangs, isHtml);
     }
 
-    // Fallback: MyMemory (free, no API key, lower quality)
-    return this.translateWithMyMemory(text, targetLangs);
+    return this.translateWithMyMemory(text, targetLangs, isHtml);
   }
 
   private async translateWithDeepL(
     text: string,
     targetLangs: string[],
+    isHtml: boolean,
   ): Promise<Record<string, string>> {
     const results: Record<string, string> = {};
 
@@ -58,17 +52,25 @@ export class TranslateService {
         if (!targetLang) return;
 
         try {
+          const body: Record<string, unknown> = {
+            text: [text],
+            source_lang: 'ZH',
+            target_lang: targetLang,
+          };
+
+          // DeepL natively supports HTML: it translates text content
+          // while preserving all HTML tags, attributes, and structure.
+          if (isHtml) {
+            body.tag_handling = 'html';
+          }
+
           const res = await fetch(`${this.deeplBaseUrl}/v2/translate`, {
             method: 'POST',
             headers: {
               Authorization: `DeepL-Auth-Key ${this.deeplApiKey}`,
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              text: [text],
-              source_lang: 'ZH',
-              target_lang: targetLang,
-            }),
+            body: JSON.stringify(body),
           });
 
           if (!res.ok) {
@@ -92,17 +94,25 @@ export class TranslateService {
   }
 
   /**
-   * Fallback: MyMemory free API (no key needed, 5000 chars/day)
+   * Fallback: MyMemory free API (no key needed, 5000 chars/day).
+   * MyMemory doesn't support HTML, so we strip tags before translating
+   * and wrap the result back in a simple <p>.
    */
   private async translateWithMyMemory(
     text: string,
     targetLangs: string[],
+    isHtml: boolean,
   ): Promise<Record<string, string>> {
     const langPairMap: Record<string, string> = {
       en: 'zh-CN|en',
       'zh-TW': 'zh-CN|zh-TW',
       ja: 'zh-CN|ja',
     };
+
+    // Strip HTML for MyMemory
+    const plainText = isHtml
+      ? text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+      : text;
 
     const results: Record<string, string> = {};
 
@@ -113,13 +123,15 @@ export class TranslateService {
 
         try {
           const res = await fetch(
-            `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${pair}`,
+            `https://api.mymemory.translated.net/get?q=${encodeURIComponent(plainText)}&langpair=${pair}`,
           );
           const data = (await res.json()) as {
             responseData?: { translatedText?: string };
           };
           if (data.responseData?.translatedText) {
-            results[lang] = data.responseData.translatedText;
+            const translated = data.responseData.translatedText;
+            // Wrap back in <p> if source was HTML
+            results[lang] = isHtml ? `<p>${translated}</p>` : translated;
           }
         } catch (err) {
           this.logger.warn(`MyMemory translate failed for ${lang}:`, err);
