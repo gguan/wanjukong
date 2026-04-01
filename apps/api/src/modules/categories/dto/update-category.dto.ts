@@ -1,9 +1,13 @@
-import { IsString, IsInt, IsOptional } from 'class-validator';
+import { IsString, IsInt, IsOptional, IsObject } from 'class-validator';
 
 export class UpdateCategoryDto {
   @IsString()
   @IsOptional()
   name?: string;
+
+  @IsObject()
+  @IsOptional()
+  nameI18n?: Record<string, string>;
 
   @IsString()
   @IsOptional()

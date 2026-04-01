@@ -3,6 +3,7 @@ import {
   IsOptional,
   IsInt,
   IsBoolean,
+  IsObject,
   Min,
 } from 'class-validator';
 
@@ -10,13 +11,17 @@ export class CreateProductVariantDto {
   @IsString()
   name!: string;
 
+  @IsObject()
+  @IsOptional()
+  nameI18n?: Record<string, string>;
+
   @IsString()
   @IsOptional()
   versionCode?: string;
 
   @IsString()
   @IsOptional()
-  sku?: string; // auto-generated if blank
+  sku?: string;
 
   @IsString()
   @IsOptional()
@@ -40,13 +45,25 @@ export class CreateProductVariantDto {
   @IsOptional()
   subtitle?: string;
 
+  @IsObject()
+  @IsOptional()
+  subtitleI18n?: Record<string, string>;
+
   @IsString()
   @IsOptional()
   specSummary?: string;
 
+  @IsObject()
+  @IsOptional()
+  specSummaryI18n?: Record<string, string>;
+
   @IsString()
   @IsOptional()
   specifications?: string;
+
+  @IsObject()
+  @IsOptional()
+  specificationsI18n?: Record<string, string>;
 
   @IsInt()
   @Min(0)

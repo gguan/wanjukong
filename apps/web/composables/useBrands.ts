@@ -13,13 +13,14 @@ export interface BrandWithProducts extends Brand {
 
 export function useBrands() {
   const { get } = usePublicApi();
+  const { lang } = useLang();
 
   function fetchBrands() {
-    return get<Brand[]>('/public/brands');
+    return get<Brand[]>(`/public/brands?lang=${lang.value}`);
   }
 
   function fetchBrandBySlug(slug: string) {
-    return get<BrandWithProducts>(`/public/brands/${slug}`);
+    return get<BrandWithProducts>(`/public/brands/${slug}?lang=${lang.value}`);
   }
 
   return { fetchBrands, fetchBrandBySlug };

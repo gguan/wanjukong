@@ -3,6 +3,7 @@ import {
   IsOptional,
   IsEnum,
   IsDateString,
+  IsObject,
 } from 'class-validator';
 import { ProductStatus, SaleType } from '@prisma/client';
 
@@ -11,6 +12,10 @@ export class UpdateProductDto {
   @IsOptional()
   name?: string;
 
+  @IsObject()
+  @IsOptional()
+  nameI18n?: Record<string, string>;
+
   @IsString()
   @IsOptional()
   slug?: string;
@@ -18,6 +23,10 @@ export class UpdateProductDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @IsObject()
+  @IsOptional()
+  descriptionI18n?: Record<string, string>;
 
   @IsString()
   @IsOptional()

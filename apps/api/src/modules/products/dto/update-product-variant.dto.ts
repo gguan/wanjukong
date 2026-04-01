@@ -3,6 +3,7 @@ import {
   IsOptional,
   IsInt,
   IsBoolean,
+  IsObject,
   Min,
 } from 'class-validator';
 
@@ -10,6 +11,10 @@ export class UpdateProductVariantDto {
   @IsString()
   @IsOptional()
   name?: string;
+
+  @IsObject()
+  @IsOptional()
+  nameI18n?: Record<string, string>;
 
   @IsString()
   @IsOptional()
@@ -42,13 +47,25 @@ export class UpdateProductVariantDto {
   @IsOptional()
   subtitle?: string;
 
+  @IsObject()
+  @IsOptional()
+  subtitleI18n?: Record<string, string>;
+
   @IsString()
   @IsOptional()
   specSummary?: string;
 
+  @IsObject()
+  @IsOptional()
+  specSummaryI18n?: Record<string, string>;
+
   @IsString()
   @IsOptional()
   specifications?: string;
+
+  @IsObject()
+  @IsOptional()
+  specificationsI18n?: Record<string, string>;
 
   @IsInt()
   @Min(0)

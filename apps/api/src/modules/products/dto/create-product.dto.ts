@@ -4,6 +4,7 @@ import {
   IsEnum,
   IsDateString,
   IsInt,
+  IsObject,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -14,17 +15,34 @@ class DefaultVariantDto {
   @IsString()
   name!: string;
 
+  @IsObject()
+  @IsOptional()
+  nameI18n?: Record<string, string>;
+
   @IsString()
   @IsOptional()
-  sku?: string; // auto-generated if blank
+  sku?: string;
 
   @IsString()
   @IsOptional()
   manufacturerSku?: string;
 
+  @IsString()
+  @IsOptional()
+  subtitle?: string;
+
+  @IsObject()
+  @IsOptional()
+  subtitleI18n?: Record<string, string>;
+
   @IsInt()
   @Min(0)
   priceCents!: number;
+
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  usdPriceCents?: number;
 
   @IsInt()
   @Min(0)
@@ -35,12 +53,20 @@ export class CreateProductDto {
   @IsString()
   name!: string;
 
+  @IsObject()
+  @IsOptional()
+  nameI18n?: Record<string, string>;
+
   @IsString()
   slug!: string;
 
   @IsString()
   @IsOptional()
   description?: string;
+
+  @IsObject()
+  @IsOptional()
+  descriptionI18n?: Record<string, string>;
 
   @IsString()
   @IsOptional()

@@ -1,8 +1,12 @@
-import { IsString, IsOptional } from 'class-validator';
+import { IsString, IsOptional, IsObject } from 'class-validator';
 
 export class CreateBrandDto {
   @IsString()
   name!: string;
+
+  @IsObject()
+  @IsOptional()
+  nameI18n?: Record<string, string>;
 
   @IsString()
   slug!: string;

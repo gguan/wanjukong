@@ -181,6 +181,16 @@ async function save() {
           />
         </AdminProductEditorSection>
 
+        <!-- Description -->
+        <AdminProductEditorSection title="商品描述" description="前台展示的商品详细说明。">
+          <ElForm label-position="top">
+            <ElFormItem label="描述内容">
+              <ElInput v-model="form.description" type="textarea" :rows="4" placeholder="商品描述..." />
+              <AdminI18nInput v-model="form.descriptionI18n" label="商品描述" type="textarea" :rows="3" />
+            </ElFormItem>
+          </ElForm>
+        </AdminProductEditorSection>
+
         <!-- Media -->
         <AdminProductEditorSection title="商品图片" description="前台展示给用户的商品图片。">
           <ProductImagesManager :product-id="(route.params.id as string)" />

@@ -1,9 +1,13 @@
-import { IsString, IsOptional } from 'class-validator';
+import { IsString, IsOptional, IsObject } from 'class-validator';
 
 export class UpdateBrandDto {
   @IsString()
   @IsOptional()
   name?: string;
+
+  @IsObject()
+  @IsOptional()
+  nameI18n?: Record<string, string>;
 
   @IsString()
   @IsOptional()
