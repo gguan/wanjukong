@@ -140,7 +140,7 @@ async function handleSave() {
         <div class="form-grid form-grid--2">
           <ElFormItem label="版本名称" required>
             <ElInput v-model="editing.name" />
-            <AdminI18nInput v-model="editing.nameI18n" label="版本名称" />
+            <AdminI18nInput v-model="editing.nameI18n" :source-text="editing.name" label="版本名称" />
           </ElFormItem>
           <ElFormItem label="排序值">
             <ElInputNumber v-model="editing.sortOrder" :min="0" style="width: 100%" />
@@ -149,7 +149,7 @@ async function handleSave() {
 
         <ElFormItem label="版本描述">
           <ElInput v-model="editing.subtitle" placeholder="例如：含额外配件..." />
-          <AdminI18nInput v-model="editing.subtitleI18n" label="版本描述" />
+          <AdminI18nInput v-model="editing.subtitleI18n" :source-text="editing.subtitle" label="版本描述" />
         </ElFormItem>
 
         <div class="form-grid form-grid--2">
@@ -193,7 +193,7 @@ async function handleSave() {
 
         <ElFormItem label="说明信息">
           <ProductRichTextEditor v-model="editing.specifications" />
-          <AdminI18nInput v-model="editing.specificationsI18n" label="说明信息" type="textarea" :rows="4" />
+          <AdminI18nInput v-model="editing.specificationsI18n" :source-text="editing.specifications" label="说明信息" type="textarea" :rows="4" />
         </ElFormItem>
 
         <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px">

@@ -41,6 +41,7 @@ const isBrandManager = computed(() => store.isBrandManager);
       <ElInput v-model="local.name" placeholder="例如：钢铁侠 Mark XLVII" @blur="emit('blur-name')" />
       <AdminI18nInput
         :model-value="local.nameI18n || {}"
+        :source-text="local.name"
         label="商品名称"
         @update:model-value="local.nameI18n = $event"
       />

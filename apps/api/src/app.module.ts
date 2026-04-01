@@ -16,6 +16,7 @@ import { MailerModule } from './modules/mailer/mailer.module';
 import { StorefrontAuthModule } from './modules/storefront-auth/storefront-auth.module';
 import { StorefrontAccountModule } from './modules/storefront-account/storefront-account.module';
 import { ShipmentsModule } from './modules/shipments/shipments.module';
+import { TranslateModule } from './modules/translate/translate.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { ShipmentsModule } from './modules/shipments/shipments.module';
     OrdersModule,
     PaymentsModule,
     ShipmentsModule,
+    TranslateModule,
     UploadsModule,
   ],
   providers: [
