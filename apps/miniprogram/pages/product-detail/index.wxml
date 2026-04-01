@@ -61,7 +61,6 @@
   <!-- ─── Description & Specifications (white bg, rich text) ─── -->
   <view wx:if="{{currentVariant && currentVariant.specifications}}" class="specs-section">
     <view class="specs-block">
-      <view class="specs-title">INCLUDED</view>
       <rich-text nodes="{{currentVariant.specifications}}" class="rich-content" />
     </view>
   </view>
@@ -72,7 +71,7 @@
   <!-- ─── Bottom Bar ─── -->
   <view class="bottom-bar safe-bottom">
     <view class="bar-cart" bindtap="onTapCart">
-      <text class="bar-cart-icon">🛍</text>
+      <image class="bar-cart-icon" src="/assets/cart.png" />
       <text class="bar-cart-label">购物袋</text>
     </view>
     <button
