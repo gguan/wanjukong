@@ -41,6 +41,7 @@ export interface CartItem {
   imageUrl: string;
   priceCents: number;
   quantity: number;
+  preorderStartAt?: string | null;
 }
 
 export function getCart(): CartItem[] {
@@ -54,4 +55,26 @@ export function setCart(items: CartItem[]): void {
 
 export function clearCart(): void {
   wx.removeStorageSync(KEYS.CART);
+}
+
+// ─── Checkout items (selected subset of cart) ────────────
+
+export function getCheckoutItems(): CartItem[] {
+  const raw = wx.getStorageSync('wk_checkout_items');
+  return raw ? (JSON.parse(raw) as CartItem[]) : [];
+}
+
+export function setCheckoutItems(items: CartItem[]): void {
+  wx.setStorageSync('wk_checkout_items', JSON.stringify(items));
+}
+
+export function clearCheckoutItems(): void {
+  wx.removeStorageSync('wk_checkout_items');
+}
+
+/** 结算后从购物车移除已付款的商品 */
+export function removeCartItems(variantIds: string[]): void {
+  const idSet = new Set(variantIds);
+  const remaining = getCart().filter((item) => !idSet.has(item.variantId));
+  setCart(remaining);
 }

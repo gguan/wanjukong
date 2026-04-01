@@ -2,7 +2,7 @@
  * Format cents to CNY string: 29999 → "299.99"
  */
 export function formatCNY(cents: number): string {
-  return `¥${(cents / 100).toFixed(2)}`;
+  return `¥ ${(cents / 100).toFixed(2)}`;
 }
 
 /**

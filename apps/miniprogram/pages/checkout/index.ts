@@ -1,7 +1,7 @@
 import { createWechatOrder, validateCoupon } from '../../utils/api';
 import { requestPayment } from '../../utils/payment';
 import { requireAuth } from '../../utils/auth';
-import { getCart, clearCart, getUserInfo } from '../../utils/storage';
+import { getCart, clearCart, getUserInfo, getCheckoutItems, clearCheckoutItems, removeCartItems } from '../../utils/storage';
 import { formatCNY } from '../../utils/format';
 import type { CartItem } from '../../utils/storage';
 
@@ -18,22 +18,22 @@ Page({
     couponApplied: false,
     couponError: '',
     paying: false,
-    mode: 'cart' as 'cart' | 'buyNow',
+    mode: 'cart' as 'cart' | 'buyNow' | 'selectedCart',
   },
 
   onLoad(query: Record<string, string | undefined>) {
     if (!requireAuth()) return;
 
-    const mode = (query.mode || 'cart') as 'cart' | 'buyNow';
+    const mode = (query.mode || 'cart') as 'cart' | 'buyNow' | 'selectedCart';
     this.setData({ mode });
 
     let rawItems: CartItem[] = [];
 
     if (mode === 'buyNow') {
       const stored = wx.getStorageSync('wk_buy_now');
-      if (stored) {
-        rawItems = [JSON.parse(stored) as CartItem];
-      }
+      if (stored) rawItems = [JSON.parse(stored) as CartItem];
+    } else if (mode === 'selectedCart') {
+      rawItems = getCheckoutItems();
     } else {
       rawItems = getCart();
     }
@@ -134,8 +134,12 @@ Page({
 
       await requestPayment(payParams);
 
-      // Payment successful — clear cart and redirect
-      if (this.data.mode === 'cart') {
+      // Payment successful — clear relevant items and redirect
+      if (this.data.mode === 'selectedCart') {
+        const variantIds = this.data.items.map((item) => item.variantId);
+        removeCartItems(variantIds);
+        clearCheckoutItems();
+      } else if (this.data.mode === 'cart') {
         clearCart();
       } else {
         wx.removeStorageSync('wk_buy_now');

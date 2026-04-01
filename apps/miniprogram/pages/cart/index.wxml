@@ -1,48 +1,78 @@
-<!-- 购物车 -->
+<!-- 购物袋 -->
 <view class="page">
-  <!-- 购物车列表 -->
+
+  <!-- 胶囊按钮下方占位 -->
+  <view style="height: {{navBarBottom}}px;" />
+
+  <!-- ─── 页头 ─── -->
+  <view class="page-header">
+    <text class="header-title">购物袋</text>
+    <text class="header-count">共{{totalCount}}件商品</text>
+  </view>
+
+  <!-- 全宽分割线（突破 page padding）-->
+  <view class="divider-line" />
+
+  <!-- ─── 列表 ─── -->
   <view wx:if="{{!isEmpty}}" class="cart-list">
     <view
       wx:for="{{items}}"
       wx:key="variantId"
-      class="cart-item card"
+      class="cart-item"
     >
       <image class="item-image" src="{{item.imageUrl}}" mode="aspectFill" />
       <view class="item-info">
         <text class="item-name">{{item.productName}}</text>
-        <text class="item-variant text-secondary text-sm">{{item.variantName}}</text>
-        <view class="item-bottom">
-          <text class="price price-sm">{{item.displayPrice}}</text>
-          <view class="quantity-stepper">
-            <view class="stepper-btn" data-index="{{index}}" bindtap="onDecrease">-</view>
-            <text class="stepper-value">{{item.quantity}}</text>
-            <view class="stepper-btn" data-index="{{index}}" bindtap="onIncrease">+</view>
-          </view>
+        <text wx:if="{{item.variantName}}" class="item-variant">{{item.variantName}}</text>
+        <view class="quantity-stepper">
+          <view class="stepper-btn" data-index="{{index}}" bindtap="onDecrease">−</view>
+          <text class="stepper-value">{{item.quantity}}</text>
+          <view class="stepper-btn" data-index="{{index}}" bindtap="onIncrease">+</view>
+        </view>
+        <text class="item-price">{{item.displayPrice}}</text>
+      </view>
+      <view class="item-right">
+        <view
+          class="item-checkbox {{selected[index] ? 'checked' : ''}}"
+          data-index="{{index}}"
+          bindtap="onToggleSelect"
+        >
+          <text wx:if="{{selected[index]}}" class="checkbox-check">✓</text>
+        </view>
+        <text class="delete-text" data-index="{{index}}" bindtap="onDelete">删除</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- ─── 空状态 ─── -->
+  <view wx:if="{{isEmpty}}" class="empty-wrap">
+    <text class="empty-text">购物袋是空的</text>
+    <view class="go-shopping-btn" bindtap="onGoShopping">去逛逛</view>
+  </view>
+
+  <view wx:if="{{!isEmpty}}" class="bottom-spacer" />
+
+  <!-- ─── 底部结算栏（fixed，自己管 padding）─── -->
+  <view wx:if="{{!isEmpty}}" class="bottom-bar safe-bottom">
+    <view class="bar-divider" />
+    <view class="bar-row">
+      <text class="selected-count">已选{{selectedCount}}件</text>
+      <view class="select-all-wrap" bindtap="onToggleSelectAll">
+        <text class="select-all-label">全选</text>
+        <view class="item-checkbox {{allSelected ? 'checked' : ''}}">
+          <text wx:if="{{allSelected}}" class="checkbox-check">✓</text>
         </view>
       </view>
-      <view class="item-delete" data-index="{{index}}" bindtap="onDelete">
-        <text class="delete-text">删除</text>
-      </view>
     </view>
-  </view>
-
-  <!-- 空状态 -->
-  <view wx:if="{{isEmpty}}" class="empty">
-    <text class="empty-text">购物车是空的</text>
-    <button class="btn btn-outline go-shopping-btn" bindtap="onGoShopping">去逛逛</button>
-  </view>
-
-  <!-- 底部占位 -->
-  <view wx:if="{{!isEmpty}}" class="bottom-spacer"></view>
-
-  <!-- 底部结算栏 -->
-  <view wx:if="{{!isEmpty}}" class="bottom-bar safe-bottom">
-    <view class="total-section">
+    <view class="bar-divider" />
+    <view class="bar-row">
       <text class="total-label">合计</text>
-      <text class="price price-lg">{{totalDisplay}}</text>
+      <text class="total-price">{{totalDisplay}}</text>
     </view>
-    <button class="btn btn-primary checkout-btn" bindtap="onCheckout">
-      去结算 ({{items.length}})
-    </button>
+    <view class="bar-divider" />
+    <view class="checkout-btn" bindtap="onCheckout">
+      <text class="checkout-text">结算</text>
+    </view>
   </view>
+
 </view>

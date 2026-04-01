@@ -21,17 +21,16 @@
   width: 64rpx;
   height: 64rpx;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(0, 0, 0, 0.15);
+  border: 1rpx solid rgba(0, 0, 0, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .nav-back-icon {
-  color: #000;
-  font-size: 40rpx;
-  font-weight: 300;
-  margin-top: -4rpx;
+  width: 36rpx;
+  height: 36rpx;
 }
 
 /* ─── Hero Image ────────────────────────────────────────── */
@@ -167,57 +166,7 @@
   word-break: break-word;
 }
 
-/* Override common HTML tags inside rich-text */
-.rich-content img {
-  max-width: 100% !important;
-  height: auto !important;
-  display: block;
-  margin: 16rpx 0;
-}
-
-.rich-content p {
-  margin: 0 0 16rpx;
-}
-
-.rich-content h1,
-.rich-content h2,
-.rich-content h3 {
-  font-weight: 700;
-  color: #000;
-  margin: 24rpx 0 12rpx;
-}
-
-.rich-content h1 { font-size: 40rpx; }
-.rich-content h2 { font-size: 36rpx; }
-.rich-content h3 { font-size: 32rpx; }
-
-.rich-content ul,
-.rich-content ol {
-  padding-left: 32rpx;
-  margin: 12rpx 0;
-}
-
-.rich-content li {
-  margin-bottom: 8rpx;
-}
-
-.rich-content table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 16rpx 0;
-}
-
-.rich-content td,
-.rich-content th {
-  padding: 12rpx 16rpx;
-  border: 1rpx solid #e8e8e8;
-  font-size: 26rpx;
-}
-
-.rich-content strong,
-.rich-content b {
-  font-weight: 700;
-}
+/* rich-text 内部 HTML tag 选择器在小程序 wxss 中无效，已移除 */
 
 /* ─── Bottom Bar ────────────────────────────────────────── */
 

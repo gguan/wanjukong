@@ -4,7 +4,7 @@
   <!-- ─── Custom Navbar (transparent, over hero) ─── -->
   <view class="custom-nav" style="padding-top: {{statusBarHeight}}px">
     <view class="nav-back" bindtap="onTapBack">
-      <text class="nav-back-icon">‹</text>
+      <image class="nav-back-icon" src="/assets/back.png" mode="aspectFit" />
     </view>
   </view>
 

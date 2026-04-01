@@ -165,6 +165,10 @@ Page({
 
     if (existingIdx >= 0) {
       cart[existingIdx].quantity += 1;
+      // 回填旧数据缺失的预售字段
+      if (cart[existingIdx].preorderStartAt === undefined) {
+        cart[existingIdx].preorderStartAt = product.preorderStartAt || null;
+      }
     } else {
       const item: CartItem = {
         productId: product.id,
@@ -174,6 +178,7 @@ Page({
         imageUrl: currentVariant.coverImageUrl || product.imageUrl || '',
         priceCents: currentVariant.priceCents,
         quantity: 1,
+        preorderStartAt: product.preorderStartAt || null,
       };
       cart.push(item);
     }
