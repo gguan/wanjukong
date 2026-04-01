@@ -84,6 +84,7 @@ export class ProductsService {
     if (dto.saleType === 'IN_STOCK') {
       data.preorderStartAt = null;
       data.preorderEndAt = null;
+      data.depositCents = null;
     }
     // Resolve SKU for default variant before transaction
     const brand = await this.prisma.brand.findUnique({ where: { id: dto.brandId } });
@@ -145,6 +146,7 @@ export class ProductsService {
     if (dto.saleType === 'IN_STOCK') {
       data.preorderStartAt = null;
       data.preorderEndAt = null;
+      data.depositCents = null;
     }
 
     // Brand manager editing → revert to DRAFT for re-review

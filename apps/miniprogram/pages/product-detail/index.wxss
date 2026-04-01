@@ -67,8 +67,8 @@
 }
 
 .price-main {
-  font-size: 48rpx;
-  font-weight: 800;
+  font-size: 52rpx;
+  font-weight: 600;
   color: #c75c2a;
   letter-spacing: 0.02em;
 }
@@ -80,8 +80,8 @@
 }
 
 .product-name {
-  font-size: 34rpx;
-  font-weight: 700;
+  font-size: 40rpx;
+  font-weight: 600;
   color: #000;
   line-height: 1.35;
   margin-bottom: 8rpx;
@@ -232,10 +232,9 @@
   right: 0;
   display: flex;
   align-items: center;
-  gap: 0;
+  gap: 16rpx;
   padding: 16rpx 24rpx;
-  background: #fff;
-  border-top: 1rpx solid #e8e8e8;
+  background: #1a1a1a;
   z-index: 100;
 }
 
@@ -244,18 +243,45 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 120rpx;
+  width: 96rpx;
   flex-shrink: 0;
 }
 
+.bar-cart-icon-wrap {
+  position: relative;
+  width: 48rpx;
+  height: 48rpx;
+}
+
 .bar-cart-icon {
-  width: 44rpx;
-  height: 44rpx;
+  width: 48rpx;
+  height: 48rpx;
+  filter: invert(1);
+}
+
+.bar-cart-badge {
+  position: absolute;
+  top: -12rpx;
+  right: -18rpx;
+  width: 34rpx;
+  height: 34rpx;
+  background: #fff;
+  border-radius: 17rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bar-cart-badge-text {
+  font-size: 22rpx;
+  color: #000;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .bar-cart-label {
   font-size: 20rpx;
-  color: #333;
+  color: rgba(255, 255, 255, 0.7);
   margin-top: 4rpx;
 }
 
@@ -264,10 +290,10 @@
   height: 88rpx;
   line-height: 88rpx;
   text-align: center;
-  font-size: 30rpx;
+  font-size: 28rpx;
   font-weight: 600;
-  letter-spacing: 0.06em;
-  border-radius: 8rpx;
+  letter-spacing: 0.04em;
+  border-radius: 0;
   border: none;
   margin: 0;
   padding: 0;
@@ -277,19 +303,52 @@
   border: none;
 }
 
-.bar-btn--buy {
+.bar-btn--add {
   background: #000;
   color: #fff;
+  border: 2rpx solid #fff;
+}
+
+.bar-btn--add:active {
+  background: #222;
+}
+
+.bar-btn--buy {
+  background: #fff;
+  color: #000;
 }
 
 .bar-btn--buy:active {
-  background: #333;
+  background: #e8e8e8;
 }
 
 .bar-btn--sold {
+  background: #2a2a2a;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.bar-btn-disabled {
+  flex: 1;
   background: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 88rpx;
+}
+
+.bar-btn-date {
+  font-size: 24rpx;
+  font-weight: 600;
   color: #000;
-  border: 2rpx solid #000;
+  line-height: 1.2;
+}
+
+.bar-btn-hint {
+  font-size: 22rpx;
+  color: #000;
+  line-height: 1.2;
+  margin-top: 6rpx;
 }
 
 /* ─── Loading ───────────────────────────────────────────── */

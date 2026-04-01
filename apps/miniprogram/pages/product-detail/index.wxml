@@ -70,24 +70,48 @@
 
   <!-- ─── Bottom Bar ─── -->
   <view class="bottom-bar safe-bottom">
+    <!-- Cart icon with badge -->
     <view class="bar-cart" bindtap="onTapCart">
-      <image class="bar-cart-icon" src="/assets/cart.png" />
+      <view class="bar-cart-icon-wrap">
+        <image class="bar-cart-icon" src="/assets/cart.png" />
+        <view wx:if="{{cartCount > 0}}" class="bar-cart-badge">
+          <text class="bar-cart-badge-text">{{cartCount > 99 ? '99+' : cartCount}}</text>
+        </view>
+      </view>
       <text class="bar-cart-label">购物袋</text>
     </view>
-    <button
-      wx:if="{{isSoldOut}}"
-      class="bar-btn bar-btn--sold"
-      disabled
-    >
-      SOLD OUT
-    </button>
-    <button
-      wx:else
-      class="bar-btn bar-btn--buy"
-      bindtap="onBuyNow"
-    >
-      立即购买
-    </button>
+
+    <!-- Sold Out -->
+    <block wx:if="{{isSoldOut}}">
+      <button class="bar-btn bar-btn--sold" disabled>SOLD OUT</button>
+    </block>
+
+    <!-- Preorder: not yet started -->
+    <block wx:elif="{{preorderState === 'upcoming'}}">
+      <button class="bar-btn bar-btn--add" bindtap="onAddToCart">加入购物车</button>
+      <view class="bar-btn-disabled">
+        <text class="bar-btn-date">{{preorderStartDisplay}}</text>
+        <text class="bar-btn-hint">开始预售</text>
+      </view>
+    </block>
+
+    <!-- Preorder: active with deposit -->
+    <block wx:elif="{{preorderState === 'active' && depositDisplay}}">
+      <button class="bar-btn bar-btn--add" bindtap="onAddToCart">加入购物车</button>
+      <button class="bar-btn bar-btn--buy" bindtap="onBuyNow">立即预购，定金 {{depositDisplay}}</button>
+    </block>
+
+    <!-- Preorder: active without deposit (full payment) -->
+    <block wx:elif="{{preorderState === 'active'}}">
+      <button class="bar-btn bar-btn--add" bindtap="onAddToCart">加入购物车</button>
+      <button class="bar-btn bar-btn--buy" bindtap="onBuyNow">立即预购</button>
+    </block>
+
+    <!-- In stock -->
+    <block wx:else>
+      <button class="bar-btn bar-btn--add" bindtap="onAddToCart">加入购物车</button>
+      <button class="bar-btn bar-btn--buy" bindtap="onBuyNow">立即购买</button>
+    </block>
   </view>
 </view>
 

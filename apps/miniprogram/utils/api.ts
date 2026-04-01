@@ -200,6 +200,10 @@ export interface Product {
   imageUrl: string | null;
   displayAvailability: 'IN_STOCK' | 'PREORDER' | 'SOLD_OUT' | null;
   isPurchasable: boolean;
+  saleType: 'IN_STOCK' | 'PREORDER';
+  preorderStartAt: string | null;
+  preorderEndAt: string | null;
+  depositCents: number | null;
   brand: { id: string; name: string; slug: string };
   category: { id: string; name: string; slug: string };
   variants?: ProductVariant[];

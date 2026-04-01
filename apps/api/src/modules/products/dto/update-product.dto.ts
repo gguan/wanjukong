@@ -4,6 +4,8 @@ import {
   IsEnum,
   IsDateString,
   IsObject,
+  IsInt,
+  Min,
 } from 'class-validator';
 import { ProductStatus, SaleType } from '@prisma/client';
 
@@ -55,4 +57,9 @@ export class UpdateProductDto {
   @IsDateString()
   @IsOptional()
   estimatedShipAt?: string | null;
+
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  depositCents?: number | null;
 }

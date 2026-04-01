@@ -16,6 +16,11 @@ Page({
     isSoldOut: false,
     loading: true,
     statusBarHeight: 44,
+    cartCount: 0,
+    // Preorder state: 'none' | 'upcoming' | 'active'
+    preorderState: 'none' as 'none' | 'upcoming' | 'active',
+    preorderStartDisplay: '',
+    depositDisplay: '',
   },
 
   onLoad(query: Record<string, string | undefined>) {
@@ -31,6 +36,10 @@ Page({
     this.loadProduct(slug);
   },
 
+  onShow() {
+    this.updateCartCount();
+  },
+
   onShareAppMessage() {
     const p = this.data.product;
     return {
@@ -38,6 +47,12 @@ Page({
       path: `/pages/product-detail/index?slug=${p?.slug}`,
       imageUrl: p?.imageUrl || undefined,
     };
+  },
+
+  updateCartCount() {
+    const cart = getCart();
+    const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+    this.setData({ cartCount: count });
   },
 
   async loadProduct(slug: string) {
@@ -59,11 +74,15 @@ Page({
       const defaultVariant =
         product.variants?.find((v) => v.isDefault) || product.variants?.[0] || null;
 
+      // Compute preorder state
+      const preorderInfo = this.computePreorderState(product);
+
       this.setData({
         product,
         heroImage,
         galleryImages,
         loading: false,
+        ...preorderInfo,
       });
 
       if (defaultVariant) {
@@ -74,6 +93,41 @@ Page({
       this.setData({ loading: false });
       wx.showToast({ title: '加载失败', icon: 'error' });
     }
+  },
+
+  computePreorderState(product: Product) {
+    if (product.saleType !== 'PREORDER') {
+      return { preorderState: 'none' as const, preorderStartDisplay: '', depositDisplay: '' };
+    }
+
+    const now = Date.now();
+    const startAt = product.preorderStartAt ? new Date(product.preorderStartAt).getTime() : null;
+    const endAt = product.preorderEndAt ? new Date(product.preorderEndAt).getTime() : null;
+
+    // If preorder window hasn't started yet
+    if (startAt && now < startAt) {
+      const d = new Date(product.preorderStartAt!);
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      const display = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      return {
+        preorderState: 'upcoming' as const,
+        preorderStartDisplay: display,
+        depositDisplay: '',
+      };
+    }
+
+    // If within preorder window (or no dates set, treat as active preorder)
+    if (!endAt || now <= endAt) {
+      const depositDisplay = product.depositCents ? formatCNY(product.depositCents) : '';
+      return {
+        preorderState: 'active' as const,
+        preorderStartDisplay: '',
+        depositDisplay,
+      };
+    }
+
+    // Preorder window has passed
+    return { preorderState: 'none' as const, preorderStartDisplay: '', depositDisplay: '' };
   },
 
   selectVariant(variant: ProductVariant) {
@@ -125,7 +179,8 @@ Page({
     }
 
     setCart(cart);
-    wx.showToast({ title: '已加入购物车', icon: 'success' });
+    this.updateCartCount();
+    wx.showToast({ title: '已加入购物袋', icon: 'success' });
   },
 
   onBuyNow() {

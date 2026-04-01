@@ -94,6 +94,11 @@ export class CreateProductDto {
   @IsOptional()
   estimatedShipAt?: string;
 
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  depositCents?: number;
+
   @ValidateNested()
   @Type(() => DefaultVariantDto)
   defaultVariant!: DefaultVariantDto;

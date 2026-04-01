@@ -25,6 +25,7 @@ const form = ref({
   preorderStartAt: '',
   preorderEndAt: '',
   estimatedShipAt: '',
+  depositYuan: 0,
 });
 
 const updatedAt = ref('');
@@ -62,6 +63,7 @@ onMounted(async () => {
     preorderStartAt: product.preorderStartAt ? toLocalDatetime(product.preorderStartAt as string) : '',
     preorderEndAt: product.preorderEndAt ? toLocalDatetime(product.preorderEndAt as string) : '',
     estimatedShipAt: product.estimatedShipAt ? toLocalDatetime(product.estimatedShipAt as string) : '',
+    depositYuan: (product.depositCents as number) ? (product.depositCents as number) / 100 : 0,
   };
 
   if (product.updatedAt) {
@@ -124,11 +126,14 @@ async function save() {
       payload.preorderStartAt = form.value.preorderStartAt ? new Date(form.value.preorderStartAt).toISOString() : null;
       payload.preorderEndAt = form.value.preorderEndAt ? new Date(form.value.preorderEndAt).toISOString() : null;
       payload.estimatedShipAt = form.value.estimatedShipAt ? new Date(form.value.estimatedShipAt).toISOString() : null;
+      payload.depositCents = form.value.depositYuan > 0 ? Math.round(form.value.depositYuan * 100) : null;
     } else {
       payload.preorderStartAt = null;
       payload.preorderEndAt = null;
       payload.estimatedShipAt = null;
+      payload.depositCents = null;
     }
+    delete payload.depositYuan;
 
     await api.put(`/api/admin/products/${route.params.id}`, payload);
     ElMessage.success('商品已更新');
@@ -314,6 +319,10 @@ async function save() {
               </ElFormItem>
               <ElFormItem label="预计发货时间">
                 <ElInput v-model="form.estimatedShipAt" type="datetime-local" />
+              </ElFormItem>
+              <ElFormItem label="定金（元）">
+                <ElInputNumber v-model="form.depositYuan" :min="0" :precision="2" :step="10" style="width: 100%" />
+                <div class="field-hint">为 0 则不收定金，全款预购</div>
               </ElFormItem>
             </template>
           </ElForm>
