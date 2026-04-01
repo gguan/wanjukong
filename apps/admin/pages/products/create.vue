@@ -23,8 +23,6 @@ const form = ref({
   preorderStartAt: '',
   preorderEndAt: '',
   estimatedShipAt: '',
-  description: '',
-  descriptionI18n: {} as Record<string, string>,
 });
 
 const defaultVariant = ref({

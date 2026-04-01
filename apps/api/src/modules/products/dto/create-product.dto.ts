@@ -62,14 +62,6 @@ export class CreateProductDto {
 
   @IsString()
   @IsOptional()
-  description?: string;
-
-  @IsObject()
-  @IsOptional()
-  descriptionI18n?: Record<string, string>;
-
-  @IsString()
-  @IsOptional()
   scale?: string;
 
   @IsEnum(ProductStatus)

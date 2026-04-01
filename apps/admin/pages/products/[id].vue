@@ -25,8 +25,6 @@ const form = ref({
   preorderStartAt: '',
   preorderEndAt: '',
   estimatedShipAt: '',
-  description: '',
-  descriptionI18n: {} as Record<string, string>,
 });
 
 const updatedAt = ref('');
@@ -64,8 +62,6 @@ onMounted(async () => {
     preorderStartAt: product.preorderStartAt ? toLocalDatetime(product.preorderStartAt as string) : '',
     preorderEndAt: product.preorderEndAt ? toLocalDatetime(product.preorderEndAt as string) : '',
     estimatedShipAt: product.estimatedShipAt ? toLocalDatetime(product.estimatedShipAt as string) : '',
-    description: (product.description as string) || '',
-    descriptionI18n: (product.descriptionI18n as Record<string, string>) || {},
   };
 
   if (product.updatedAt) {
@@ -181,15 +177,7 @@ async function save() {
           />
         </AdminProductEditorSection>
 
-        <!-- Description -->
-        <AdminProductEditorSection title="商品描述" description="前台展示的商品详细说明。">
-          <ElForm label-position="top">
-            <ElFormItem label="描述内容">
-              <ElInput v-model="form.description" type="textarea" :rows="4" placeholder="商品描述..." />
-              <AdminI18nInput v-model="form.descriptionI18n" :source-text="form.description" label="商品描述" type="textarea" :rows="3" />
-            </ElFormItem>
-          </ElForm>
-        </AdminProductEditorSection>
+
 
         <!-- Media -->
         <AdminProductEditorSection title="商品图片" description="前台展示给用户的商品图片。">

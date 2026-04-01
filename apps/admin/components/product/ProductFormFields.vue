@@ -6,8 +6,6 @@ const props = defineProps<{
     name: string;
     nameI18n?: Record<string, string>;
     slug: string;
-    description?: string;
-    descriptionI18n?: Record<string, string>;
     scale: string;
     status: string;
     brandId: string;

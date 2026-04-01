@@ -89,8 +89,6 @@ CREATE TABLE "Product" (
     "name" TEXT NOT NULL,
     "nameI18n" JSONB DEFAULT '{}',
     "slug" TEXT NOT NULL,
-    "description" TEXT,
-    "descriptionI18n" JSONB DEFAULT '{}',
     "scale" TEXT,
     "status" "ProductStatus" NOT NULL DEFAULT 'DRAFT',
     "imageUrl" TEXT,

@@ -59,11 +59,8 @@
   </view>
 
   <!-- ─── Description & Specifications (white bg, rich text) ─── -->
-  <view wx:if="{{product.description || (currentVariant && currentVariant.specifications)}}" class="specs-section">
-    <view wx:if="{{product.description}}" class="specs-block">
-      <rich-text nodes="{{product.description}}" class="rich-content" />
-    </view>
-    <view wx:if="{{currentVariant && currentVariant.specifications}}" class="specs-block">
+  <view wx:if="{{currentVariant && currentVariant.specifications}}" class="specs-section">
+    <view class="specs-block">
       <view class="specs-title">INCLUDED</view>
       <rich-text nodes="{{currentVariant.specifications}}" class="rich-content" />
     </view>

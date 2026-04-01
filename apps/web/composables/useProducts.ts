@@ -32,7 +32,6 @@ export interface Product {
   id: string;
   name: string;
   slug: string;
-  description: string | null;
   scale: string | null;
   status: string;
   displayAvailability: 'IN_STOCK' | 'PREORDER' | 'SOLD_OUT' | null;

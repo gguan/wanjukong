@@ -89,7 +89,6 @@ async function main() {
   type SeedProduct = {
     name: string;
     slug: string;
-    description: string;
     scale: string;
     status: ProductStatus;
     saleType?: SaleType;
@@ -104,8 +103,6 @@ async function main() {
     {
       name: 'Hot Toys MMS617 Spider-Man No Way Home 1/6',
       slug: 'hot-toys-spider-man-nwh',
-      description:
-        'Spider-Man (Integrated Suit) 1/6th scale collectible figure',
       scale: '1/6',
       status: ProductStatus.ACTIVE,
       brandId: hotToys.id,
@@ -114,7 +111,6 @@ async function main() {
     {
       name: 'Hot Toys MMS656 The Batman 1/6',
       slug: 'hot-toys-the-batman',
-      description: 'The Batman 1/6th scale collectible figure',
       scale: '1/6',
       status: ProductStatus.ACTIVE,
       saleType: SaleType.PREORDER,
@@ -127,7 +123,6 @@ async function main() {
     {
       name: 'DAM DMS032 Assassins Creed Altair 1/6',
       slug: 'dam-assassins-creed-altair',
-      description: "Altair the Mentor Assassin's Creed collectible figure",
       scale: '1/6',
       status: ProductStatus.ACTIVE,
       brandId: dam.id,
@@ -136,7 +131,6 @@ async function main() {
     {
       name: 'Threezero Ultraman Suit 1/6',
       slug: 'threezero-ultraman-suit',
-      description: 'Ultraman Suit anime edition 1/6th scale figure',
       scale: '1/6',
       status: ProductStatus.DRAFT,
       brandId: threezero.id,
@@ -145,7 +139,6 @@ async function main() {
     {
       name: 'Hot Toys Headsculpt Tony Stark MK85',
       slug: 'hot-toys-headsculpt-tony-stark-mk85',
-      description: 'Tony Stark battle damaged head sculpt for MK85',
       scale: '1/6',
       status: ProductStatus.ACTIVE,
       brandId: hotToys.id,
@@ -154,7 +147,6 @@ async function main() {
     {
       name: 'DAM Narrow Shoulder Body 2.0',
       slug: 'dam-narrow-shoulder-body-2',
-      description: 'DAM narrow shoulder male body version 2.0',
       scale: '1/6',
       status: ProductStatus.ACTIVE,
       brandId: dam.id,
@@ -163,7 +155,6 @@ async function main() {
     {
       name: 'Hot Toys Tactical Suit Set MMS',
       slug: 'hot-toys-tactical-suit-set',
-      description: 'Generic tactical clothing set for 1/6 figures',
       scale: '1/6',
       status: ProductStatus.INACTIVE,
       brandId: hotToys.id,

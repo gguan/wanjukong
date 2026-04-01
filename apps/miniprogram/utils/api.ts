@@ -196,7 +196,6 @@ export interface Product {
   id: string;
   name: string;
   slug: string;
-  description: string | null;
   scale: string | null;
   imageUrl: string | null;
   displayAvailability: 'IN_STOCK' | 'PREORDER' | 'SOLD_OUT' | null;

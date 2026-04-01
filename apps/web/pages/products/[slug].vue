@@ -157,9 +157,9 @@ watchEffect(() => {
   if (!product.value) return;
   useSeoMeta({
     title: `${product.value.name} — Wanjukong`,
-    description: product.value.description?.slice(0, 160) || `${product.value.name} by ${product.value.brand?.name}. ${product.value.scale || ''} scale collectible figure.`,
+    description: `${product.value.name} by ${product.value.brand?.name}. ${product.value.scale || ''} scale collectible figure.`,
     ogTitle: product.value.name,
-    ogDescription: product.value.description?.slice(0, 160) || `${product.value.name} by ${product.value.brand?.name}`,
+    ogDescription: `${product.value.name} by ${product.value.brand?.name}`,
     ogImage: product.value.imageUrl || undefined,
   })
 })
@@ -355,9 +355,6 @@ function formatDate(iso: string | null | undefined) {
 
               <!-- ─── Divider ─── -->
               <hr class="panel-divider" />
-
-              <!-- ─── Product description (plain text, preserves line breaks) ─── -->
-              <p v-if="product.description" class="panel-product-description">{{ product.description }}</p>
 
               <!-- ─── Specifications (rich text) ─── -->
               <!-- eslint-disable-next-line vue/no-v-html -->

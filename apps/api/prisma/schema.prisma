@@ -65,8 +65,6 @@ model Product {
   name             String
   nameI18n         Json?         @default("{}")
   slug             String        @unique
-  description      String?       @db.Text
-  descriptionI18n  Json?         @default("{}")
   scale            String?
   status           ProductStatus @default(DRAFT)
   imageUrl         String?
