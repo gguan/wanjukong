@@ -137,8 +137,11 @@ export function createWechatOrder(data: {
 
 // ─── Orders ──────────────────────────────────────────────
 
-export function fetchMyOrders() {
-  return request<OrderSummary[]>('/public/account/orders');
+export function fetchMyOrders(params?: { limit?: number; page?: number }) {
+  const qs = params
+    ? '?' + Object.entries(params).filter(([, v]) => v !== undefined).map(([k, v]) => `${k}=${v}`).join('&')
+    : '';
+  return request<OrderSummary[]>(`/public/account/orders${qs}`);
 }
 
 export function fetchOrderDetail(orderNo: string) {

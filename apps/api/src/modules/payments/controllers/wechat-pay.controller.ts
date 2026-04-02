@@ -6,7 +6,10 @@ import {
   HttpCode,
   BadRequestException,
   Logger,
+  Req,
+  RawBodyRequest,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import {
   IsString,
   IsArray,
@@ -81,13 +84,17 @@ export class WechatPayController {
   async handleNotification(
     @Headers() headers: WechatPayNotificationHeaders,
     @Body() body: WechatPayNotificationBody,
+    @Req() req: RawBodyRequest<Request>,
   ) {
     const timestamp = headers['wechatpay-timestamp'];
     if (!timestamp) {
       throw new BadRequestException('Missing wechatpay-timestamp header');
     }
 
-    await this.paymentsService.handleWechatNotification(headers, body);
+    // Use raw body bytes for signature verification (not re-serialized JSON)
+    const rawBody = req.rawBody?.toString('utf-8') || JSON.stringify(body);
+
+    await this.paymentsService.handleWechatNotification(headers, body, rawBody);
     return { code: 'SUCCESS', message: 'OK' };
   }
 }

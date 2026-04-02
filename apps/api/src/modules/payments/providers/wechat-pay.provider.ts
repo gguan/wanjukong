@@ -65,6 +65,11 @@ export class WechatPayProvider implements IPaymentProvider {
     return process.env.WECHAT_PAY_CERT_SERIAL || '';
   }
 
+  /** WeChat Pay public key (PEM) — for verifying notification signatures */
+  private get wechatPublicKey(): string {
+    return (process.env.WECHAT_PAY_PUBLIC_KEY || '').replace(/\\n/g, '\n');
+  }
+
   private get notifyUrl(): string {
     return (
       process.env.WECHAT_PAY_NOTIFY_URL ||
@@ -135,15 +140,29 @@ export class WechatPayProvider implements IPaymentProvider {
       payer: { openid },
     });
 
-    const res = await fetch(`${this.baseUrl}${urlPath}`, {
-      method: 'POST',
-      headers: {
-        Authorization: this.buildAuthHeader('POST', urlPath, reqBody),
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: reqBody,
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10_000);
+
+    let res: Response;
+    try {
+      res = await fetch(`${this.baseUrl}${urlPath}`, {
+        method: 'POST',
+        headers: {
+          Authorization: this.buildAuthHeader('POST', urlPath, reqBody),
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: reqBody,
+        signal: controller.signal,
+      });
+    } catch (err) {
+      if ((err as Error).name === 'AbortError') {
+        throw new InternalServerErrorException('WeChat Pay API request timed out');
+      }
+      throw err;
+    } finally {
+      clearTimeout(timeout);
+    }
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -190,13 +209,55 @@ export class WechatPayProvider implements IPaymentProvider {
   // ─── Notification Verification + Decryption ───────────
 
   /**
-   * Verifies the Wechatpay-Signature header.
-   * In production this should verify against the downloaded WeChat platform cert.
-   * Here we verify the timestamp is recent (±5 min) as a basic replay guard.
+   * Verifies the timestamp is within ±5 minutes (replay guard).
    */
   verifyNotificationTimestamp(timestamp: string): boolean {
     const diff = Math.abs(Date.now() / 1000 - Number(timestamp));
     return diff < 300;
+  }
+
+  /**
+   * Verifies the Wechatpay-Signature header using the WeChat platform certificate.
+   * Constructs the verification message per WeChat Pay V3 spec:
+   *   timestamp + "\n" + nonce + "\n" + body + "\n"
+   * Then verifies with RSA-SHA256 against the platform public key.
+   *
+   * Returns true if verification succeeds or if no platform cert is configured
+   * (for development environments). Logs a warning in the latter case.
+   */
+  verifyNotificationSignature(
+    headers: WechatPayNotificationHeaders,
+    rawBody: string,
+  ): boolean {
+    const pubKey = this.wechatPublicKey;
+    if (!pubKey) {
+      this.logger.warn(
+        'WECHAT_PAY_PUBLIC_KEY not configured — skipping signature verification. ' +
+          'Set this env var for production!',
+      );
+      return true;
+    }
+
+    const timestamp = headers['wechatpay-timestamp'];
+    const nonce = headers['wechatpay-nonce'];
+    const signature = headers['wechatpay-signature'];
+
+    if (!timestamp || !nonce || !signature) {
+      this.logger.warn('Missing required WeChat Pay notification headers');
+      return false;
+    }
+
+    const message = `${timestamp}\n${nonce}\n${rawBody}\n`;
+
+    try {
+      return crypto
+        .createVerify('RSA-SHA256')
+        .update(message)
+        .verify(pubKey, signature, 'base64');
+    } catch (err) {
+      this.logger.error('WeChat Pay signature verification failed', err);
+      return false;
+    }
   }
 
   /**

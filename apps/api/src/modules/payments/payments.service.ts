@@ -268,10 +268,17 @@ export class PaymentsService {
   async handleWechatNotification(
     headers: WechatPayNotificationHeaders,
     body: WechatPayNotificationBody,
+    rawBody: string,
   ): Promise<void> {
     const timestamp = headers['wechatpay-timestamp'];
     if (!this.wechatPayProvider.verifyNotificationTimestamp(timestamp)) {
       this.logger.warn('WeChat Pay notification timestamp out of range');
+      return;
+    }
+
+    // Verify RSA-SHA256 signature against WeChat Pay public key
+    if (!this.wechatPayProvider.verifyNotificationSignature(headers, rawBody)) {
+      this.logger.warn('WeChat Pay notification signature verification failed');
       return;
     }
 

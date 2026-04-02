@@ -34,8 +34,8 @@ Page({
   async loadOrders() {
     this.setData({ loading: true });
     try {
-      const result = await fetchMyOrders({ limit: 50 });
-      const orders: OrderDisplay[] = result.data.map((order) => {
+      const rawOrders = await fetchMyOrders({ limit: 50 });
+      const orders: OrderDisplay[] = rawOrders.map((order) => {
         const statusClassMap: Record<string, string> = {
           PENDING: 'badge-warning',
           CONFIRMED: 'badge-info',
