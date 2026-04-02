@@ -1,4 +1,5 @@
 import { API_BASE_URL } from './config';
+import { clearSession } from './storage';
 
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -56,6 +57,9 @@ function request<T = unknown>(
         if (res.statusCode >= 200 && res.statusCode < 300) {
           resolve(res.data as T);
         } else if (res.statusCode === 401) {
+          // Server session expired — clear stale local auth state
+          wx.removeStorageSync(SESSION_COOKIE_KEY);
+          clearSession();
           wx.navigateTo({ url: '/pages/login/index' });
           reject(new Error('未登录'));
         } else {

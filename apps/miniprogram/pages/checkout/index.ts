@@ -16,6 +16,7 @@ function formatAddress(addr: Address): string {
 
 Page({
   data: {
+    statusBarHeight: 44,
     items: [] as (CartItem & { displayPrice: string; lineTotal: string })[],
     address: null as (Address & { displayAddress: string }) | null,
     subtotalCents: 0,
@@ -35,6 +36,9 @@ Page({
 
   onLoad(query: Record<string, string | undefined>) {
     if (!requireAuth()) return;
+
+    const { statusBarHeight } = wx.getWindowInfo();
+    this.setData({ statusBarHeight: statusBarHeight || 44 });
 
     const mode = (query.mode || 'cart') as 'cart' | 'buyNow' | 'selectedCart';
     this.setData({ mode });
@@ -107,6 +111,10 @@ Page({
     } catch {
       // No address loaded — user can add one
     }
+  },
+
+  onGoBack() {
+    wx.navigateBack();
   },
 
   onGoToAddress() {

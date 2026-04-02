@@ -1,6 +1,17 @@
 <!-- 订单结算 -->
 <view class="page">
 
+  <!-- ─── 自定义导航栏 ─── -->
+  <view class="custom-nav" style="padding-top: {{statusBarHeight}}px;">
+    <view class="nav-inner">
+      <view class="nav-back" bindtap="onGoBack">
+        <image class="nav-back-icon" src="/assets/back.png" mode="aspectFit" />
+      </view>
+      <text class="nav-title">订单结算</text>
+      <view class="nav-placeholder" />
+    </view>
+  </view>
+
   <!-- ─── 配送地址 ─── -->
   <view class="section" bindtap="onGoToAddress">
     <view class="section-header-row">

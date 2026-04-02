@@ -13,6 +13,7 @@
     "pages/address-edit/index"
   ],
   "window": {
+    "navigationStyle": "custom",
     "navigationBarBackgroundColor": "#1a1a1a",
     "navigationBarTitleText": "万局控",
     "navigationBarTextStyle": "white",

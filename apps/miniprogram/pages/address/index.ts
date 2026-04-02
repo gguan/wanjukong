@@ -18,6 +18,7 @@ function formatAddress(addr: Address): string {
 
 Page({
   data: {
+    statusBarHeight: 44,
     addresses: [] as AddressDisplay[],
     loading: true,
     fromCheckout: false,
@@ -25,7 +26,11 @@ Page({
 
   onLoad(query: Record<string, string | undefined>) {
     if (!requireAuth()) return;
-    this.setData({ fromCheckout: query.from === 'checkout' });
+    const { statusBarHeight } = wx.getWindowInfo();
+    this.setData({
+      statusBarHeight: statusBarHeight || 44,
+      fromCheckout: query.from === 'checkout',
+    });
     this.loadAddresses();
   },
 
@@ -46,6 +51,10 @@ Page({
       this.setData({ loading: false });
       wx.showToast({ title: '加载失败', icon: 'none' });
     }
+  },
+
+  onGoBack() {
+    wx.navigateBack();
   },
 
   onSelectAddress(e: WechatMiniprogram.TouchEvent) {

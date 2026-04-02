@@ -5,6 +5,45 @@
   min-height: 100vh;
 }
 
+/* ─── 自定义导航栏 ───────────────────────────────────────── */
+
+.custom-nav {
+  background: #fff;
+}
+
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 88rpx;
+  padding: 0 24rpx;
+}
+
+.nav-back {
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.nav-back-icon {
+  width: 36rpx;
+  height: 36rpx;
+}
+
+.nav-title {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #111;
+}
+
+.nav-placeholder {
+  width: 64rpx;
+}
+
 /* ─── 加载 / 空状态 ──────────────────────────────────────── */
 
 .loading-wrap,
