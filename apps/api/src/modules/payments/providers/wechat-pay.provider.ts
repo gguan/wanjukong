@@ -206,6 +206,34 @@ export class WechatPayProvider implements IPaymentProvider {
     };
   }
 
+  // ─── Close Order ────────────────────────────────────────
+
+  /**
+   * Close a prepay order on WeChat Pay side.
+   * https://pay.weixin.qq.com/doc/v3/merchant/4012791858
+   */
+  async closeOrder(outTradeNo: string): Promise<void> {
+    const urlPath = `/v3/pay/transactions/out-trade-no/${outTradeNo}/close`;
+    const reqBody = JSON.stringify({ mchid: this.mchId });
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10_000);
+
+    try {
+      await fetch(`${this.baseUrl}${urlPath}`, {
+        method: 'POST',
+        headers: {
+          Authorization: this.buildAuthHeader('POST', urlPath, reqBody),
+          'Content-Type': 'application/json',
+        },
+        body: reqBody,
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
   // ─── Notification Verification + Decryption ───────────
 
   /**

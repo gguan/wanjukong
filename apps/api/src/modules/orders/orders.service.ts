@@ -190,10 +190,27 @@ export class OrdersService {
       return sum + v.priceCents * item.quantity;
     }, 0);
 
+    const discountCents = dto.discountCents || 0;
+    const totalPriceCents = Math.max(0, subtotalCents - discountCents);
     const currency = dto.currency || 'USD';
     const orderNo = this.generateOrderNo();
 
     const order = await this.prisma.$transaction(async (tx) => {
+      // Lock variant rows to prevent concurrent oversell (SELECT FOR UPDATE)
+      for (const item of dto.items) {
+        const locked = await tx.$queryRaw<Array<{ id: string; stock: number }>>`
+          SELECT "id", "stock" FROM "ProductVariant"
+          WHERE "id" = ${item.variantId}
+          FOR UPDATE
+        `;
+        if (!locked.length || locked[0].stock < item.quantity) {
+          const variant = variants.find((v) => v.id === item.variantId);
+          throw new BadRequestException(
+            `库存不足：${variant?.product?.name || item.variantId}`,
+          );
+        }
+      }
+
       // Decrement stock for all items atomically
       for (const item of dto.items) {
         const updated = await tx.productVariant.updateMany({
@@ -201,7 +218,7 @@ export class OrdersService {
           data: { stock: { decrement: item.quantity } },
         });
         if (updated.count !== 1) {
-          throw new BadRequestException('Insufficient stock (race condition)');
+          throw new BadRequestException('库存不足');
         }
       }
 
@@ -220,8 +237,10 @@ export class OrdersService {
           addressLine2: dto.addressLine2,
           postalCode: dto.postalCode,
           currency,
+          couponCode: dto.couponCode || null,
+          discountCents,
           subtotalPriceCents: subtotalCents,
-          totalPriceCents: subtotalCents,
+          totalPriceCents,
           paypalOrderId: dto.paypalOrderId,
           wechatTransactionId: dto.wechatTransactionId,
           paymentStatus: (dto.paypalOrderId || dto.wechatTransactionId) ? 'PAID' : 'UNPAID',
@@ -537,7 +556,7 @@ export class OrdersService {
   }
 
   /**
-   * Validate a coupon code against a subtotal.
+   * Validate a coupon code against a subtotal (read-only, for UI display).
    */
   async validateCoupon(code: string, subtotalCents: number) {
     const coupon = await this.prisma.coupon.findUnique({ where: { code: code.toUpperCase() } });
@@ -552,7 +571,7 @@ export class OrdersService {
       throw new BadRequestException('This coupon has reached its usage limit');
     }
     if (subtotalCents < coupon.minOrderCents) {
-      const minAmount = `$${(coupon.minOrderCents / 100).toFixed(2)}`;
+      const minAmount = `¥${(coupon.minOrderCents / 100).toFixed(2)}`;
       throw new BadRequestException(`Minimum order amount for this coupon is ${minAmount}`);
     }
 
@@ -569,6 +588,41 @@ export class OrdersService {
       discountValue: coupon.discountValue,
       discountCents,
     };
+  }
+
+  /**
+   * Atomically reserve a coupon: validate + increment usedCount in one transaction.
+   * Prevents two concurrent orders from consuming the same limited coupon.
+   */
+  async reserveCoupon(code: string, subtotalCents: number) {
+    const result = await this.validateCoupon(code, subtotalCents);
+
+    // Atomic CAS: increment usedCount only when under the limit.
+    // Uses raw SQL because Prisma can't express "usedCount < maxUsageTimes" in updateMany.
+    const upperCode = code.toUpperCase();
+    const rows = await this.prisma.$executeRaw`
+      UPDATE "Coupon"
+      SET "usedCount" = "usedCount" + 1, "updatedAt" = NOW()
+      WHERE "code" = ${upperCode}
+        AND "isActive" = true
+        AND ("maxUsageTimes" IS NULL OR "usedCount" < "maxUsageTimes")
+    `;
+
+    if (rows === 0) {
+      throw new BadRequestException('优惠券已达使用上限');
+    }
+
+    return result;
+  }
+
+  /**
+   * Release a previously reserved coupon (e.g. payment failed).
+   */
+  async releaseCoupon(code: string) {
+    await this.prisma.coupon.updateMany({
+      where: { code: code.toUpperCase(), usedCount: { gt: 0 } },
+      data: { usedCount: { decrement: 1 } },
+    });
   }
 
   // ── Helpers ──────────────────────────────────────────────

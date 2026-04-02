@@ -277,6 +277,8 @@ model PaymentIntent {
   amountCents           Int
   cartSnapshotJson      String              @db.Text
   shippingAddressJson   String?             @db.Text
+  couponCode            String?
+  discountCents         Int?
   status                PaymentIntentStatus @default(CREATED)
   capturedAt       DateTime?
   orderId          String?

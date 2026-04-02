@@ -8,19 +8,22 @@ import {
   Logger,
   Req,
   RawBodyRequest,
+  UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
 import {
   IsString,
   IsArray,
   IsOptional,
-  IsNumber,
   IsInt,
   Min,
+  Max,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { Public } from '../../admin-auth/decorators/public.decorator';
+import { CustomerSessionAuthGuard } from '../../storefront-auth/guards/customer-session-auth.guard';
+import { CurrentCustomer } from '../../storefront-auth/decorators/current-customer.decorator';
 import { PaymentsService } from '../payments.service';
 import {
   WechatPayNotificationHeaders,
@@ -30,7 +33,7 @@ import {
 class WechatCartItemDto {
   @IsString() productId!: string;
   @IsString() variantId!: string;
-  @IsNumber() quantity!: number;
+  @IsInt() @Min(1) @Max(10) quantity!: number;
 }
 
 class CreateWechatOrderDto {
@@ -39,8 +42,8 @@ class CreateWechatOrderDto {
   @Type(() => WechatCartItemDto)
   items!: WechatCartItemDto[];
 
-  /** Payer's WeChat openid — obtained via wx.login() + code exchange on the server */
-  @IsString() openid!: string;
+  /** @deprecated — openid is now resolved server-side from the session */
+  @IsString() @IsOptional() openid?: string;
 
   @IsString() @IsOptional() couponCode?: string;
 
@@ -62,17 +65,32 @@ export class WechatPayController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
   /**
-   * Step 1: Mini program calls this with cart items + payer openid.
+   * Step 1: Mini program calls this with cart items.
+   * Resolves payer openid from the authenticated session.
    * Returns wx.requestPayment() params (appId, timeStamp, nonceStr, package, signType, paySign).
    */
+  @UseGuards(CustomerSessionAuthGuard)
   @Post('create-order')
-  createOrder(@Body() dto: CreateWechatOrderDto) {
+  createOrder(
+    @Body() dto: CreateWechatOrderDto,
+    @CurrentCustomer() customer: { id: string },
+  ) {
     return this.paymentsService.createWechatOrder({
       items: dto.items,
-      openid: dto.openid,
+      customerId: customer.id,
       couponCode: dto.couponCode,
       addressId: dto.addressId,
     });
+  }
+
+  /**
+   * Cancel a pending payment — releases reserved coupon and closes WeChat Pay order.
+   * Called when user cancels wx.requestPayment().
+   */
+  @UseGuards(CustomerSessionAuthGuard)
+  @Post('cancel')
+  cancelOrder(@CurrentCustomer() customer: { id: string }) {
+    return this.paymentsService.cancelWechatOrder(customer.id);
   }
 
   /**

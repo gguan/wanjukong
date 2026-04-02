@@ -1,7 +1,7 @@
-import { createWechatOrder, validateCoupon, fetchAddresses } from '../../utils/api';
+import { createWechatOrder, cancelWechatOrder, validateCoupon, fetchAddresses } from '../../utils/api';
 import { requestPayment } from '../../utils/payment';
 import { requireAuth } from '../../utils/auth';
-import { getCart, clearCart, getUserInfo, getCheckoutItems, clearCheckoutItems, removeCartItems } from '../../utils/storage';
+import { getCart, clearCart, getCheckoutItems, clearCheckoutItems, removeCartItems } from '../../utils/storage';
 import { formatCNY } from '../../utils/format';
 import type { CartItem } from '../../utils/storage';
 import type { Address } from '../../utils/api';
@@ -176,13 +176,6 @@ Page({
     this.setData({ paying: true });
 
     try {
-      const user = getUserInfo();
-      if (!user) {
-        requireAuth();
-        this.setData({ paying: false });
-        return;
-      }
-
       const orderItems = this.data.items.map((item) => ({
         productId: item.productId,
         variantId: item.variantId,
@@ -191,7 +184,6 @@ Page({
 
       const payParams = await createWechatOrder({
         items: orderItems,
-        openid: user.id,
         couponCode: this.data.couponApplied ? this.data.couponCode : undefined,
         addressId: this.data.address?.id,
       });
@@ -215,8 +207,13 @@ Page({
       }, 1500);
     } catch (err) {
       const msg = (err as Error).message || '支付失败';
-      if (!msg.includes('取消')) {
+      if (msg.includes('cancel') || msg.includes('取消')) {
+        // User cancelled payment — release coupon and close WeChat order
+        cancelWechatOrder().catch(() => {});
+      } else {
         wx.showToast({ title: msg, icon: 'error' });
+        // Payment error — also cancel to release resources
+        cancelWechatOrder().catch(() => {});
       }
     } finally {
       this.setData({ paying: false });

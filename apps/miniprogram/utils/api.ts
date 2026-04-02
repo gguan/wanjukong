@@ -125,7 +125,6 @@ export function logout() {
 
 export function createWechatOrder(data: {
   items: Array<{ productId: string; variantId: string; quantity: number }>;
-  openid: string;
   couponCode?: string;
   addressId?: string;
 }) {
@@ -133,6 +132,10 @@ export function createWechatOrder(data: {
     '/miniprogram/payment/wechat/create-order',
     { method: 'POST', data },
   );
+}
+
+export function cancelWechatOrder() {
+  return request('/miniprogram/payment/wechat/cancel', { method: 'POST' });
 }
 
 // ─── Orders ──────────────────────────────────────────────

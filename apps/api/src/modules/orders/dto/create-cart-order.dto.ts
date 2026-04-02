@@ -21,6 +21,8 @@ export class CreateCartOrderDto {
   postalCode?: string;
 
   currency?: string;
+  couponCode?: string;
+  discountCents?: number;
   paypalOrderId?: string;
   wechatTransactionId?: string;
   customerId?: string;

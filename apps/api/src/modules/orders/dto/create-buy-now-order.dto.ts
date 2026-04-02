@@ -4,6 +4,7 @@ import {
   IsInt,
   IsEmail,
   Min,
+  Max,
 } from 'class-validator';
 
 export class CreateBuyNowOrderDto {
@@ -15,6 +16,7 @@ export class CreateBuyNowOrderDto {
 
   @IsInt()
   @Min(1)
+  @Max(10)
   quantity!: number;
 
   @IsString()

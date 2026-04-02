@@ -98,6 +98,10 @@ Page({
   onIncrease(e: WechatMiniprogram.TouchEvent) {
     const idx = e.currentTarget.dataset.index as number;
     const cart = getCart();
+    if (cart[idx].quantity >= 10) {
+      wx.showToast({ title: '单品最多购买10件', icon: 'none' });
+      return;
+    }
     cart[idx].quantity += 1;
     setCart(cart);
     this.refreshCart();
