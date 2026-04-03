@@ -1,6 +1,7 @@
-import { Controller, Get, Param, Patch, Body, Query, Req } from '@nestjs/common';
+import { Controller, Get, Post, Param, Patch, Body, Query, Req } from '@nestjs/common';
 import { AdminRole } from '@prisma/client';
 import { OrdersService } from '../orders.service';
+import { PaymentsService } from '../../payments/payments.service';
 import { Roles } from '../../admin-auth/decorators/roles.decorator';
 import { UpdateOrderStatusDto } from '../dto/update-order-status.dto';
 import { UpdatePaymentStatusDto } from '../dto/update-payment-status.dto';
@@ -8,7 +9,10 @@ import { UpdatePaymentStatusDto } from '../dto/update-payment-status.dto';
 @Roles(AdminRole.SUPER_ADMIN, AdminRole.ADMIN, AdminRole.EDITOR, AdminRole.BRAND_MANAGER)
 @Controller('admin/orders')
 export class AdminOrdersController {
-  constructor(private readonly ordersService: OrdersService) {}
+  constructor(
+    private readonly ordersService: OrdersService,
+    private readonly paymentsService: PaymentsService,
+  ) {}
 
   /**
    * Extract brandIds from request if user is BRAND_MANAGER.
@@ -72,5 +76,20 @@ export class AdminOrdersController {
     @Body() dto: UpdatePaymentStatusDto,
   ) {
     return this.ordersService.updatePaymentStatus(id, dto.paymentStatus);
+  }
+
+  /**
+   * Initiate a refund for a PAID order.
+   * Only SUPER_ADMIN and ADMIN can refund (not EDITOR or BRAND_MANAGER).
+   */
+  @Roles(AdminRole.SUPER_ADMIN, AdminRole.ADMIN)
+  @Post(':id/refund')
+  refund(
+    @Param('id') id: string,
+    @Body() body: { amountCents: number; reason?: string },
+    @Req() req: any,
+  ) {
+    const adminId = req.adminUser?.id || 'unknown';
+    return this.paymentsService.refundOrder(id, body.amountCents, body.reason, adminId);
   }
 }

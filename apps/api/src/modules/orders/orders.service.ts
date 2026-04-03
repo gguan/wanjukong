@@ -440,6 +440,7 @@ export class OrdersService {
       include: {
         items: { include: { product: { select: { brandId: true } } } },
         paymentIntents: true,
+        refunds: { orderBy: { createdAt: 'desc' } },
       },
     });
 

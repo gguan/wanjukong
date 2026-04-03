@@ -206,6 +206,75 @@ export class WechatPayProvider implements IPaymentProvider {
     };
   }
 
+  // ─── Refund Order ───────────────────────────────────────
+
+  /**
+   * Create a refund via WeChat Pay API.
+   * https://pay.weixin.qq.com/doc/v3/merchant/4012456413
+   */
+  async refundOrder(params: {
+    transactionId: string;
+    outRefundNo: string;
+    refundCents: number;
+    totalCents: number;
+    reason?: string;
+  }): Promise<{ refundId: string; status: string }> {
+    const urlPath = '/v3/refund/domestic/refunds';
+    const reqBody = JSON.stringify({
+      transaction_id: params.transactionId,
+      out_refund_no: params.outRefundNo,
+      reason: params.reason || '商家退款',
+      amount: {
+        refund: params.refundCents,
+        total: params.totalCents,
+        currency: 'CNY',
+      },
+    });
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10_000);
+
+    let res: Response;
+    try {
+      res = await fetch(`${this.baseUrl}${urlPath}`, {
+        method: 'POST',
+        headers: {
+          Authorization: this.buildAuthHeader('POST', urlPath, reqBody),
+          'Content-Type': 'application/json',
+          'Accept-Language': 'zh-CN',
+          Accept: 'application/json',
+        },
+        body: reqBody,
+        signal: controller.signal,
+      });
+    } catch (err) {
+      if ((err as Error).name === 'AbortError') {
+        throw new InternalServerErrorException('WeChat Pay refund API timed out');
+      }
+      throw err;
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      this.logger.error('WeChat Pay refund failed', err);
+      throw new BadRequestException(
+        `退款失败: ${(err as Record<string, string>).message || JSON.stringify(err)}`,
+      );
+    }
+
+    const data = (await res.json()) as {
+      refund_id: string;
+      status: string; // SUCCESS | CLOSED | PROCESSING | ABNORMAL
+    };
+
+    return {
+      refundId: data.refund_id,
+      status: data.status,
+    };
+  }
+
   // ─── Close Order ────────────────────────────────────────
 
   /**

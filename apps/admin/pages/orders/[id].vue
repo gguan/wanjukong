@@ -116,13 +116,15 @@ async function load() {
   loading.value = true;
   try {
     const [o, s] = await Promise.all([
-      api.get<Order>(`/api/admin/orders/${id}`),
+      api.get<Order & { refunds?: RefundRecord[] }>(`/api/admin/orders/${id}`),
       api.get<Shipment[]>(`/api/admin/orders/${id}/shipments`),
     ]);
     order.value = o;
     shipments.value = s;
+    refunds.value = o.refunds || [];
     newStatus.value = o.status;
     newPaymentStatus.value = o.paymentStatus;
+    refundAmountCents.value = maxRefundableCents.value;
   } finally {
     loading.value = false;
   }
@@ -172,6 +174,72 @@ async function updatePaymentStatus() {
     newPaymentStatus.value = order.value.paymentStatus;
   } finally {
     paymentStatusUpdating.value = false;
+  }
+}
+
+// ─── Refund ──────────────────────────────────
+
+interface RefundRecord {
+  id: string;
+  amountCents: number;
+  reason: string | null;
+  status: string;
+  wechatRefundId: string | null;
+  createdAt: string;
+}
+
+const refunds = ref<RefundRecord[]>([]);
+const refundAmountCents = ref(0);
+const refundReason = ref('');
+const refunding = ref(false);
+
+const maxRefundableCents = computed(() => {
+  if (!order.value) return 0;
+  const refunded = refunds.value
+    .filter((r) => r.status === 'SUCCESS')
+    .reduce((sum, r) => sum + r.amountCents, 0);
+  return order.value.totalPriceCents - refunded;
+});
+
+function refundStatusLabel(status: string) {
+  const map: Record<string, string> = { PENDING: '处理中', SUCCESS: '已退款', FAILED: '退款失败' };
+  return map[status] || status;
+}
+
+async function loadRefunds() {
+  try {
+    const o = await api.get<Order & { refunds?: RefundRecord[] }>(`/api/admin/orders/${id}`);
+    refunds.value = o.refunds || [];
+    refundAmountCents.value = maxRefundableCents.value;
+  } catch { /* noop */ }
+}
+
+async function confirmRefund() {
+  if (!order.value) return;
+  try {
+    await ElMessageBox.confirm(
+      `确定退款 ¥${(refundAmountCents.value / 100).toFixed(2)} 吗？退款将直接退回用户微信账户。`,
+      '确认退款',
+      { confirmButtonText: '确认退款', cancelButtonText: '取消', type: 'warning' },
+    );
+  } catch {
+    return; // user cancelled
+  }
+
+  refunding.value = true;
+  try {
+    await api.post(`/api/admin/orders/${id}/refund`, {
+      amountCents: refundAmountCents.value,
+      reason: refundReason.value || undefined,
+    });
+    ElMessage.success('退款已发起');
+    refundReason.value = '';
+    await load();
+    await loadRefunds();
+  } catch (err: any) {
+    ElMessage.error(err?.data?.message || err?.message || '退款失败');
+  } finally {
+    refunding.value = false;
   }
 }
 
@@ -411,6 +479,55 @@ onMounted(load);
             </template>
           </AdminSidebarCard>
 
+          <!-- Refund (only for PAID orders, and SUPER_ADMIN/ADMIN) -->
+          <AdminSidebarCard v-if="order.paymentStatus === 'PAID' && !isBrandManager" title="退款">
+            <div class="sidebar-field">
+              <label class="refund-label">退款金额 (分)</label>
+              <ElInputNumber
+                v-model="refundAmountCents"
+                :min="1"
+                :max="maxRefundableCents"
+                :step="100"
+                style="width: 100%"
+                placeholder="退款金额（分）"
+              />
+              <div class="refund-hint">
+                可退: ¥{{ (maxRefundableCents / 100).toFixed(2) }}
+              </div>
+            </div>
+            <div class="sidebar-field">
+              <label class="refund-label">退款原因</label>
+              <ElInput v-model="refundReason" placeholder="可选填写原因" />
+            </div>
+            <template #footer>
+              <ElButton
+                type="danger"
+                size="small"
+                :loading="refunding"
+                :disabled="refundAmountCents <= 0 || refundAmountCents > maxRefundableCents"
+                @click="confirmRefund"
+              >
+                发起退款
+              </ElButton>
+            </template>
+          </AdminSidebarCard>
+
+          <!-- Refund History -->
+          <AdminSidebarCard v-if="refunds.length > 0" title="退款记录">
+            <div class="refund-history">
+              <div v-for="r in refunds" :key="r.id" class="refund-record">
+                <div class="refund-record__row">
+                  <span class="refund-record__amount">¥{{ (r.amountCents / 100).toFixed(2) }}</span>
+                  <ElTag :type="r.status === 'SUCCESS' ? 'success' : r.status === 'FAILED' ? 'danger' : 'warning'" size="small">
+                    {{ refundStatusLabel(r.status) }}
+                  </ElTag>
+                </div>
+                <div v-if="r.reason" class="refund-record__reason">{{ r.reason }}</div>
+                <div class="refund-record__date">{{ formatDate(r.createdAt) }}</div>
+              </div>
+            </div>
+          </AdminSidebarCard>
+
           <!-- Order Info -->
           <AdminSidebarCard title="订单信息">
             <div class="sidebar-info">
@@ -539,6 +656,17 @@ onMounted(load);
 /* Detail fields */
 .detail-label { font-size: 12px; color: var(--el-text-color-secondary); margin-bottom: 2px; }
 .detail-value { font-size: 13px; color: var(--el-text-color-primary); }
+
+/* Refund */
+.refund-label { font-size: 12px; color: var(--el-text-color-secondary); margin-bottom: 4px; display: block; }
+.refund-hint { font-size: 12px; color: var(--el-text-color-secondary); margin-top: 4px; }
+.refund-history { display: flex; flex-direction: column; gap: 10px; }
+.refund-record { padding: 8px 0; border-bottom: 1px solid var(--el-border-color-lighter); }
+.refund-record:last-child { border-bottom: none; }
+.refund-record__row { display: flex; justify-content: space-between; align-items: center; }
+.refund-record__amount { font-size: 14px; font-weight: 600; color: var(--el-text-color-primary); }
+.refund-record__reason { font-size: 12px; color: var(--el-text-color-secondary); margin-top: 4px; }
+.refund-record__date { font-size: 11px; color: var(--el-text-color-placeholder); margin-top: 2px; }
 
 /* Sidebar */
 .sidebar-field { margin-bottom: 4px; }

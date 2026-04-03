@@ -372,12 +372,39 @@ model Order {
 
   customer       Customer?       @relation(fields: [customerId], references: [id])
   items          OrderItem[]
+  refunds        Refund[]
   shipments      Shipment[]
   paymentIntents PaymentIntent[]
 
   @@index([customerId])
   @@index([email])
   @@index([status])
+}
+
+// ─── Refund Model ─────────────────────────────────────────
+
+enum RefundStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+model Refund {
+  id              String       @id @default(cuid())
+  orderId         String
+  amountCents     Int
+  reason          String?
+  status          RefundStatus @default(PENDING)
+  wechatRefundId  String?      // 微信退款单号（微信返回）
+  wechatRefundNo  String?      @unique  // 商户退款单号
+  createdBy       String?      // 操作管理员 ID
+  processedAt     DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
 }
 
 model OrderItem {

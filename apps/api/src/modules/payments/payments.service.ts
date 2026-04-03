@@ -3,6 +3,8 @@ import {
   BadRequestException,
   NotFoundException,
   Logger,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -56,6 +58,7 @@ export class PaymentsService {
 
   constructor(
     private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => OrdersService))
     private readonly ordersService: OrdersService,
     private readonly mailerService: MailerService,
     private readonly paypalProvider: PaypalProvider,
@@ -631,6 +634,102 @@ export class PaymentsService {
           );
       }
     }
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // Refund
+  // ═══════════════════════════════════════════════════════
+
+  /**
+   * Initiate a refund for a PAID order.
+   * Calls WeChat Pay refund API, creates Refund record, restores stock if full refund.
+   */
+  async refundOrder(
+    orderId: string,
+    amountCents: number,
+    reason: string | undefined,
+    adminId: string,
+  ) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true, refunds: true },
+    });
+
+    if (!order) throw new NotFoundException('订单不存在');
+    if (order.paymentStatus !== 'PAID') {
+      throw new BadRequestException('只能对已支付订单发起退款');
+    }
+
+    // Calculate already-refunded amount
+    const refundedCents = order.refunds
+      .filter((r) => r.status === 'SUCCESS')
+      .reduce((sum, r) => sum + r.amountCents, 0);
+
+    const maxRefundable = order.totalPriceCents - refundedCents;
+    if (amountCents <= 0 || amountCents > maxRefundable) {
+      throw new BadRequestException(
+        `退款金额无效，最多可退 ¥${(maxRefundable / 100).toFixed(2)}`,
+      );
+    }
+
+    // Must have a WeChat transaction ID to refund
+    if (!order.wechatTransactionId) {
+      throw new BadRequestException('该订单没有微信支付记录，无法发起退款');
+    }
+
+    const outRefundNo = `RF-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+
+    // Call WeChat Pay refund API
+    const result = await this.wechatPayProvider.refundOrder({
+      transactionId: order.wechatTransactionId,
+      outRefundNo,
+      refundCents: amountCents,
+      totalCents: order.totalPriceCents,
+      reason,
+    });
+
+    // Create Refund record
+    const refund = await this.prisma.refund.create({
+      data: {
+        orderId,
+        amountCents,
+        reason,
+        status: result.status === 'SUCCESS' ? 'SUCCESS' : 'PENDING',
+        wechatRefundId: result.refundId,
+        wechatRefundNo: outRefundNo,
+        createdBy: adminId,
+        processedAt: result.status === 'SUCCESS' ? new Date() : null,
+      },
+    });
+
+    // Check if this is a full refund (total refunded == total paid)
+    const totalRefundedAfter = refundedCents + amountCents;
+    const isFullRefund = totalRefundedAfter >= order.totalPriceCents;
+
+    if (isFullRefund && (result.status === 'SUCCESS' || result.status === 'PROCESSING')) {
+      // Update order payment status
+      await this.prisma.order.update({
+        where: { id: orderId },
+        data: { paymentStatus: 'REFUNDED' },
+      });
+
+      // Restore stock for all items
+      for (const item of order.items) {
+        if (item.variantId) {
+          await this.prisma.productVariant.update({
+            where: { id: item.variantId },
+            data: { stock: { increment: item.quantity } },
+          });
+        }
+      }
+
+      // Release coupon
+      if (order.couponCode) {
+        await this.ordersService.releaseCoupon(order.couponCode).catch(() => {});
+      }
+    }
+
+    return refund;
   }
 
   // ═══════════════════════════════════════════════════════

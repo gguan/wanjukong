@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { PaypalProvider } from './providers/paypal.provider';
 import { WechatPayProvider } from './providers/wechat-pay.provider';
@@ -8,8 +8,9 @@ import { PaymentCleanupTask } from './tasks/payment-cleanup.task';
 import { OrdersModule } from '../orders/orders.module';
 
 @Module({
-  imports: [OrdersModule],
+  imports: [forwardRef(() => OrdersModule)],
   controllers: [PaypalController, WechatPayController],
   providers: [PaymentsService, PaypalProvider, WechatPayProvider, PaymentCleanupTask],
+  exports: [PaymentsService],
 })
 export class PaymentsModule {}
