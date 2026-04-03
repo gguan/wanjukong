@@ -309,8 +309,11 @@ export class PaymentsService {
 
       return { payParams: result.clientPayload as Record<string, string>, orderNo: order.orderNo };
     } catch (err) {
-      // WeChat API or PI write failed — order is UNPAID, user can retry from order detail
-      this.logger.error('WeChat Pay API failed after order creation', err);
+      // WeChat API or PI write failed — roll back the UNPAID order to free stock
+      this.logger.error('WeChat Pay API failed after order creation, rolling back', err);
+      await this.cancelUnpaidOrder(order.id, customerId).catch((rollbackErr) => {
+        this.logger.error('Failed to roll back UNPAID order after prepay failure', rollbackErr);
+      });
       throw err;
     }
   }
@@ -337,10 +340,21 @@ export class PaymentsService {
     }
 
     // Close any existing CREATED PaymentIntents for this order
-    await this.prisma.paymentIntent.updateMany({
+    const oldIntents = await this.prisma.paymentIntent.findMany({
       where: { orderId, status: 'CREATED' },
-      data: { status: 'FAILED' },
     });
+    for (const oldPi of oldIntents) {
+      // Close the old WeChat prepay order first to prevent late charges
+      if (oldPi.wechatOutTradeNo) {
+        this.wechatPayProvider.closeOrder(oldPi.wechatOutTradeNo).catch(() => {});
+      }
+    }
+    if (oldIntents.length) {
+      await this.prisma.paymentIntent.updateMany({
+        where: { orderId, status: 'CREATED' },
+        data: { status: 'FAILED' },
+      });
+    }
 
     const outTradeNo = `WX-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
     const result = await this.wechatPayProvider.createOrder({
@@ -409,14 +423,10 @@ export class PaymentsService {
   }
 
   /**
-   * Clean up stale PaymentIntents that have been in CREATED status for too long.
-   * This handles cases where user's phone dies, app crashes, or they simply abandon checkout.
-   * Releases reserved coupons and closes WeChat prepay orders.
-   */
-  /**
-   * Clean up stale CREATED PaymentIntents (expired WeChat prepay orders).
-   * Only marks PIs as FAILED and closes WeChat orders.
-   * Does NOT cancel the Order itself — user can retry payment from order detail.
+   * Clean up stale CREATED PaymentIntents and their associated UNPAID orders.
+   * Closes WeChat prepay orders, marks PIs as FAILED, and cancels UNPAID orders
+   * that no longer have any CREATED PaymentIntent (i.e., all retries expired).
+   * This prevents abandoned orders from holding inventory forever.
    */
   async cleanupStalePaymentIntents(maxAgeMinutes = 30): Promise<number> {
     const cutoff = new Date(Date.now() - maxAgeMinutes * 60_000);
@@ -430,7 +440,9 @@ export class PaymentsService {
 
     if (!staleIntents.length) return 0;
 
+    const affectedOrderIds = new Set<string>();
     let cleaned = 0;
+
     for (const pi of staleIntents) {
       try {
         await this.prisma.paymentIntent.update({
@@ -438,14 +450,34 @@ export class PaymentsService {
           data: { status: 'FAILED' },
         });
 
-        // Close WeChat prepay order (best-effort)
         if (pi.wechatOutTradeNo) {
           this.wechatPayProvider.closeOrder(pi.wechatOutTradeNo).catch(() => {});
         }
 
+        if (pi.orderId) affectedOrderIds.add(pi.orderId);
         cleaned++;
       } catch (err) {
         this.logger.error(`Failed to clean up PaymentIntent ${pi.id}`, err);
+      }
+    }
+
+    // Cancel UNPAID orders that have no remaining CREATED PaymentIntents
+    for (const orderId of affectedOrderIds) {
+      try {
+        const hasActivePi = await this.prisma.paymentIntent.count({
+          where: { orderId, status: 'CREATED' },
+        });
+        if (hasActivePi > 0) continue;
+
+        const order = await this.prisma.order.findFirst({
+          where: { id: orderId, paymentStatus: 'UNPAID' },
+        });
+        if (!order || !order.customerId) continue;
+
+        await this.cancelUnpaidOrder(orderId, order.customerId);
+        this.logger.log(`Auto-cancelled stale UNPAID order ${order.orderNo}`);
+      } catch (err) {
+        this.logger.error(`Failed to auto-cancel stale order ${orderId}`, err);
       }
     }
 
