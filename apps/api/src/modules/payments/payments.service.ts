@@ -202,7 +202,7 @@ export class PaymentsService {
 
   async createWechatOrder(
     input: CreateWechatOrderInput,
-  ): Promise<Record<string, string>> {
+  ): Promise<{ payParams: Record<string, string>; orderNo: string }> {
     const { items: cartItems, customerId, couponCode, addressId } = input;
 
     if (!cartItems?.length) throw new BadRequestException('Cart is empty');
@@ -210,37 +210,34 @@ export class PaymentsService {
     // Resolve WeChat openid from customer record
     const customer = await this.prisma.customer.findUnique({
       where: { id: customerId },
-      select: { wechatOpenId: true },
+      select: { wechatOpenId: true, name: true, email: true, phone: true },
     });
     if (!customer?.wechatOpenId) {
       throw new BadRequestException('未绑定微信，无法发起微信支付');
     }
     const openid = customer.wechatOpenId;
 
+    // Validate items (stock, status, availability, preorder)
     const { totalCents } = await this.resolveCartItems(cartItems);
 
     // Apply coupon if provided — atomically reserve to prevent double-use
-    let amountCents = totalCents;
     let reservedCouponCode: string | null = null;
     let discountCents = 0;
     if (couponCode) {
-      const couponResult = await this.ordersService.reserveCoupon(
-        couponCode,
-        totalCents,
-      );
+      const couponResult = await this.ordersService.reserveCoupon(couponCode, totalCents);
       discountCents = couponResult.discountCents;
-      amountCents = totalCents - discountCents;
       reservedCouponCode = couponResult.code;
     }
+    const amountCents = totalCents - discountCents;
 
-    // Snapshot shipping address if provided — verify ownership
-    let shippingAddressJson: string | null = null;
+    // Resolve shipping address — verify ownership
+    let shippingAddr: Record<string, string | null> | null = null;
     if (addressId) {
       const addr = await this.prisma.customerAddress.findFirst({
         where: { id: addressId, customerId },
       });
       if (addr) {
-        shippingAddressJson = JSON.stringify({
+        shippingAddr = {
           fullName: addr.fullName,
           phone: addr.phone,
           country: addr.country,
@@ -250,14 +247,40 @@ export class PaymentsService {
           addressLine1: addr.addressLine1,
           addressLine2: addr.addressLine2,
           postalCode: addr.postalCode,
-        });
+        };
       }
     }
 
-    const outTradeNo = `WX-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+    // Step 1: Create the Order as UNPAID (reserves stock atomically)
+    let order;
+    try {
+      order = await this.ordersService.createCartOrder({
+        items: cartItems,
+        fullName: shippingAddr?.fullName || customer.name || openid,
+        email: customer.email || `wechat+${openid}@noreply.wanjukong.com`,
+        phone: shippingAddr?.phone || customer.phone || undefined,
+        currency: 'CNY',
+        couponCode: reservedCouponCode || undefined,
+        discountCents: discountCents || undefined,
+        customerId,
+        country: shippingAddr?.country || 'CN',
+        stateOrProvince: shippingAddr?.stateOrProvince || undefined,
+        city: shippingAddr?.city || '',
+        addressLine1: shippingAddr?.addressLine1 || '',
+        addressLine2: shippingAddr?.addressLine2 || undefined,
+        postalCode: shippingAddr?.postalCode || undefined,
+        // No wechatTransactionId → paymentStatus = UNPAID
+      });
+    } catch (err) {
+      // Rollback coupon if order creation (stock decrement) failed
+      if (reservedCouponCode) {
+        await this.ordersService.releaseCoupon(reservedCouponCode).catch(() => {});
+      }
+      throw err;
+    }
 
-    // Call WeChat API + persist PaymentIntent.
-    // If anything fails after coupon reservation, release the coupon.
+    // Step 2: Call WeChat Pay API to get prepay params
+    const outTradeNo = `WX-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
     try {
       const result = await this.wechatPayProvider.createOrder({
         items: cartItems,
@@ -275,23 +298,113 @@ export class PaymentsService {
           currency: 'CNY',
           amountCents,
           customerId,
+          orderId: order.id,
           cartSnapshotJson: JSON.stringify(cartItems),
-          shippingAddressJson,
+          shippingAddressJson: shippingAddr ? JSON.stringify(shippingAddr) : null,
           couponCode: reservedCouponCode,
           discountCents: discountCents || null,
           status: 'CREATED',
         },
       });
 
-      return result.clientPayload as Record<string, string>;
+      return { payParams: result.clientPayload as Record<string, string>, orderNo: order.orderNo };
     } catch (err) {
-      // Rollback: release reserved coupon if WeChat API or DB write failed
-      if (reservedCouponCode) {
-        await this.ordersService.releaseCoupon(reservedCouponCode).catch((releaseErr) => {
-          this.logger.error('Failed to release coupon after order creation failure', releaseErr);
-        });
-      }
+      // WeChat API or PI write failed — order is UNPAID, user can retry from order detail
+      this.logger.error('WeChat Pay API failed after order creation', err);
       throw err;
+    }
+  }
+
+  /**
+   * Retry payment for an existing UNPAID order.
+   * Creates a new PaymentIntent + WeChat prepay order.
+   */
+  async retryWechatPayment(
+    orderId: string,
+    customerId: string,
+  ): Promise<Record<string, string>> {
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, customerId, paymentStatus: 'UNPAID' },
+    });
+    if (!order) throw new NotFoundException('未找到待支付订单');
+
+    const customer = await this.prisma.customer.findUnique({
+      where: { id: customerId },
+      select: { wechatOpenId: true },
+    });
+    if (!customer?.wechatOpenId) {
+      throw new BadRequestException('未绑定微信');
+    }
+
+    // Close any existing CREATED PaymentIntents for this order
+    await this.prisma.paymentIntent.updateMany({
+      where: { orderId, status: 'CREATED' },
+      data: { status: 'FAILED' },
+    });
+
+    const outTradeNo = `WX-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+    const result = await this.wechatPayProvider.createOrder({
+      items: [],
+      amountCents: order.totalPriceCents,
+      currency: 'CNY',
+      outTradeNo,
+      openid: customer.wechatOpenId,
+    });
+
+    await this.prisma.paymentIntent.create({
+      data: {
+        provider: 'WECHAT_PAY',
+        wechatPrepayId: result.providerOrderId,
+        wechatOutTradeNo: outTradeNo,
+        currency: 'CNY',
+        amountCents: order.totalPriceCents,
+        customerId,
+        orderId: order.id,
+        cartSnapshotJson: '[]',
+        status: 'CREATED',
+      },
+    });
+
+    return result.clientPayload as Record<string, string>;
+  }
+
+  /**
+   * Cancel an UNPAID order — restore stock and release coupon.
+   */
+  async cancelUnpaidOrder(orderId: string, customerId: string): Promise<void> {
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, customerId, paymentStatus: 'UNPAID' },
+      include: { items: true },
+    });
+    if (!order) throw new NotFoundException('未找到待支付订单');
+
+    await this.prisma.$transaction(async (tx) => {
+      // Restore stock for all items
+      for (const item of order.items) {
+        if (item.variantId) {
+          await tx.productVariant.update({
+            where: { id: item.variantId },
+            data: { stock: { increment: item.quantity } },
+          });
+        }
+      }
+
+      // Cancel the order
+      await tx.order.update({
+        where: { id: order.id },
+        data: { status: 'CANCELLED', paymentStatus: 'FAILED' },
+      });
+
+      // Cancel all CREATED PaymentIntents
+      await tx.paymentIntent.updateMany({
+        where: { orderId: order.id, status: 'CREATED' },
+        data: { status: 'FAILED' },
+      });
+    });
+
+    // Release coupon
+    if (order.couponCode) {
+      await this.ordersService.releaseCoupon(order.couponCode).catch(() => {});
     }
   }
 
@@ -299,6 +412,11 @@ export class PaymentsService {
    * Clean up stale PaymentIntents that have been in CREATED status for too long.
    * This handles cases where user's phone dies, app crashes, or they simply abandon checkout.
    * Releases reserved coupons and closes WeChat prepay orders.
+   */
+  /**
+   * Clean up stale CREATED PaymentIntents (expired WeChat prepay orders).
+   * Only marks PIs as FAILED and closes WeChat orders.
+   * Does NOT cancel the Order itself — user can retry payment from order detail.
    */
   async cleanupStalePaymentIntents(maxAgeMinutes = 30): Promise<number> {
     const cutoff = new Date(Date.now() - maxAgeMinutes * 60_000);
@@ -320,11 +438,6 @@ export class PaymentsService {
           data: { status: 'FAILED' },
         });
 
-        // Release reserved coupon
-        if (pi.couponCode) {
-          await this.ordersService.releaseCoupon(pi.couponCode).catch(() => {});
-        }
-
         // Close WeChat prepay order (best-effort)
         if (pi.wechatOutTradeNo) {
           this.wechatPayProvider.closeOrder(pi.wechatOutTradeNo).catch(() => {});
@@ -343,10 +456,10 @@ export class PaymentsService {
   }
 
   /**
-   * Called when the user cancels wx.requestPayment().
+   * Called when the user cancels wx.requestPayment() — only cancels the prepay,
+   * NOT the order. The UNPAID order stays so user can retry from order detail.
    */
-  async cancelWechatOrder(customerId: string): Promise<void> {
-    // Find the customer's latest CREATED payment intent
+  async cancelWechatPayment(customerId: string): Promise<void> {
     const pi = await this.prisma.paymentIntent.findFirst({
       where: {
         customerId,
@@ -358,24 +471,14 @@ export class PaymentsService {
 
     if (!pi) return;
 
-    // Mark as cancelled
     await this.prisma.paymentIntent.update({
       where: { id: pi.id },
       data: { status: 'FAILED' },
     });
 
-    // Release reserved coupon
-    if (pi.couponCode) {
-      await this.ordersService.releaseCoupon(pi.couponCode).catch((err) => {
-        this.logger.error('Failed to release coupon on cancel', err);
-      });
-    }
-
-    // Close the order on WeChat Pay side (best-effort)
+    // Close WeChat prepay (best-effort)
     if (pi.wechatOutTradeNo) {
-      this.wechatPayProvider.closeOrder(pi.wechatOutTradeNo).catch((err) => {
-        this.logger.warn('Failed to close WeChat Pay order', err);
-      });
+      this.wechatPayProvider.closeOrder(pi.wechatOutTradeNo).catch(() => {});
     }
   }
 
@@ -451,64 +554,50 @@ export class PaymentsService {
       return;
     }
 
+    // Update PaymentIntent to CAPTURED
     await this.prisma.paymentIntent.update({
       where: { id: pi.id },
       data: {
-        status: 'CAPTURED',
+        status: 'ORDER_CREATED',
         capturedAt: new Date(),
         wechatTransactionId: transaction.transaction_id,
       },
     });
 
-    const cartItems: CartItemInput[] = JSON.parse(pi.cartSnapshotJson);
-    const openid = transaction.payer.openid;
+    // Update existing Order to PAID (order was created at checkout as UNPAID)
+    if (pi.orderId) {
+      await this.prisma.order.update({
+        where: { id: pi.orderId },
+        data: {
+          paymentStatus: 'PAID',
+          wechatTransactionId: transaction.transaction_id,
+        },
+      });
 
-    // Look up customer by wechatOpenId if available
-    const customer = await this.prisma.customer.findFirst({
-      where: { wechatOpenId: openid },
-    });
+      // Send confirmation email
+      const openid = transaction.payer.openid;
+      const customer = await this.prisma.customer.findFirst({
+        where: { wechatOpenId: openid },
+      });
+      const order = await this.prisma.order.findUnique({
+        where: { id: pi.orderId },
+        include: { items: true },
+      });
 
-    // Use snapshotted shipping address if available
-    const shippingAddr = pi.shippingAddressJson
-      ? JSON.parse(pi.shippingAddressJson) as Record<string, string | null>
-      : null;
-
-    const order = await this.ordersService.createCartOrder({
-      items: cartItems,
-      fullName: shippingAddr?.fullName || customer?.name || openid,
-      email: customer?.email || `wechat+${openid}@noreply.wanjukong.com`,
-      phone: shippingAddr?.phone || customer?.phone || undefined,
-      currency: 'CNY',
-      couponCode: pi.couponCode || undefined,
-      discountCents: pi.discountCents || undefined,
-      wechatTransactionId: transaction.transaction_id,
-      customerId: customer?.id,
-      country: shippingAddr?.country || 'CN',
-      stateOrProvince: shippingAddr?.stateOrProvince || undefined,
-      city: shippingAddr?.city || '',
-      addressLine1: shippingAddr?.addressLine1 || '',
-      addressLine2: shippingAddr?.addressLine2 || undefined,
-      postalCode: shippingAddr?.postalCode || undefined,
-    });
-
-    await this.prisma.paymentIntent.update({
-      where: { id: pi.id },
-      data: { status: 'ORDER_CREATED', orderId: order.id },
-    });
-
-    if (customer?.email) {
-      this.mailerService
-        .sendOrderConfirmationEmail({
-          email: customer.email,
-          name: customer.name || openid,
-          orderNo: order.orderNo,
-          items: order.items,
-          totalPriceCents: order.totalPriceCents,
-          currency: order.currency,
-        })
-        .catch((err) =>
-          this.logger.error('Failed to send WeChat order confirmation', err),
-        );
+      if (customer?.email && order) {
+        this.mailerService
+          .sendOrderConfirmationEmail({
+            email: customer.email,
+            name: customer.name || openid,
+            orderNo: order.orderNo,
+            items: order.items,
+            totalPriceCents: order.totalPriceCents,
+            currency: order.currency,
+          })
+          .catch((err) =>
+            this.logger.error('Failed to send WeChat order confirmation', err),
+          );
+      }
     }
   }
 

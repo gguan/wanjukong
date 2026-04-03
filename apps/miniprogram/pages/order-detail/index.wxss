@@ -254,6 +254,57 @@
   color: #c75c2a;
 }
 
+/* ─── 底部操作栏 ─────────────────────────────────────────── */
+
+.bottom-spacer {
+  height: 140rpx;
+}
+
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border-top: 1rpx solid #e8e8e8;
+  padding: 20rpx 32rpx;
+  z-index: 100;
+}
+
+.bottom-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16rpx;
+}
+
+.action-btn {
+  padding: 16rpx 40rpx;
+  border-radius: 40rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-btn--outline {
+  border: 1rpx solid #ddd;
+  background: #fff;
+}
+
+.action-btn--fill {
+  background: #111;
+}
+
+.action-text {
+  font-size: 28rpx;
+  color: #333;
+}
+
+.action-text--white {
+  font-size: 28rpx;
+  color: #fff;
+  font-weight: 600;
+}
+
 /* ─── 空状态 ─────────────────────────────────────────────── */
 
 .empty-wrap {

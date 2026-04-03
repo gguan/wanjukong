@@ -1,4 +1,5 @@
-import { fetchOrderDetail } from '../../utils/api';
+import { fetchOrderDetail, retryWechatPayment, cancelUnpaidOrder } from '../../utils/api';
+import { requestPayment } from '../../utils/payment';
 import { requireAuth } from '../../utils/auth';
 import { formatCNY, formatDateTimeFull, orderDisplayStatus } from '../../utils/format';
 import type { OrderDetail } from '../../utils/api';
@@ -21,6 +22,7 @@ Page({
     }>,
     hasShipping: false,
     shippingDisplay: '',
+    isUnpaid: false,
     loading: true,
   },
 
@@ -66,6 +68,7 @@ Page({
         items,
         hasShipping: addrParts.length > 0,
         shippingDisplay: addrParts.join(' '),
+        isUnpaid: order.paymentStatus === 'UNPAID',
         loading: false,
       });
     } catch (err) {
@@ -82,5 +85,40 @@ Page({
   onCopyOrderNo() {
     if (!this.data.order) return;
     wx.setClipboardData({ data: this.data.order.orderNo });
+  },
+
+  async onRetryPayment() {
+    if (!this.data.order) return;
+    try {
+      const payParams = await retryWechatPayment(this.data.order.id);
+      await requestPayment(payParams);
+      wx.showToast({ title: '支付成功', icon: 'success' });
+      setTimeout(() => this.loadOrder(this.data.order!.orderNo), 1500);
+    } catch (err) {
+      const msg = (err as Error).message || '';
+      if (!msg.includes('cancel') && !msg.includes('取消')) {
+        wx.showToast({ title: msg || '支付失败', icon: 'none' });
+      }
+    }
+  },
+
+  onCancelOrder() {
+    if (!this.data.order) return;
+    wx.showModal({
+      title: '取消订单',
+      content: '确定要取消该订单吗？库存将被释放。',
+      confirmText: '确定取消',
+      cancelText: '再想想',
+      success: async (res) => {
+        if (!res.confirm) return;
+        try {
+          await cancelUnpaidOrder(this.data.order!.id);
+          wx.showToast({ title: '订单已取消', icon: 'success' });
+          setTimeout(() => wx.navigateBack(), 1500);
+        } catch (err) {
+          wx.showToast({ title: (err as Error).message || '取消失败', icon: 'none' });
+        }
+      },
+    });
   },
 });

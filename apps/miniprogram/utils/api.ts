@@ -134,8 +134,22 @@ export function createWechatOrder(data: {
   );
 }
 
-export function cancelWechatOrder() {
-  return request('/miniprogram/payment/wechat/cancel', { method: 'POST' });
+export function cancelWechatPayment() {
+  return request('/miniprogram/payment/wechat/cancel-payment', { method: 'POST' });
+}
+
+export function retryWechatPayment(orderId: string) {
+  return request<WechatPayParams>('/miniprogram/payment/wechat/retry-payment', {
+    method: 'POST',
+    data: { orderId },
+  });
+}
+
+export function cancelUnpaidOrder(orderId: string) {
+  return request('/miniprogram/payment/wechat/cancel-order', {
+    method: 'POST',
+    data: { orderId },
+  });
 }
 
 // ─── Orders ──────────────────────────────────────────────

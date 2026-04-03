@@ -84,13 +84,38 @@ export class WechatPayController {
   }
 
   /**
-   * Cancel a pending payment — releases reserved coupon and closes WeChat Pay order.
-   * Called when user cancels wx.requestPayment().
+   * Cancel a pending WeChat prepay — called when user cancels wx.requestPayment().
+   * The UNPAID order is kept so user can retry payment later.
    */
   @UseGuards(CustomerSessionAuthGuard)
-  @Post('cancel')
-  cancelOrder(@CurrentCustomer() customer: { id: string }) {
-    return this.paymentsService.cancelWechatOrder(customer.id);
+  @Post('cancel-payment')
+  cancelPayment(@CurrentCustomer() customer: { id: string }) {
+    return this.paymentsService.cancelWechatPayment(customer.id);
+  }
+
+  /**
+   * Retry payment for an existing UNPAID order.
+   * Creates a new WeChat prepay order and returns wx.requestPayment() params.
+   */
+  @UseGuards(CustomerSessionAuthGuard)
+  @Post('retry-payment')
+  retryPayment(
+    @Body() body: { orderId: string },
+    @CurrentCustomer() customer: { id: string },
+  ) {
+    return this.paymentsService.retryWechatPayment(body.orderId, customer.id);
+  }
+
+  /**
+   * Cancel an UNPAID order — restores stock and releases coupon.
+   */
+  @UseGuards(CustomerSessionAuthGuard)
+  @Post('cancel-order')
+  cancelUnpaidOrder(
+    @Body() body: { orderId: string },
+    @CurrentCustomer() customer: { id: string },
+  ) {
+    return this.paymentsService.cancelUnpaidOrder(body.orderId, customer.id);
   }
 
   /**

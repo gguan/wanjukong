@@ -1,4 +1,4 @@
-import { createWechatOrder, cancelWechatOrder, validateCoupon, fetchAddresses } from '../../utils/api';
+import { createWechatOrder, cancelWechatPayment, validateCoupon, fetchAddresses } from '../../utils/api';
 import { requestPayment } from '../../utils/payment';
 import { requireAuth } from '../../utils/auth';
 import { getCart, clearCart, getCheckoutItems, clearCheckoutItems, removeCartItems } from '../../utils/storage';
@@ -182,15 +182,13 @@ Page({
         quantity: item.quantity,
       }));
 
-      const payParams = await createWechatOrder({
+      const result = await createWechatOrder({
         items: orderItems,
         couponCode: this.data.couponApplied ? this.data.couponCode : undefined,
         addressId: this.data.address?.id,
-      });
+      }) as unknown as { payParams: Record<string, string>; orderNo: string };
 
-      await requestPayment(payParams);
-
-      // Payment successful — clear relevant items and redirect
+      // Clear cart immediately — order is already created (UNPAID)
       if (this.data.mode === 'selectedCart') {
         const variantIds = this.data.items.map((item) => item.variantId);
         removeCartItems(variantIds);
@@ -201,19 +199,27 @@ Page({
         wx.removeStorageSync('wk_buy_now');
       }
 
+      await requestPayment(result.payParams);
+
+      // Payment successful — redirect to order detail
       wx.showToast({ title: '支付成功', icon: 'success' });
       setTimeout(() => {
-        wx.redirectTo({ url: '/pages/orders/index' });
+        wx.redirectTo({ url: `/pages/order-detail/index?orderNo=${result.orderNo}` });
       }, 1500);
     } catch (err) {
       const msg = (err as Error).message || '支付失败';
       if (msg.includes('cancel') || msg.includes('取消')) {
-        // User cancelled payment — release coupon and close WeChat order
-        cancelWechatOrder().catch(() => {});
+        // User cancelled payment — close prepay only, order stays UNPAID for retry
+        cancelWechatPayment().catch(() => {});
+        wx.showToast({ title: '订单已创建，可在"我的订单"中继续支付', icon: 'none', duration: 3000 });
+        setTimeout(() => {
+          wx.redirectTo({ url: '/pages/orders/index' });
+        }, 2000);
+      } else if (msg.includes('库存') || msg.includes('not available') || msg.includes('未上架')) {
+        wx.showToast({ title: msg, icon: 'none' });
       } else {
         wx.showToast({ title: msg, icon: 'error' });
-        // Payment error — also cancel to release resources
-        cancelWechatOrder().catch(() => {});
+        cancelWechatPayment().catch(() => {});
       }
     } finally {
       this.setData({ paying: false });

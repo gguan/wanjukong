@@ -93,7 +93,7 @@ Page({
     wx.navigateTo({ url: `/pages/order-detail/index?orderNo=${orderNo}` });
   },
 
-  onGoHome() {
-    wx.switchTab({ url: '/pages/index/index' });
+  onGoBack() {
+    wx.navigateBack();
   },
 });

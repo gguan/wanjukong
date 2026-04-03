@@ -27,9 +27,14 @@
   justify-content: center;
 }
 
-.nav-home-icon {
-  width: 40rpx;
-  height: 40rpx;
+.nav-back {
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.nav-back-icon {
+  width: 36rpx;
+  height: 36rpx;
 }
 
 .nav-title {

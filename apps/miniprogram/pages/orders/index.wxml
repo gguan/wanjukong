@@ -4,8 +4,8 @@
   <!-- ─── 自定义导航栏 ─── -->
   <view class="custom-nav" style="padding-top: {{statusBarHeight}}px;">
     <view class="nav-inner">
-      <view class="nav-back" bindtap="onGoHome">
-        <image class="nav-home-icon" src="/assets/tabbar/home.png" mode="aspectFit" />
+      <view class="nav-back" bindtap="onGoBack">
+        <image class="nav-back-icon" src="/assets/back.png" mode="aspectFit" />
       </view>
       <text class="nav-title">我的订单</text>
       <view class="nav-placeholder" />

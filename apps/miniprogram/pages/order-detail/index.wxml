@@ -101,6 +101,19 @@
       </view>
     </view>
 
+    <!-- ─── 底部操作栏（未支付订单） ─── -->
+    <view wx:if="{{isUnpaid}}" class="bottom-spacer" />
+    <view wx:if="{{isUnpaid}}" class="bottom-bar">
+      <view class="bottom-actions">
+        <view class="action-btn action-btn--outline" bindtap="onCancelOrder">
+          <text class="action-text">取消订单</text>
+        </view>
+        <view class="action-btn action-btn--fill" bindtap="onRetryPayment">
+          <text class="action-text--white">去支付</text>
+        </view>
+      </view>
+    </view>
+
   </view>
 
   <!-- 加载中 -->
