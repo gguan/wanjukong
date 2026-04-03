@@ -31,6 +31,7 @@ const form = ref({
 const updatedAt = ref('');
 const store = useAdminAuthStore();
 const isBrandManager = computed(() => store.isBrandManager);
+const isSuperAdmin = computed(() => store.user?.role === 'SUPER_ADMIN');
 
 onMounted(async () => {
 
@@ -142,6 +143,28 @@ async function save() {
     error.value = e instanceof Error ? e.message : '更新商品失败';
   } finally {
     saving.value = false;
+  }
+}
+
+const deleting = ref(false);
+async function deleteProduct() {
+  try {
+    await ElMessageBox.confirm(
+      '确认删除该商品吗？删除后无法恢复。',
+      '删除商品',
+      { confirmButtonText: '确认删除', cancelButtonText: '取消', type: 'warning' },
+    );
+  } catch { return; }
+
+  deleting.value = true;
+  try {
+    await api.del(`/api/admin/products/${route.params.id}`);
+    ElMessage.success('商品已删除');
+    router.push('/products');
+  } catch (e: any) {
+    ElMessage.error(e?.data?.message || '删除失败');
+  } finally {
+    deleting.value = false;
   }
 }
 </script>
@@ -359,6 +382,18 @@ async function save() {
           <div style="font-size: 13px; color: var(--el-text-color-secondary); word-break: break-all">
             /products/{{ form.slug || '...' }}
           </div>
+        </AdminSidebarCard>
+
+        <!-- Delete (SUPER_ADMIN only) -->
+        <AdminSidebarCard v-if="isSuperAdmin" title="危险操作">
+          <div style="font-size: 12px; color: var(--el-text-color-secondary); margin-bottom: 8px">
+            删除商品后无法恢复，请谨慎操作。
+          </div>
+          <template #footer>
+            <ElButton type="danger" size="small" :loading="deleting" @click="deleteProduct">
+              删除商品
+            </ElButton>
+          </template>
         </AdminSidebarCard>
       </aside>
     </div>

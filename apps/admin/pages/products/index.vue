@@ -50,14 +50,6 @@ function goToPage(p: number) {
   load();
 }
 
-async function remove(id: string) {
-  try {
-    await ElMessageBox.confirm('确认删除该商品吗？', '提示', { type: 'warning' });
-    await api.del(`/api/admin/products/${id}`);
-    await load();
-  } catch {}
-}
-
 const statusOptions = [
   { label: '全部状态', value: '' },
   { label: '草稿', value: 'DRAFT' },
@@ -124,12 +116,11 @@ onMounted(load);
           <AdminStatusTag :value="row.saleType" />
         </template>
       </ElTableColumn>
-      <ElTableColumn label="操作" width="160" align="right">
+      <ElTableColumn label="操作" width="100" align="right">
         <template #default="{ row }">
           <NuxtLink :to="`/products/${row.id}`">
             <ElButton size="small">编辑</ElButton>
           </NuxtLink>
-          <ElButton size="small" type="danger" @click="remove(row.id)">删除</ElButton>
         </template>
       </ElTableColumn>
       <template #empty>
