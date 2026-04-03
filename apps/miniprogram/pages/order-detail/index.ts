@@ -1,30 +1,34 @@
 import { fetchOrderDetail } from '../../utils/api';
 import { requireAuth } from '../../utils/auth';
-import { formatCNY, formatDateTime, orderStatusLabel, paymentStatusLabel } from '../../utils/format';
+import { formatCNY, formatDateTimeFull, orderDisplayStatus } from '../../utils/format';
 import type { OrderDetail } from '../../utils/api';
 
 Page({
   data: {
+    statusBarHeight: 44,
     order: null as OrderDetail | null,
     displayStatus: '',
-    displayPayment: '',
-    statusClass: '',
     displayDate: '',
     displayTotal: '',
+    displaySubtotal: '',
+    earnedPoints: 0,
     items: [] as Array<{
       productNameSnapshot: string;
       variantNameSnapshot: string | null;
       coverImageUrlSnapshot: string | null;
-      displayUnitPrice: string;
-      quantity: number;
       displayLineTotal: string;
+      quantity: number;
     }>,
     hasShipping: false,
+    shippingDisplay: '',
     loading: true,
   },
 
   onLoad(query: Record<string, string | undefined>) {
     if (!requireAuth()) return;
+
+    const { statusBarHeight } = wx.getWindowInfo();
+    this.setData({ statusBarHeight: statusBarHeight || 44 });
 
     const orderNo = query.orderNo;
     if (!orderNo) {
@@ -40,29 +44,28 @@ Page({
     try {
       const order = await fetchOrderDetail(orderNo);
 
-      const statusClassMap: Record<string, string> = {
-        PENDING: 'badge-warning',
-        CONFIRMED: 'badge-info',
-        SHIPPED: 'badge-info',
-        DELIVERED: 'badge-success',
-        CANCELLED: 'badge-danger',
-      };
-
       const items = order.items.map((item) => ({
         ...item,
-        displayUnitPrice: formatCNY(item.unitPriceCents),
         displayLineTotal: formatCNY(item.totalPriceCents),
       }));
 
+      // Build shipping address display
+      const addrParts = [
+        order.stateOrProvince,
+        order.city,
+        order.addressLine1,
+      ].filter(Boolean);
+
       this.setData({
         order,
-        displayStatus: orderStatusLabel(order.status),
-        displayPayment: paymentStatusLabel(order.paymentStatus),
-        statusClass: statusClassMap[order.status] || 'badge-info',
-        displayDate: formatDateTime(order.createdAt),
+        displayStatus: orderDisplayStatus(order.status, order.paymentStatus),
+        displayDate: formatDateTimeFull(order.createdAt),
         displayTotal: formatCNY(order.totalPriceCents),
+        displaySubtotal: formatCNY(order.totalPriceCents),
+        earnedPoints: Math.round(order.totalPriceCents / 1000),
         items,
-        hasShipping: !!(order.addressLine1 || order.city),
+        hasShipping: addrParts.length > 0,
+        shippingDisplay: addrParts.join(' '),
         loading: false,
       });
     } catch (err) {
@@ -70,6 +73,10 @@ Page({
       this.setData({ loading: false });
       wx.showToast({ title: '加载失败', icon: 'error' });
     }
+  },
+
+  onGoBack() {
+    wx.navigateBack();
   },
 
   onCopyOrderNo() {

@@ -1,55 +1,84 @@
 <!-- 我的订单 -->
 <view class="page">
-  <!-- 订单列表 -->
+
+  <!-- ─── 自定义导航栏 ─── -->
+  <view class="custom-nav" style="padding-top: {{statusBarHeight}}px;">
+    <view class="nav-inner">
+      <view class="nav-back" bindtap="onGoHome">
+        <image class="nav-home-icon" src="/assets/tabbar/home.png" mode="aspectFit" />
+      </view>
+      <text class="nav-title">我的订单</text>
+      <view class="nav-placeholder" />
+    </view>
+  </view>
+
+  <!-- ─── 状态 tabs ─── -->
+  <view class="tabs">
+    <view
+      wx:for="{{tabs}}"
+      wx:key="key"
+      class="tab {{activeTab === item.key ? 'tab--active' : ''}}"
+      data-tab="{{item.key}}"
+      bindtap="onSwitchTab"
+    >
+      <text class="tab-text">{{item.label}}</text>
+    </view>
+  </view>
+
+  <!-- ─── 订单列表 ─── -->
   <view wx:if="{{!loading && !isEmpty}}" class="order-list">
     <view
       wx:for="{{orders}}"
       wx:key="id"
-      class="card order-card"
-      data-order-no="{{item.orderNo}}"
-      bindtap="onTapOrder"
+      class="order-card"
     >
       <!-- 订单头 -->
       <view class="order-header">
-        <view class="order-no">
-          <text class="text-secondary text-sm">订单号</text>
-          <text class="text-sm font-medium">{{item.orderNo}}</text>
-        </view>
-        <view class="badge {{item.statusClass}}">{{item.displayStatus}}</view>
+        <text class="order-no">订单编号：{{item.orderNo}}</text>
+        <text class="order-status">{{item.displayStatus}}</text>
       </view>
 
-      <!-- 订单内容 -->
-      <view class="order-body">
+      <!-- 商品内容 -->
+      <view class="order-body" data-order-no="{{item.orderNo}}" bindtap="onTapOrder">
         <image
-          wx:if="{{item.firstImage}}"
           class="order-image"
-          src="{{item.firstImage}}"
+          src="{{item.items[0].coverImageUrlSnapshot || ''}}"
           mode="aspectFill"
         />
-        <view wx:else class="order-image-placeholder">
-          <text class="text-muted text-xs">无图</text>
-        </view>
         <view class="order-info">
-          <text class="item-summary">
-            {{item.items[0].productNameSnapshot}}
-            <text wx:if="{{item.items.length > 1}}" class="text-secondary"> 等{{item.items.length}}件商品</text>
-          </text>
-          <view class="order-meta">
-            <text class="text-secondary text-sm">{{item.displayDate}}</text>
-            <text class="price font-semibold">{{item.displayTotal}}</text>
-          </view>
+          <text class="order-name">{{item.items[0].productNameSnapshot}}</text>
+          <text class="order-qty">数量：{{item.items[0].quantity}}</text>
+        </view>
+      </view>
+
+      <!-- 价格 -->
+      <view class="order-price-row">
+        <text class="order-price">实付款{{item.displayTotal}}</text>
+      </view>
+
+      <!-- 操作按钮 -->
+      <view class="order-actions" wx:if="{{item.showPayBtn || item.showViewBtn}}">
+        <view wx:if="{{item.showCancelBtn}}" class="action-btn action-btn--outline" data-order-no="{{item.orderNo}}" catchtap="onTapOrder">
+          <text class="action-text">取消订单</text>
+        </view>
+        <view wx:if="{{item.showPayBtn}}" class="action-btn action-btn--fill" data-order-no="{{item.orderNo}}" catchtap="onTapOrder">
+          <text class="action-text--white">去支付</text>
+        </view>
+        <view wx:if="{{item.showViewBtn && !item.showPayBtn}}" class="action-btn action-btn--outline" data-order-no="{{item.orderNo}}" catchtap="onTapOrder">
+          <text class="action-text">查看订单</text>
         </view>
       </view>
     </view>
   </view>
 
   <!-- 加载中 -->
-  <view wx:if="{{loading}}" class="empty">
-    <text class="text-secondary">加载中...</text>
+  <view wx:if="{{loading}}" class="empty-wrap">
+    <text class="empty-text">加载中...</text>
   </view>
 
   <!-- 空状态 -->
-  <view wx:elif="{{isEmpty}}" class="empty">
+  <view wx:elif="{{isEmpty}}" class="empty-wrap">
     <text class="empty-text">暂无订单</text>
   </view>
+
 </view>

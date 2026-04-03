@@ -1,84 +1,111 @@
 <!-- 订单详情 -->
-<view class="page" wx:if="{{!loading && order}}">
-  <!-- 状态栏 -->
-  <view class="status-bar">
-    <view class="status-row">
-      <view class="badge {{statusClass}} badge-lg">{{displayStatus}}</view>
-      <text class="status-payment text-sm">{{displayPayment}}</text>
+<view class="page">
+
+  <!-- ─── 自定义导航栏 ─── -->
+  <view class="custom-nav" style="padding-top: {{statusBarHeight}}px;">
+    <view class="nav-inner">
+      <view class="nav-back" bindtap="onGoBack">
+        <image class="nav-back-icon" src="/assets/back.png" mode="aspectFit" />
+      </view>
+      <text class="nav-title">订单详情</text>
+      <view class="nav-placeholder" />
     </view>
-    <view class="status-meta">
-      <text class="text-sm">订单号: {{order.orderNo}}</text>
-      <text class="copy-btn text-sm" bindtap="onCopyOrderNo">复制</text>
-    </view>
-    <text class="text-secondary text-sm">{{displayDate}}</text>
   </view>
 
-  <!-- 商品列表 -->
-  <view class="card">
-    <view class="card-header">商品明细</view>
-    <view class="card-body">
+  <view wx:if="{{!loading && order}}">
+
+    <!-- ─── 状态区 ─── -->
+    <view class="status-section">
+      <text class="status-title">{{displayStatus}}</text>
+      <view class="status-badge-btn">
+        <text class="status-badge-text">当前进度</text>
+      </view>
+    </view>
+
+    <!-- ─── 物流追踪 ─── -->
+    <view class="tracking-section">
+      <view class="tracking-left">
+        <view class="tracking-icon">
+          <text class="tracking-icon-text">%</text>
+        </view>
+      </view>
+      <view class="tracking-right">
+        <text class="tracking-status">{{displayStatus}}</text>
+        <view class="tracking-copy-btn" bindtap="onCopyOrderNo">
+          <text class="tracking-copy-text">暂无单号 | 复制</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 进度条 -->
+    <view class="progress-bar">
+      <view class="progress-fill" />
+    </view>
+
+    <!-- ─── 配送地址 ─── -->
+    <view wx:if="{{hasShipping}}" class="address-section">
+      <text class="address-label">配送地址</text>
+      <text class="address-detail">{{shippingDisplay}}</text>
+      <text class="address-contact">{{order.fullName}} {{order.phone}}</text>
+    </view>
+
+    <!-- ─── 商品列表 ─── -->
+    <view class="items-section">
       <view
         wx:for="{{items}}"
         wx:key="productNameSnapshot"
-        class="detail-item"
+        class="item-card"
       >
         <image
-          wx:if="{{item.coverImageUrlSnapshot}}"
           class="item-image"
-          src="{{item.coverImageUrlSnapshot}}"
+          src="{{item.coverImageUrlSnapshot || ''}}"
           mode="aspectFill"
         />
-        <view wx:else class="item-image-placeholder">
-          <text class="text-muted text-xs">无图</text>
-        </view>
         <view class="item-info">
           <text class="item-name">{{item.productNameSnapshot}}</text>
-          <text wx:if="{{item.variantNameSnapshot}}" class="text-secondary text-sm">{{item.variantNameSnapshot}}</text>
-          <view class="item-price-row">
-            <text class="text-secondary text-sm">{{item.displayUnitPrice}} x {{item.quantity}}</text>
-            <text class="price price-sm">{{item.displayLineTotal}}</text>
-          </view>
+          <text class="item-qty">数量：{{item.quantity}}</text>
         </view>
       </view>
-    </view>
-  </view>
 
-  <!-- 价格信息 -->
-  <view class="card">
-    <view class="card-header">订单金额</view>
-    <view class="card-body">
-      <view class="price-line total-line">
-        <text class="font-semibold">订单总额</text>
-        <text class="price price-lg">{{displayTotal}}</text>
+      <!-- 实付款 -->
+      <view class="item-total-row">
+        <text class="item-total-text">实付款{{displayTotal}}</text>
       </view>
     </view>
-  </view>
 
-  <!-- 收货信息 -->
-  <view class="card" wx:if="{{hasShipping}}">
-    <view class="card-header">收货信息</view>
-    <view class="card-body">
-      <view class="shipping-line" wx:if="{{order.fullName}}">
-        <text class="shipping-label">收件人</text>
-        <text>{{order.fullName}}</text>
+    <!-- ─── 价格清单 ─── -->
+    <view class="price-section">
+      <view class="price-row">
+        <text class="price-label">商品总价</text>
+        <text class="price-value">{{displaySubtotal}}</text>
       </view>
-      <view class="shipping-line" wx:if="{{order.phone}}">
-        <text class="shipping-label">电话</text>
-        <text>{{order.phone}}</text>
+      <view class="price-row">
+        <text class="price-label">运费</text>
+        <text class="price-value">¥ 0.00</text>
       </view>
-      <view class="shipping-line" wx:if="{{order.email}}">
-        <text class="shipping-label">邮箱</text>
-        <text>{{order.email}}</text>
-      </view>
-      <view class="shipping-line" wx:if="{{order.addressLine1}}">
-        <text class="shipping-label">地址</text>
-        <text>{{order.country}} {{order.city}} {{order.addressLine1}}</text>
+      <view class="price-row">
+        <text class="price-label">获得积分</text>
+        <text class="price-value price-orange">+{{earnedPoints}}</text>
       </view>
     </view>
-  </view>
-</view>
 
-<!-- 加载中 -->
-<view wx:if="{{loading}}" class="empty">
-  <text class="text-secondary">加载中...</text>
+    <!-- ─── 订单信息 ─── -->
+    <view class="info-section">
+      <view class="price-row">
+        <text class="price-label">订单编号</text>
+        <text class="price-value">{{order.orderNo}}</text>
+      </view>
+      <view class="price-row">
+        <text class="price-label">创建时间</text>
+        <text class="price-value">{{displayDate}}</text>
+      </view>
+    </view>
+
+  </view>
+
+  <!-- 加载中 -->
+  <view wx:if="{{loading}}" class="empty-wrap">
+    <text class="empty-text">加载中...</text>
+  </view>
+
 </view>

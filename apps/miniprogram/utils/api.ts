@@ -320,6 +320,7 @@ export interface OrderDetail extends OrderSummary {
   email: string;
   phone: string | null;
   country: string;
+  stateOrProvince: string | null;
   city: string;
   addressLine1: string;
   items: Array<{

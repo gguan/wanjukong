@@ -58,10 +58,36 @@ export function orderStatusLabel(status: string): string {
  */
 export function paymentStatusLabel(status: string): string {
   const map: Record<string, string> = {
-    UNPAID: '未付款',
-    PAID: '已付款',
-    FAILED: '付款失败',
+    UNPAID: '未支付',
+    PAID: '已支付',
+    FAILED: '支付失败',
     REFUNDED: '已退款',
   };
   return map[status] || status;
+}
+
+/**
+ * Combined order display status for mini program UI.
+ */
+export function orderDisplayStatus(orderStatus: string, paymentStatus: string): string {
+  if (paymentStatus === 'UNPAID') return '未支付';
+  if (paymentStatus === 'FAILED') return '支付失败';
+  if (paymentStatus === 'REFUNDED') return '已退款';
+  const map: Record<string, string> = {
+    PENDING: '待发货',
+    CONFIRMED: '待发货',
+    SHIPPED: '待收货',
+    DELIVERED: '已完成',
+    CANCELLED: '已取消',
+  };
+  return map[orderStatus] || orderStatus;
+}
+
+/**
+ * Format full datetime: "2026-04-03 10:35:26"
+ */
+export function formatDateTimeFull(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
