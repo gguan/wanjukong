@@ -1,5 +1,5 @@
 import { fetchMyOrders } from '../../utils/api';
-import { requireAuth } from '../../utils/auth';
+import { ensureAuth } from '../../utils/auth';
 import { formatCNY, orderDisplayStatus } from '../../utils/format';
 import type { OrderSummary } from '../../utils/api';
 
@@ -50,8 +50,8 @@ Page({
     ],
   },
 
-  onLoad() {
-    if (!requireAuth()) return;
+  async onLoad() {
+    if (!(await ensureAuth())) return;
     const { statusBarHeight } = wx.getWindowInfo();
     this.setData({ statusBarHeight: statusBarHeight || 44 });
   },

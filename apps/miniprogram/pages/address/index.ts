@@ -1,5 +1,5 @@
 import { fetchAddresses, deleteAddress } from '../../utils/api';
-import { requireAuth } from '../../utils/auth';
+import { ensureAuth } from '../../utils/auth';
 import type { Address } from '../../utils/api';
 
 interface AddressDisplay extends Address {
@@ -24,8 +24,8 @@ Page({
     fromCheckout: false,
   },
 
-  onLoad(query: Record<string, string | undefined>) {
-    if (!requireAuth()) return;
+  async onLoad(query: Record<string, string | undefined>) {
+    if (!(await ensureAuth())) return;
     const { statusBarHeight } = wx.getWindowInfo();
     this.setData({
       statusBarHeight: statusBarHeight || 44,

@@ -1,5 +1,5 @@
 import { fetchAddresses, createAddress, updateAddress } from '../../utils/api';
-import { requireAuth } from '../../utils/auth';
+import { ensureAuth } from '../../utils/auth';
 import type { Address } from '../../utils/api';
 
 interface FormData {
@@ -30,8 +30,8 @@ Page({
     saving: false,
   },
 
-  onLoad(query: Record<string, string | undefined>) {
-    if (!requireAuth()) return;
+  async onLoad(query: Record<string, string | undefined>) {
+    if (!(await ensureAuth())) return;
 
     const editId = query.id || '';
     this.setData({ editId });

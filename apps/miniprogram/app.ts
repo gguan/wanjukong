@@ -1,16 +1,10 @@
-import { login, isLoggedIn } from './utils/auth';
+import { trySilentLogin } from './utils/auth';
 
 App({
-  globalData: {
-    userInfo: null as WechatMiniprogram.UserInfo | null,
-  },
+  globalData: {},
 
   onLaunch() {
-    // Silent login — skip in DevTools if API not reachable
-    if (!isLoggedIn()) {
-      login().catch(() => {
-        // Expected to fail in DevTools without backend — silently ignore
-      });
-    }
+    // Silent login on app start — pages use ensureAuth() to await this
+    trySilentLogin();
   },
 });

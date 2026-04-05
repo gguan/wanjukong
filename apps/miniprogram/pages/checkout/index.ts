@@ -1,6 +1,6 @@
 import { createWechatOrder, cancelWechatPayment, validateCoupon, fetchAddresses } from '../../utils/api';
 import { requestPayment } from '../../utils/payment';
-import { requireAuth } from '../../utils/auth';
+import { ensureAuth } from '../../utils/auth';
 import { getCart, clearCart, getCheckoutItems, clearCheckoutItems, removeCartItems } from '../../utils/storage';
 import { formatCNY } from '../../utils/format';
 import type { CartItem } from '../../utils/storage';
@@ -34,8 +34,8 @@ Page({
     mode: 'cart' as 'cart' | 'buyNow' | 'selectedCart',
   },
 
-  onLoad(query: Record<string, string | undefined>) {
-    if (!requireAuth()) return;
+  async onLoad(query: Record<string, string | undefined>) {
+    if (!(await ensureAuth())) return;
 
     const { statusBarHeight } = wx.getWindowInfo();
     this.setData({ statusBarHeight: statusBarHeight || 44 });

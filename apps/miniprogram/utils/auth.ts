@@ -2,6 +2,10 @@ import { wechatLogin, bindPhone } from './api';
 import { setUserInfo, clearSession, getUserInfo } from './storage';
 import type { CustomerInfo } from './api';
 
+// ─── Silent login singleton ─────────────────────────────
+
+let _silentLoginPromise: Promise<boolean> | null = null;
+
 /**
  * Full WeChat login flow:
  * 1. wx.login() → code
@@ -31,6 +35,22 @@ export function login(): Promise<CustomerInfo> {
 }
 
 /**
+ * Try silent login. Deduplicates concurrent calls — only one wx.login()
+ * runs at a time. Returns true if logged in, false otherwise.
+ */
+export function trySilentLogin(): Promise<boolean> {
+  if (isLoggedIn()) return Promise.resolve(true);
+  if (_silentLoginPromise) return _silentLoginPromise;
+
+  _silentLoginPromise = login()
+    .then(() => true)
+    .catch(() => false)
+    .finally(() => { _silentLoginPromise = null; });
+
+  return _silentLoginPromise;
+}
+
+/**
  * Request phone number binding.
  * Must be triggered from a <button open-type="getPhoneNumber">.
  */
@@ -52,7 +72,8 @@ export function isLoggedIn(): boolean {
 }
 
 /**
- * Ensure user is logged in. If not, redirect to login page.
+ * Sync auth check — for use in non-async contexts.
+ * Redirects to login page if not logged in.
  */
 export function requireAuth(): boolean {
   if (!isLoggedIn()) {
@@ -60,6 +81,30 @@ export function requireAuth(): boolean {
     return false;
   }
   return true;
+}
+
+/**
+ * Async auth check — awaits any in-flight silent login first.
+ * Use this in page onLoad() to avoid racing with app launch silent login.
+ * Only redirects to login page if silent login also fails.
+ */
+export async function ensureAuth(): Promise<boolean> {
+  // If already logged in, skip
+  if (isLoggedIn()) return true;
+
+  // Wait for any in-flight silent login (from app.ts onLaunch)
+  if (_silentLoginPromise) {
+    await _silentLoginPromise;
+    if (isLoggedIn()) return true;
+  }
+
+  // Try one more silent login
+  const ok = await trySilentLogin();
+  if (ok) return true;
+
+  // All failed — redirect to login page for manual login / phone binding
+  wx.navigateTo({ url: '/pages/login/index' });
+  return false;
 }
 
 /**

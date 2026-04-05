@@ -1,6 +1,6 @@
 import { fetchOrderDetail, retryWechatPayment, cancelUnpaidOrder } from '../../utils/api';
 import { requestPayment } from '../../utils/payment';
-import { requireAuth } from '../../utils/auth';
+import { ensureAuth } from '../../utils/auth';
 import { formatCNY, formatDateTimeFull, orderDisplayStatus } from '../../utils/format';
 import type { OrderDetail } from '../../utils/api';
 
@@ -26,8 +26,8 @@ Page({
     loading: true,
   },
 
-  onLoad(query: Record<string, string | undefined>) {
-    if (!requireAuth()) return;
+  async onLoad(query: Record<string, string | undefined>) {
+    if (!(await ensureAuth())) return;
 
     const { statusBarHeight } = wx.getWindowInfo();
     this.setData({ statusBarHeight: statusBarHeight || 44 });
