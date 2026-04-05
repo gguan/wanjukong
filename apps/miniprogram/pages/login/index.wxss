@@ -1,53 +1,153 @@
+/* ─── 页面 ────────────────────────────────────────────────── */
+
 .page {
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   background: #fff;
 }
 
-.login-container {
-  width: 100%;
-  padding: 0 64rpx;
-  text-align: center;
+/* ─── 导航栏 ─────────────────────────────────────────────── */
+
+.custom-nav {
+  background: #fff;
 }
 
-/* 品牌 */
-.brand-section {
-  margin-bottom: 80rpx;
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 88rpx;
+  padding: 0 24rpx;
 }
 
-.brand-logo-text {
-  font-size: 64rpx;
+.nav-back {
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.nav-back-icon {
+  width: 36rpx;
+  height: 36rpx;
+}
+
+.nav-title {
+  font-size: 34rpx;
   font-weight: 700;
-  color: #1a1a1a;
-  letter-spacing: 0.04em;
-  margin-bottom: 12rpx;
+  color: #111;
+}
+
+.nav-placeholder {
+  width: 64rpx;
+}
+
+/* ─── 登录容器 ───────────────────────────────────────────── */
+
+.login-container {
+  padding: 80rpx 64rpx 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ─── 品牌 ───────────────────────────────────────────────── */
+
+.brand-section {
+  text-align: center;
+  margin-bottom: 100rpx;
+}
+
+.brand-logo {
+  font-size: 72rpx;
+  font-weight: 800;
+  color: #111;
+  letter-spacing: 0.06em;
+  margin-bottom: 16rpx;
 }
 
 .brand-tagline {
   font-size: 28rpx;
+  color: #999;
+  display: block;
 }
 
-/* 登录操作 */
+/* ─── 登录操作 ───────────────────────────────────────────── */
+
 .login-actions {
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
 .login-btn {
+  width: 100% !important;
+  height: 96rpx;
+  line-height: 96rpx;
+  background: #111 !important;
+  color: #fff !important;
+  font-size: 32rpx;
+  font-weight: 600;
+  border: none;
+  border-radius: 0;
   margin: 0;
-  font-size: 30rpx;
-  height: 88rpx;
-  line-height: 88rpx;
-  border-radius: 16rpx;
+  padding: 0;
+}
+
+.login-btn--phone {
+  background: #07c160 !important;
+}
+
+.login-btn::after {
+  border: none;
 }
 
 .login-hint {
+  font-size: 24rpx;
+  color: #bbb;
   margin-top: 24rpx;
 }
 
-.login-success-text {
-  margin-bottom: 32rpx;
+/* ─── 登录状态 ───────────────────────────────────────────── */
+
+.login-status {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 48rpx;
+}
+
+.login-status-icon {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+  background: #07c160;
+  color: #fff;
+  font-size: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 44rpx;
+  text-align: center;
+}
+
+.login-status-text {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #111;
+}
+
+/* ─── 跳过 ───────────────────────────────────────────────── */
+
+.skip-link {
+  margin-top: 40rpx;
+  padding: 16rpx 32rpx;
+}
+
+.skip-text {
+  font-size: 28rpx;
+  color: #999;
 }

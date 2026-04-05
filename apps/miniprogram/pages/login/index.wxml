@@ -1,34 +1,47 @@
 <!-- 登录 -->
 <view class="page">
+
+  <!-- ─── 自定义导航栏 ─── -->
+  <view class="custom-nav" style="padding-top: {{statusBarHeight}}px;">
+    <view class="nav-inner">
+      <view class="nav-back" bindtap="onGoBack">
+        <image class="nav-back-icon" src="/assets/back.png" mode="aspectFit" />
+      </view>
+      <text class="nav-title"></text>
+      <view class="nav-placeholder" />
+    </view>
+  </view>
+
   <view class="login-container">
+
     <!-- Logo / 品牌 -->
     <view class="brand-section">
-      <view class="brand-logo-text">万局控</view>
-      <text class="brand-tagline text-secondary">精选手办 · 全球收藏</text>
+      <view class="brand-logo">万局控</view>
+      <text class="brand-tagline">精选手办 · 全球收藏</text>
     </view>
 
     <!-- 未登录 -->
     <view wx:if="{{!loggedIn}}" class="login-actions">
       <button
-        class="btn btn-primary btn-block login-btn"
+        class="login-btn"
         bindtap="onWechatLogin"
         loading="{{loading}}"
         disabled="{{loading}}"
       >
         微信一键登录
       </button>
-      <text class="login-hint text-secondary text-sm">
-        点击登录即表示同意相关服务条款
-      </text>
+      <text class="login-hint">点击登录即表示同意相关服务条款</text>
     </view>
 
     <!-- 已登录但未绑定手机 -->
     <view wx:elif="{{loggedIn && !phoneBound}}" class="login-actions">
-      <view class="login-success-text">
-        <text class="text-success font-medium">已登录</text>
+      <view class="login-status">
+        <text class="login-status-icon">✓</text>
+        <text class="login-status-text">微信登录成功</text>
       </view>
+
       <button
-        class="btn btn-success btn-block login-btn"
+        class="login-btn login-btn--phone"
         open-type="getPhoneNumber"
         bindgetphonenumber="onGetPhoneNumber"
         loading="{{loading}}"
@@ -36,16 +49,21 @@
       >
         绑定手机号
       </button>
-      <text class="login-hint text-secondary text-sm">
-        绑定手机号以获得更好的服务体验
-      </text>
+      <text class="login-hint">绑定手机号以获得更好的服务体验</text>
+
+      <view class="skip-link" bindtap="onSkipPhone">
+        <text class="skip-text">跳过</text>
+      </view>
     </view>
 
     <!-- 已登录且已绑定 -->
     <view wx:else class="login-actions">
-      <view class="login-success-text">
-        <text class="text-success font-medium">登录成功，正在跳转...</text>
+      <view class="login-status">
+        <text class="login-status-icon">✓</text>
+        <text class="login-status-text">登录成功，正在跳转...</text>
       </view>
     </view>
+
   </view>
+
 </view>

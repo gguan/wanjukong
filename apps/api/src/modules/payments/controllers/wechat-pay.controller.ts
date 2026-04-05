@@ -140,4 +140,26 @@ export class WechatPayController {
     await this.paymentsService.handleWechatNotification(headers, body, rawBody);
     return { code: 'SUCCESS', message: 'OK' };
   }
+
+  /**
+   * Step 3: WeChat Pay servers call this after refund status change.
+   * Must return { code: 'SUCCESS' } to acknowledge receipt.
+   */
+  @Post('refund-notify')
+  @HttpCode(200)
+  async handleRefundNotification(
+    @Headers() headers: WechatPayNotificationHeaders,
+    @Body() body: WechatPayNotificationBody,
+    @Req() req: RawBodyRequest<Request>,
+  ) {
+    const timestamp = headers['wechatpay-timestamp'];
+    if (!timestamp) {
+      throw new BadRequestException('Missing wechatpay-timestamp header');
+    }
+
+    const rawBody = req.rawBody?.toString('utf-8') || JSON.stringify(body);
+
+    await this.paymentsService.handleWechatRefundNotification(headers, body, rawBody);
+    return { code: 'SUCCESS', message: 'OK' };
+  }
 }

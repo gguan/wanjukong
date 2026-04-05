@@ -732,6 +732,106 @@ export class PaymentsService {
     return refund;
   }
 
+  /**
+   * Handle WeChat Pay refund notification.
+   * Updates Refund record status and order payment status accordingly.
+   */
+  async handleWechatRefundNotification(
+    headers: WechatPayNotificationHeaders,
+    body: WechatPayNotificationBody,
+    rawBody: string,
+  ): Promise<void> {
+    // Verify timestamp
+    if (!this.wechatPayProvider.verifyNotificationTimestamp(headers['wechatpay-timestamp'])) {
+      this.logger.warn('WeChat refund notification timestamp out of range');
+      return;
+    }
+
+    // Verify signature
+    if (!this.wechatPayProvider.verifyNotificationSignature(headers, rawBody)) {
+      this.logger.warn('WeChat refund notification signature verification failed');
+      return;
+    }
+
+    if (body.event_type !== 'REFUND.SUCCESS' && body.event_type !== 'REFUND.ABNORMAL' && body.event_type !== 'REFUND.CLOSED') {
+      return;
+    }
+
+    let resource: {
+      out_refund_no: string;
+      refund_id: string;
+      refund_status: string; // SUCCESS | CLOSED | ABNORMAL
+      transaction_id: string;
+      amount: { refund: number; payer_refund: number };
+    };
+
+    try {
+      resource = this.wechatPayProvider.decryptNotificationResource(body.resource) as any;
+    } catch (err) {
+      this.logger.error('Failed to decrypt refund notification', err);
+      return;
+    }
+
+    const refund = await this.prisma.refund.findFirst({
+      where: { wechatRefundNo: resource.out_refund_no },
+      include: { order: { include: { items: true, refunds: true } } },
+    });
+
+    if (!refund) {
+      this.logger.warn(`WeChat refund notification: no Refund for out_refund_no=${resource.out_refund_no}`);
+      return;
+    }
+
+    // Already processed — idempotency
+    if (refund.status === 'SUCCESS' || refund.status === 'FAILED') return;
+
+    const newStatus = resource.refund_status === 'SUCCESS' ? 'SUCCESS'
+      : resource.refund_status === 'ABNORMAL' || resource.refund_status === 'CLOSED' ? 'FAILED'
+      : 'PENDING';
+
+    await this.prisma.refund.update({
+      where: { id: refund.id },
+      data: {
+        status: newStatus as any,
+        wechatRefundId: resource.refund_id,
+        processedAt: newStatus === 'SUCCESS' ? new Date() : null,
+      },
+    });
+
+    this.logger.log(
+      `Refund ${resource.out_refund_no} status: ${resource.refund_status} → ${newStatus}`,
+    );
+
+    if (newStatus === 'SUCCESS' && refund.order) {
+      // Check if all refunds total up to full refund
+      const allRefunds = refund.order.refunds;
+      const totalRefunded = allRefunds
+        .filter((r) => r.id === refund.id ? true : r.status === 'SUCCESS')
+        .reduce((sum, r) => sum + r.amountCents, 0);
+
+      if (totalRefunded >= refund.order.totalPriceCents) {
+        // Full refund complete — update order status + restore stock
+        await this.prisma.order.update({
+          where: { id: refund.order.id },
+          data: { paymentStatus: 'REFUNDED' },
+        });
+
+        for (const item of refund.order.items) {
+          if (item.variantId) {
+            await this.prisma.productVariant.update({
+              where: { id: item.variantId },
+              data: { stock: { increment: item.quantity } },
+            });
+          }
+        }
+
+        if (refund.order.couponCode) {
+          await this.ordersService.releaseCoupon(refund.order.couponCode).catch(() => {});
+        }
+      }
+    }
+  }
+
   // ═══════════════════════════════════════════════════════
   // Shared helpers
   // ═══════════════════════════════════════════════════════

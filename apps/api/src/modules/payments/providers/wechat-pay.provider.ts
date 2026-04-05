@@ -70,6 +70,12 @@ export class WechatPayProvider implements IPaymentProvider {
     return (process.env.WECHAT_PAY_PUBLIC_KEY || '').replace(/\\n/g, '\n');
   }
 
+  private get refundNotifyUrl(): string {
+    const base = process.env.WECHAT_PAY_NOTIFY_URL || 'https://example.com/api/miniprogram/payment/wechat/notify';
+    // Replace /notify with /refund-notify
+    return base.replace(/\/notify$/, '/refund-notify');
+  }
+
   private get notifyUrl(): string {
     return (
       process.env.WECHAT_PAY_NOTIFY_URL ||
@@ -224,6 +230,7 @@ export class WechatPayProvider implements IPaymentProvider {
       transaction_id: params.transactionId,
       out_refund_no: params.outRefundNo,
       reason: params.reason || '商家退款',
+      notify_url: this.refundNotifyUrl,
       amount: {
         refund: params.refundCents,
         total: params.totalCents,
