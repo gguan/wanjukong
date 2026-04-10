@@ -66,6 +66,7 @@ services:
     ports:
       - "127.0.0.1:3000:3000"
     environment:
+      # SSR + 客户端都通过 Nginx 同域代理 (overrealm.shop/api/*)
       NUXT_PUBLIC_API_BASE: ${SITE_URL:-https://overrealm.shop}
       NUXT_PUBLIC_PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID}
 
@@ -80,7 +81,8 @@ services:
       - "127.0.0.1:3002:3002"
     environment:
       PORT: 3002
-      NUXT_PUBLIC_API_BASE_URL: ${API_URL:-https://api.wanjukong.com}
+      # SSR + 客户端都通过 Nginx 同域代理 (admin.wanjukong.com/api/*)
+      NUXT_PUBLIC_API_BASE_URL: ${ADMIN_URL:-https://admin.wanjukong.com}
 
 volumes:
   pgdata:
