@@ -1,6 +1,7 @@
 <script setup lang="ts">
 definePageMeta({ layout: false, middleware: 'auth' });
 
+const config = useRuntimeConfig();
 const { login } = useAdminAuth();
 
 const email = ref('');
@@ -8,12 +9,53 @@ const password = ref('');
 const loading = ref(false);
 const error = ref('');
 
-async function handleLogin() {
+const tcaptchaAppId = config.public.tcaptchaAppId as string;
+
+// Load TCaptcha SDK on mount
+onMounted(() => {
+  if (!tcaptchaAppId) return;
+  if (document.getElementById('tcaptcha-sdk')) return;
+
+  const script = document.createElement('script');
+  script.id = 'tcaptcha-sdk';
+  script.src = 'https://turing.captcha.qcloud.com/TCaptcha.js';
+  document.head.appendChild(script);
+});
+
+function showCaptchaAndLogin() {
   if (!email.value || !password.value) return;
+
+  // If TCaptcha not configured, login directly
+  if (!tcaptchaAppId) {
+    doLogin();
+    return;
+  }
+
+  // Show TCaptcha popup
+  const TencentCaptcha = (window as any).TencentCaptcha;
+  if (!TencentCaptcha) {
+    error.value = '验证码组件加载失败，请刷新页面';
+    return;
+  }
+
+  const captcha = new TencentCaptcha(tcaptchaAppId, (res: any) => {
+    if (res.ret === 0) {
+      // Verification success — proceed with login
+      doLogin({ ticket: res.ticket, randstr: res.randstr });
+    } else if (res.ret === 2) {
+      // User closed captcha
+    } else {
+      error.value = '验证码验证失败，请重试';
+    }
+  });
+  captcha.show();
+}
+
+async function doLogin(captcha?: { ticket: string; randstr: string }) {
   loading.value = true;
   error.value = '';
   try {
-    await login(email.value, password.value);
+    await login(email.value, password.value, captcha);
   } catch (e: any) {
     error.value = e?.data?.message || e?.message || '登录失败';
   } finally {
@@ -24,7 +66,7 @@ async function handleLogin() {
 
 <template>
   <div class="login-page">
-    <form class="login-form" @submit.prevent="handleLogin">
+    <form class="login-form" @submit.prevent="showCaptchaAndLogin">
       <h1>管理后台登录</h1>
 
       <div v-if="error" class="login-form__error">{{ error }}</div>

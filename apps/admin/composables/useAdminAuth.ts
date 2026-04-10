@@ -4,13 +4,17 @@ export function useAdminAuth() {
   const store = useAdminAuthStore();
   const api = useAdminApi();
 
-  async function login(email: string, password: string) {
+  async function login(email: string, password: string, captcha?: { ticket: string; randstr: string }) {
     const user = await api.post<{
       id: string;
       email: string;
       name: string;
       role: string;
-    }>('/api/admin/auth/login', { email, password });
+    }>('/api/admin/auth/login', {
+      email,
+      password,
+      ...(captcha ? { captchaTicket: captcha.ticket, captchaRandstr: captcha.randstr } : {}),
+    });
     store.setUser(user);
     navigateTo('/');
   }

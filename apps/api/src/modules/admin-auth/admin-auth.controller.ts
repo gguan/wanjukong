@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -30,6 +31,13 @@ export class AdminAuthController {
   async login(@Body() dto: LoginDto, @Req() req: Request) {
     const ip = req.ip || req.socket.remoteAddress;
     const ua = req.headers['user-agent'];
+
+    // Verify captcha before attempting login
+    if (dto.captchaTicket && dto.captchaRandstr) {
+      await this.authService.verifyCaptcha(dto.captchaTicket, dto.captchaRandstr, ip);
+    } else if (process.env.TCAPTCHA_APP_ID) {
+      throw new BadRequestException('请完成验证码验证');
+    }
 
     const user = await this.authService.validateCredentials(
       dto.email,
