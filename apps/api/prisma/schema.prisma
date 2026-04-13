@@ -7,6 +7,19 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─── Session Table (managed by connect-pg-simple) ────────
+// Declared here so `prisma db push` won't drop it.
+// Do NOT use Prisma to query this table — it's managed by express-session.
+
+model Session {
+  sid    String   @id @db.VarChar(255)
+  sess   Json
+  expire DateTime @db.Timestamptz(6)
+
+  @@map("session")
+  @@index([expire])
+}
+
 model AppConfig {
   id        String   @id @default(cuid())
   key       String   @unique
