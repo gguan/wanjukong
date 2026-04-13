@@ -1,72 +1,56 @@
 <script setup lang="ts">
 definePageMeta({ layout: false, middleware: 'auth' });
 
-const config = useRuntimeConfig();
 const { login } = useAdminAuth();
+const api = useAdminApi();
 
 const email = ref('');
 const password = ref('');
+const captchaCode = ref('');
+const captchaId = ref('');
+const captchaSvg = ref('');
 const loading = ref(false);
 const error = ref('');
 
-const tcaptchaAppId = config.public.tcaptchaAppId as string;
+const canSubmit = computed(() =>
+  email.value && password.value && captchaCode.value.length >= 4 && captchaId.value
+);
 
-// Load TCaptcha SDK on mount
-onMounted(() => {
-  if (!tcaptchaAppId) return;
-  if (document.getElementById('tcaptcha-sdk')) return;
-
-  const script = document.createElement('script');
-  script.id = 'tcaptcha-sdk';
-  script.src = 'https://turing.captcha.qcloud.com/TCaptcha.js';
-  document.head.appendChild(script);
-});
-
-function showCaptchaAndLogin() {
-  if (!email.value || !password.value) return;
-
-  // If TCaptcha not configured, login directly
-  if (!tcaptchaAppId) {
-    doLogin();
-    return;
+async function loadCaptcha() {
+  try {
+    const res = await api.get<{ id: string; svg: string }>('/api/admin/auth/captcha');
+    captchaId.value = res.id;
+    captchaSvg.value = res.svg;
+    captchaCode.value = '';
+  } catch {
+    captchaSvg.value = '';
   }
-
-  // Show TCaptcha popup
-  const TencentCaptcha = (window as any).TencentCaptcha;
-  if (!TencentCaptcha) {
-    error.value = '验证码组件加载失败，请刷新页面';
-    return;
-  }
-
-  const captcha = new TencentCaptcha(tcaptchaAppId, (res: any) => {
-    if (res.ret === 0) {
-      // Verification success — proceed with login
-      doLogin({ ticket: res.ticket, randstr: res.randstr });
-    } else if (res.ret === 2) {
-      // User closed captcha
-    } else {
-      error.value = '验证码验证失败，请重试';
-    }
-  });
-  captcha.show();
 }
 
-async function doLogin(captcha?: { ticket: string; randstr: string }) {
+async function handleLogin() {
+  if (!canSubmit.value) return;
   loading.value = true;
   error.value = '';
   try {
-    await login(email.value, password.value, captcha);
+    await login(email.value, password.value, {
+      captchaId: captchaId.value,
+      captchaCode: captchaCode.value,
+    });
   } catch (e: any) {
     error.value = e?.data?.message || e?.message || '登录失败';
+    // Refresh captcha on any error
+    await loadCaptcha();
   } finally {
     loading.value = false;
   }
 }
+
+onMounted(loadCaptcha);
 </script>
 
 <template>
   <div class="login-page">
-    <form class="login-form" @submit.prevent="showCaptchaAndLogin">
+    <form class="login-form" @submit.prevent="handleLogin">
       <h1>管理后台登录</h1>
 
       <div v-if="error" class="login-form__error">{{ error }}</div>
@@ -81,7 +65,22 @@ async function doLogin(captcha?: { ticket: string; randstr: string }) {
         <input v-model="password" type="password" placeholder="请输入密码" required autocomplete="current-password" />
       </label>
 
-      <button type="submit" :disabled="loading">
+      <label>
+        验证码
+        <div class="captcha-row">
+          <input
+            v-model="captchaCode"
+            type="text"
+            placeholder="请输入验证码"
+            maxlength="4"
+            autocomplete="off"
+            class="captcha-input"
+          />
+          <div class="captcha-image" @click="loadCaptcha" title="点击刷新验证码" v-html="captchaSvg" />
+        </div>
+      </label>
+
+      <button type="submit" :disabled="loading || !canSubmit">
         {{ loading ? '登录中...' : '登录' }}
       </button>
     </form>
@@ -138,6 +137,40 @@ async function doLogin(captcha?: { ticket: string; randstr: string }) {
   outline: none;
   border-color: #111;
   box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.08);
+}
+
+.captcha-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.captcha-input {
+  flex: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-size: 1.1rem !important;
+  font-weight: 600;
+}
+
+.captcha-image {
+  flex-shrink: 0;
+  cursor: pointer;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  height: 50px;
+  display: flex;
+  align-items: center;
+}
+
+.captcha-image:hover {
+  border-color: #bbb;
+}
+
+.captcha-image :deep(svg) {
+  display: block;
 }
 
 .login-form button {

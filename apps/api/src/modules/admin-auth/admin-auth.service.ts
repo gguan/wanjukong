@@ -1,22 +1,125 @@
 import { Injectable, UnauthorizedException, BadRequestException, Logger } from '@nestjs/common';
 import * as argon2 from 'argon2';
+import * as crypto from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdminAuditService } from './admin-audit.service';
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+const CAPTCHA_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const CAPTCHA_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no I/O/0/1
 
 @Injectable()
 export class AdminAuthService {
   private readonly logger = new Logger(AdminAuthService.name);
 
+  /** In-memory captcha store: id → { code, expiresAt } */
+  private captchaStore = new Map<string, { code: string; expiresAt: number }>();
+
   constructor(
     private prisma: PrismaService,
     private audit: AdminAuditService,
-  ) {}
+  ) {
+    // Clean up expired captchas every minute
+    setInterval(() => {
+      const now = Date.now();
+      for (const [id, entry] of this.captchaStore) {
+        if (entry.expiresAt < now) this.captchaStore.delete(id);
+      }
+    }, 60_000);
+  }
 
   async hashPassword(password: string): Promise<string> {
     return argon2.hash(password);
+  }
+
+  // ─── SVG Captcha ──────────────────────────────────────
+
+  /**
+   * Generate a captcha: returns { id, svg }.
+   * The SVG contains a 4-character code rendered with noise lines.
+   */
+  generateCaptcha(): { id: string; svg: string } {
+    // Generate random 4-char code
+    const code = Array.from({ length: 4 }, () =>
+      CAPTCHA_CHARS[crypto.randomInt(CAPTCHA_CHARS.length)],
+    ).join('');
+
+    const id = crypto.randomBytes(16).toString('hex');
+    this.captchaStore.set(id, {
+      code,
+      expiresAt: Date.now() + CAPTCHA_TTL_MS,
+    });
+
+    const svg = this.renderCaptchaSvg(code);
+    return { id, svg };
+  }
+
+  /**
+   * Verify a captcha code. Consumes the captcha (one-time use).
+   */
+  verifyCaptchaCode(captchaId: string, captchaCode: string): void {
+    const entry = this.captchaStore.get(captchaId);
+
+    if (!entry) {
+      throw new BadRequestException('验证码已过期，请刷新');
+    }
+
+    // Always consume — one-time use
+    this.captchaStore.delete(captchaId);
+
+    if (entry.expiresAt < Date.now()) {
+      throw new BadRequestException('验证码已过期，请刷新');
+    }
+
+    if (entry.code.toUpperCase() !== captchaCode.toUpperCase()) {
+      throw new BadRequestException('验证码错误');
+    }
+  }
+
+  /**
+   * Render a 4-char code as SVG with noise lines and character transforms.
+   */
+  private renderCaptchaSvg(code: string): string {
+    const width = 150;
+    const height = 50;
+    const chars = code.split('');
+
+    // Random color
+    const randColor = () => {
+      const r = crypto.randomInt(40, 150);
+      const g = crypto.randomInt(40, 150);
+      const b = crypto.randomInt(40, 150);
+      return `rgb(${r},${g},${b})`;
+    };
+
+    // Characters
+    const charSvgs = chars.map((ch, i) => {
+      const x = 15 + i * 32 + crypto.randomInt(-3, 4);
+      const y = 30 + crypto.randomInt(-5, 6);
+      const rotate = crypto.randomInt(-20, 21);
+      const color = randColor();
+      const fontSize = 26 + crypto.randomInt(-2, 4);
+      return `<text x="${x}" y="${y}" font-size="${fontSize}" font-family="monospace" font-weight="bold" fill="${color}" transform="rotate(${rotate},${x},${y})">${ch}</text>`;
+    }).join('');
+
+    // Noise lines
+    const lines = Array.from({ length: 5 }, () => {
+      const x1 = crypto.randomInt(0, width);
+      const y1 = crypto.randomInt(0, height);
+      const x2 = crypto.randomInt(0, width);
+      const y2 = crypto.randomInt(0, height);
+      return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${randColor()}" stroke-width="1" opacity="0.5"/>`;
+    }).join('');
+
+    // Noise dots
+    const dots = Array.from({ length: 30 }, () => {
+      const cx = crypto.randomInt(0, width);
+      const cy = crypto.randomInt(0, height);
+      return `<circle cx="${cx}" cy="${cy}" r="1" fill="${randColor()}" opacity="0.5"/>`;
+    }).join('');
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="#f8f8f8"/>${lines}${dots}${charSvgs}</svg>`;
   }
 
   /**

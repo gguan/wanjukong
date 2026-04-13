@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength, IsOptional } from 'class-validator';
+import { IsEmail, IsString, MinLength } from 'class-validator';
 
 export class LoginDto {
   @IsEmail()
@@ -8,13 +8,9 @@ export class LoginDto {
   @MinLength(1)
   password!: string;
 
-  /** 腾讯云验证码 ticket */
   @IsString()
-  @IsOptional()
-  captchaTicket?: string;
+  captchaId!: string;
 
-  /** 腾讯云验证码 randstr */
   @IsString()
-  @IsOptional()
-  captchaRandstr?: string;
+  captchaCode!: string;
 }
