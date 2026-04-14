@@ -55,8 +55,6 @@ services:
       SMTP_PASS: ${SMTP_PASS}
       SMTP_FROM: ${SMTP_FROM}
       APP_BASE_URL: ${SITE_URL}
-      TCAPTCHA_APP_ID: ${TCAPTCHA_APP_ID:-}
-      TCAPTCHA_APP_SECRET_KEY: ${TCAPTCHA_APP_SECRET_KEY:-}
 
   web:
     image: ghcr.io/gguan/wanjukong-web:latest
@@ -85,7 +83,6 @@ services:
       PORT: 3002
       # SSR + 客户端都通过 Nginx 同域代理 (admin.wanjukong.com/api/*)
       NUXT_PUBLIC_API_BASE_URL: ${ADMIN_URL:-https://admin.wanjukong.com}
-      NUXT_PUBLIC_TCAPTCHA_APP_ID: ${TCAPTCHA_APP_ID:-}
 
 volumes:
   pgdata:
