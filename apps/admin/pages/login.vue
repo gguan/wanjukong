@@ -103,7 +103,7 @@ async function handleLogin() {
 
       <!-- TCaptcha embedded -->
       <div v-if="captchaAppId" class="captcha-section">
-        <div ref="captchaContainerRef" class="captcha-embed" />
+        <div v-show="!captchaVerified" ref="captchaContainerRef" class="captcha-embed" />
         <div v-if="captchaVerified" class="captcha-success">✓ 验证通过</div>
       </div>
 
