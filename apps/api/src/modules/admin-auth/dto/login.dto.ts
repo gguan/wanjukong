@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsString, MinLength, IsOptional } from 'class-validator';
 
 export class LoginDto {
   @IsEmail()
@@ -8,9 +8,13 @@ export class LoginDto {
   @MinLength(1)
   password!: string;
 
+  /** TCaptcha ticket */
   @IsString()
-  captchaId!: string;
+  @IsOptional()
+  captchaTicket?: string;
 
+  /** TCaptcha randstr */
   @IsString()
-  captchaCode!: string;
+  @IsOptional()
+  captchaRandstr?: string;
 }

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -23,15 +24,6 @@ export class AdminAuthController {
     private audit: AdminAuditService,
   ) {}
 
-  /**
-   * Generate a new captcha image.
-   */
-  @Public()
-  @Get('captcha')
-  getCaptcha() {
-    return this.authService.generateCaptcha();
-  }
-
   @Public()
   @Throttle({ default: { ttl: 60000, limit: 5 } })
   @Post('login')
@@ -40,8 +32,12 @@ export class AdminAuthController {
     const ip = req.ip || req.socket.remoteAddress;
     const ua = req.headers['user-agent'];
 
-    // Verify captcha before attempting login
-    this.authService.verifyCaptchaCode(dto.captchaId, dto.captchaCode);
+    // Verify TCaptcha before attempting login
+    if (dto.captchaTicket && dto.captchaRandstr) {
+      await this.authService.verifyCaptcha(dto.captchaTicket, dto.captchaRandstr, ip);
+    } else if (process.env.TCAPTCHA_APP_ID) {
+      throw new BadRequestException('请完成验证码验证');
+    }
 
     const user = await this.authService.validateCredentials(
       dto.email,

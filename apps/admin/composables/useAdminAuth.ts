@@ -4,7 +4,7 @@ export function useAdminAuth() {
   const store = useAdminAuthStore();
   const api = useAdminApi();
 
-  async function login(email: string, password: string, captcha: { captchaId: string; captchaCode: string }) {
+  async function login(email: string, password: string, captcha?: { captchaTicket?: string; captchaRandstr?: string }) {
     const user = await api.post<{
       id: string;
       email: string;
@@ -13,7 +13,7 @@ export function useAdminAuth() {
     }>('/api/admin/auth/login', {
       email,
       password,
-      ...captcha,
+      ...(captcha || {}),
     });
     store.setUser(user);
     navigateTo('/');
