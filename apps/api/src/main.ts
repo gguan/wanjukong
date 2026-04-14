@@ -10,6 +10,9 @@ async function bootstrap() {
     rawBody: true, // Preserve raw body for WeChat Pay signature verification
   });
 
+  // Trust Nginx reverse proxy — required for secure cookies behind proxy
+  app.getHttpAdapter().getInstance().set('trust proxy', 1);
+
   app.setGlobalPrefix('api');
 
   app.useGlobalPipes(
