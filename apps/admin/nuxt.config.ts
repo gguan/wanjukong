@@ -1,19 +1,12 @@
+// Nuxt may not auto-load .env from monorepo subdirectory — load explicitly
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-
-// Load apps/admin/.env explicitly (Nuxt only auto-loads root .env)
 try {
-  const envContent = readFileSync(resolve(__dirname, '.env'), 'utf-8');
-  for (const line of envContent.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const eqIdx = trimmed.indexOf('=');
-    if (eqIdx < 0) continue;
-    const key = trimmed.slice(0, eqIdx).trim();
-    const val = trimmed.slice(eqIdx + 1).trim();
-    if (!process.env[key]) process.env[key] = val;
+  for (const line of readFileSync(resolve(__dirname, '.env'), 'utf-8').split('\n')) {
+    const m = line.match(/^([^#=][^=]*)=(.*)/);
+    if (m && !process.env[m[1].trim()]) process.env[m[1].trim()] = m[2].trim();
   }
-} catch { /* .env not found — use defaults */ }
+} catch {}
 
 export default defineNuxtConfig({
   devtools: { enabled: true },

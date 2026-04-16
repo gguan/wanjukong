@@ -57,7 +57,6 @@ export class AdminAuthService {
     });
 
     // TC3-HMAC-SHA256 signing
-    const crypto = await import('crypto');
     const sha256 = (data: string) => crypto.createHash('sha256').update(data).digest('hex');
     const hmacSha256 = (key: Buffer, data: string) =>
       crypto.createHmac('sha256', key).update(data).digest();

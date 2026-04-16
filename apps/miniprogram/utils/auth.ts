@@ -72,18 +72,6 @@ export function isLoggedIn(): boolean {
 }
 
 /**
- * Sync auth check — for use in non-async contexts.
- * Redirects to login page if not logged in.
- */
-export function requireAuth(): boolean {
-  if (!isLoggedIn()) {
-    wx.navigateTo({ url: '/pages/login/index' });
-    return false;
-  }
-  return true;
-}
-
-/**
  * Async auth check — awaits any in-flight silent login first.
  * Use this in page onLoad() to avoid racing with app launch silent login.
  * Only redirects to login page if silent login also fails.
