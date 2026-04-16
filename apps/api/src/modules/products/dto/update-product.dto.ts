@@ -5,6 +5,7 @@ import {
   IsDateString,
   IsObject,
   IsInt,
+  IsBoolean,
   Min,
 } from 'class-validator';
 import { ProductStatus, SaleType } from '@prisma/client';
@@ -62,4 +63,12 @@ export class UpdateProductDto {
   @Min(0)
   @IsOptional()
   depositCents?: number | null;
+
+  @IsBoolean()
+  @IsOptional()
+  isFeatured?: boolean;
+
+  @IsInt()
+  @IsOptional()
+  featuredSort?: number;
 }

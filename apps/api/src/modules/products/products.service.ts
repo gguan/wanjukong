@@ -25,6 +25,7 @@ export interface ProductFilters {
   scale?: string;
   availability?: string;
   search?: string;
+  featured?: boolean;
   page?: number;
   limit?: number;
 }
@@ -147,6 +148,12 @@ export class ProductsService {
       data.preorderStartAt = null;
       data.preorderEndAt = null;
       data.depositCents = null;
+    }
+
+    // Brand manager cannot edit featured settings
+    if (isBrandManager) {
+      delete (data as Record<string, unknown>).isFeatured;
+      delete (data as Record<string, unknown>).featuredSort;
     }
 
     // Brand manager editing → revert to DRAFT for re-review
@@ -287,10 +294,18 @@ export class ProductsService {
     if (filters.search) {
       where.name = { contains: filters.search, mode: 'insensitive' };
     }
+    if (filters.featured) {
+      where.isFeatured = true;
+    }
 
     const page = Math.max(1, filters.page || 1);
     const limit = Math.min(100, Math.max(1, filters.limit || 20));
     const skip = (page - 1) * limit;
+
+    // Featured products sort by featuredSort first, then by creation date
+    const orderBy = filters.featured
+      ? [{ featuredSort: 'asc' as const }, { createdAt: 'desc' as const }]
+      : [{ createdAt: 'desc' as const }];
 
     const [products, total] = await Promise.all([
       this.prisma.product.findMany({
@@ -301,7 +316,7 @@ export class ProductsService {
             orderBy: { sortOrder: 'asc' },
           },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy,
         skip,
         take: limit,
       }),

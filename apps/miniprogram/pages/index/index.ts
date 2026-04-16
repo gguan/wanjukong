@@ -34,7 +34,7 @@ Page({
     const page = reset ? 1 : this.data.page;
 
     try {
-      const result = await fetchProducts({ page: String(page), limit: '10' });
+      const result = await fetchProducts({ page: String(page), limit: '10', featured: 'true' });
       const newProducts = result.data || [];
       const hasMore = newProducts.length >= 10;
 

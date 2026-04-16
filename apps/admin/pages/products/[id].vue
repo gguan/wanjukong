@@ -26,6 +26,8 @@ const form = ref({
   preorderEndAt: '',
   estimatedShipAt: '',
   depositYuan: 0,
+  isFeatured: false,
+  featuredSort: 0,
 });
 
 const updatedAt = ref('');
@@ -65,6 +67,8 @@ onMounted(async () => {
     preorderEndAt: product.preorderEndAt ? toLocalDatetime(product.preorderEndAt as string) : '',
     estimatedShipAt: product.estimatedShipAt ? toLocalDatetime(product.estimatedShipAt as string) : '',
     depositYuan: (product.depositCents as number) ? (product.depositCents as number) / 100 : 0,
+    isFeatured: (product.isFeatured as boolean) || false,
+    featuredSort: (product.featuredSort as number) || 0,
   };
 
   if (product.updatedAt) {
@@ -373,6 +377,21 @@ async function deleteProduct() {
                   :value="c.id"
                 />
               </ElSelect>
+            </ElFormItem>
+          </ElForm>
+        </AdminSidebarCard>
+
+        <!-- Featured (SUPER_ADMIN only) -->
+        <AdminSidebarCard v-if="isSuperAdmin" title="首页推荐">
+          <ElForm label-position="top">
+            <ElFormItem style="margin-bottom: 8px">
+              <ElSwitch v-model="form.isFeatured" active-text="推荐到首页" />
+            </ElFormItem>
+            <ElFormItem v-if="form.isFeatured" label="排序" style="margin-bottom: 0">
+              <ElInputNumber v-model="form.featuredSort" :min="0" :max="999" style="width: 100%" />
+              <div style="font-size: 12px; color: var(--el-text-color-secondary); margin-top: 4px">
+                数字越小越靠前
+              </div>
             </ElFormItem>
           </ElForm>
         </AdminSidebarCard>

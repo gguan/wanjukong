@@ -84,6 +84,10 @@ model Product {
   brandId          String
   categoryId       String
 
+  // Homepage featured
+  isFeatured       Boolean       @default(false)
+  featuredSort     Int           @default(0)
+
   // Sale type & preorder
   saleType         SaleType      @default(IN_STOCK)
   preorderStartAt  DateTime?

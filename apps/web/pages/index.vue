@@ -12,9 +12,9 @@ const { fetchBrands } = useBrands();
 const { fetchProducts } = useProducts();
 
 const { data: brands } = useAsyncData('home-brands', fetchBrands);
-const { data: products } = useAsyncData('home-products', () => fetchProducts());
+const { data: products } = useAsyncData('home-products', () => fetchProducts({ featured: 'true' }));
 
-const featuredProducts = computed(() => (products.value?.data ?? []).slice(0, 4));
+const featuredProducts = computed(() => products.value?.data ?? []);
 </script>
 
 <template>

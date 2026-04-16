@@ -19,6 +19,7 @@ export class ProductsPublicController {
     @Query('scale') scale?: string,
     @Query('availability') availability?: string,
     @Query('search') search?: string,
+    @Query('featured') featured?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('lang') lang?: string,
@@ -29,6 +30,7 @@ export class ProductsPublicController {
       scale,
       availability,
       search,
+      featured: featured === 'true',
       page: page ? parseInt(page, 10) : undefined,
       limit: limit ? parseInt(limit, 10) : undefined,
     });
