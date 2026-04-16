@@ -25,6 +25,7 @@ const groupedItems = computed(() => {
     <nav class="admin-sidebar__nav">
       <template v-for="(group, gi) in groupedItems" :key="gi">
         <div v-if="gi > 0" class="admin-sidebar__divider" />
+        <div v-if="group.label" class="admin-sidebar__group-label">{{ group.label }}</div>
         <ul class="admin-sidebar__group">
           <li v-for="item in group.items" :key="item.to">
             <NuxtLink
@@ -64,6 +65,15 @@ const groupedItems = computed(() => {
   margin: 8px 16px;
 }
 
+.admin-sidebar__group-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--el-text-color-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 8px 16px 4px;
+}
+
 .admin-sidebar__item {
   display: flex;
   align-items: center;
@@ -99,6 +109,6 @@ const groupedItems = computed(() => {
   bottom: 6px;
   width: 3px;
   border-radius: 0 3px 3px 0;
-  background: #303030;
+  background: #008060;
 }
 </style>

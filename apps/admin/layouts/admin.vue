@@ -3,7 +3,7 @@
     <LayoutAdminHeader />
     <ElContainer>
       <LayoutAdminSidebar />
-      <ElMain style="background: var(--wk-admin-shell-bg); padding: 28px 36px">
+      <ElMain style="background: var(--wk-admin-shell-bg); padding: 20px 32px">
         <div class="wk-admin-page">
           <slot />
         </div>

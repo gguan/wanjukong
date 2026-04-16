@@ -109,12 +109,12 @@
 }
 
 .el-button--primary {
-  --el-button-bg-color: #303030;
-  --el-button-border-color: #303030;
-  --el-button-hover-bg-color: #1a1a1a;
-  --el-button-hover-border-color: #1a1a1a;
-  --el-button-active-bg-color: #000000;
-  --el-button-active-border-color: #000000;
+  --el-button-bg-color: #008060;
+  --el-button-border-color: #008060;
+  --el-button-hover-bg-color: #006e52;
+  --el-button-hover-border-color: #006e52;
+  --el-button-active-bg-color: #005c46;
+  --el-button-active-border-color: #005c46;
 }
 
 .el-button--default {
@@ -325,7 +325,7 @@
   bottom: 6px;
   width: 3px;
   border-radius: 0 3px 3px 0;
-  background: #303030;
+  background: #008060;
 }
 
 /* ─── Alert ───────────────────────────────────────────────── */
@@ -409,7 +409,7 @@
 }
 
 .el-tabs__active-bar {
-  background-color: #303030;
+  background-color: #008060;
 }
 
 /* ─── Focus Visible ──────────────────────────────────────── */
