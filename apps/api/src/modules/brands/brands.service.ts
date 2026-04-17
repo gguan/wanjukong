@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { ProductStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateBrandDto } from './dto/create-brand.dto';
@@ -36,7 +36,13 @@ export class BrandsService {
     return this.prisma.brand.update({ where: { id }, data: dto });
   }
 
-  remove(id: string) {
+  async remove(id: string) {
+    const productCount = await this.prisma.product.count({ where: { brandId: id } });
+    if (productCount > 0) {
+      throw new BadRequestException(
+        `该品牌下还有 ${productCount} 个商品，请先删除或转移商品后再删除品牌`,
+      );
+    }
     return this.prisma.brand.delete({ where: { id } });
   }
 }
