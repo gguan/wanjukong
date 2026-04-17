@@ -16,10 +16,8 @@ interface UploadResult {
 }
 
 interface UploadOptions {
-  /** Max file size in MB (default: 10) */
+  /** Max file size in MB (default: 5) */
   maxSizeMB?: number;
-  /** Max dimension in px (default: 4096) */
-  maxDimension?: number;
   /** JPG quality 0-1 (default: 0.9) */
   jpgQuality?: number;
   /** Allowed mime types (default: common image types) */
@@ -48,18 +46,15 @@ const DEFAULT_ALLOWED_TYPES = [
 ];
 
 /**
- * Validate that a file is a real image by loading it into an Image element.
- * Prevents malicious files disguised as images.
+ * Load a file into an Image element (validates it's a real image).
  */
-function validateImage(file: File, maxDimension: number): Promise<HTMLImageElement> {
+function loadImage(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => {
       URL.revokeObjectURL(url);
-      if (img.width > maxDimension || img.height > maxDimension) {
-        reject(new Error(`图片尺寸过大（最大 ${maxDimension}×${maxDimension}px），当前 ${img.width}×${img.height}px`));
-      } else if (img.width < 10 || img.height < 10) {
+      if (img.width < 10 || img.height < 10) {
         reject(new Error('图片尺寸过小'));
       } else {
         resolve(img);
@@ -74,7 +69,7 @@ function validateImage(file: File, maxDimension: number): Promise<HTMLImageEleme
 }
 
 /**
- * Convert an image to JPG using canvas.
+ * Convert an image to JPG using canvas (no resizing).
  * Returns a Blob in JPEG format.
  */
 function convertToJpg(img: HTMLImageElement, quality: number): Promise<Blob> {
@@ -110,16 +105,14 @@ function convertToJpg(img: HTMLImageElement, quality: number): Promise<Blob> {
  *
  * Features:
  * - Validates file type (only images allowed)
- * - Validates file size (default 10MB max)
- * - Validates image dimensions (default 4096px max)
+ * - Validates file size (default 5MB max)
  * - Validates actual image data (prevents disguised files)
  * - Auto-converts all images to JPG via canvas
  * - Uploads to Tencent COS with STS temporary credentials
  */
 export function useImageUpload(options: UploadOptions = {}) {
   const {
-    maxSizeMB = 10,
-    maxDimension = 4096,
+    maxSizeMB = 5,
     jpgQuality = 0.9,
     allowedTypes = DEFAULT_ALLOWED_TYPES,
     prefix = 'products',
@@ -175,7 +168,7 @@ export function useImageUpload(options: UploadOptions = {}) {
         const file = fileArray[i];
 
         // Validate image data (loads into Image element)
-        const img = await validateImage(file, maxDimension);
+        const img = await loadImage(file);
 
         // Convert to JPG
         const jpgBlob = await convertToJpg(img, jpgQuality);

@@ -179,7 +179,7 @@ onMounted(loadImages);
       <div v-else class="drop-zone__content">
         <span class="drop-zone__icon">&#43;</span>
         <span class="drop-zone__text">点击或拖拽图片到此处上传</span>
-        <span class="drop-zone__hint">支持 JPG/PNG/WebP/GIF/BMP，最大 10MB，自动转为 JPG</span>
+        <span class="drop-zone__hint">支持 JPG/PNG/WebP/GIF/BMP，最大 5MB，自动转为 JPG</span>
       </div>
       <input
         ref="fileInputRef"
