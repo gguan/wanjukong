@@ -53,6 +53,17 @@ const defaultVariant = ref({
 const isBrandManager = computed(() => useAdminAuthStore().isBrandManager);
 const isPreorder = computed(() => form.value.saleType === 'PREORDER');
 
+const { rate: usdCnyRate, date: rateDate } = useExchangeRate();
+
+const suggestedUsdPrice = computed(() => {
+  if (!usdCnyRate.value || !defaultVariant.value.priceYuan) return 0;
+  return Math.round(defaultVariant.value.priceYuan / usdCnyRate.value);
+});
+
+function applySuggestedUsdPrice() {
+  if (suggestedUsdPrice.value > 0) defaultVariant.value.usdPriceYuan = suggestedUsdPrice.value;
+}
+
 // Auto-fill USD deposit at 10% of USD price when user hasn't manually edited
 watch(() => defaultVariant.value.usdPriceYuan, (usd) => {
   if (!form.value.usdDepositTouched && isPreorder.value && usd > 0) {
@@ -200,15 +211,41 @@ async function save() {
             <div class="form-grid form-grid--3">
               <ElFormItem label="价格（元）" required>
                 <ElInputNumber v-model="defaultVariant.priceYuan" :min="0" :precision="0" :step="1" style="width: 100%" />
-                <div class="field-hint">人民币</div>
+                <div class="field-hint">人民币，含国际运费</div>
               </ElFormItem>
               <ElFormItem label="美元价格">
                 <ElInputNumber v-model="defaultVariant.usdPriceYuan" :min="0" :precision="0" :step="1" style="width: 100%" />
-                <div class="field-hint">选填，0 表示不设置</div>
+                <div class="field-hint">
+                  <template v-if="usdCnyRate > 0">
+                    今日汇率 1 USD = ¥{{ usdCnyRate.toFixed(4) }}<span v-if="rateDate">（{{ rateDate }}）</span>
+                  </template>
+                  <template v-else>选填，0 表示不设置</template>
+                </div>
+                <div v-if="suggestedUsdPrice > 0" class="field-hint suggested-hint">
+                  按当前人民币价换算约 ${{ suggestedUsdPrice }}
+                  <ElButton
+                    v-if="defaultVariant.usdPriceYuan !== suggestedUsdPrice"
+                    link
+                    type="primary"
+                    size="small"
+                    @click="applySuggestedUsdPrice"
+                  >
+                    使用此价格
+                  </ElButton>
+                </div>
               </ElFormItem>
               <ElFormItem label="库存" required>
                 <ElInputNumber v-model="defaultVariant.stock" :min="0" style="width: 100%" />
               </ElFormItem>
+            </div>
+
+            <div class="shipping-hint">
+              <div class="shipping-hint__title">💡 定价提示</div>
+              <ul class="shipping-hint__list">
+                <li>售价应包含国际邮费（DHL/FedEx/EMS）</li>
+                <li>参考运费：美国/加拿大 ≈ $30、欧洲 ≈ $40、澳新 ≈ $45、东南亚 ≈ $25</li>
+                <li>大件（≥3kg）运费按 +$15/kg 估算</li>
+              </ul>
             </div>
 
             <ElFormItem label="说明信息">

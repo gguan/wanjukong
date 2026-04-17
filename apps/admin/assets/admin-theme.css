@@ -153,6 +153,40 @@ body,
   line-height: 1.4;
 }
 
+.suggested-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--el-color-primary);
+  margin-top: 2px;
+}
+
+/* ─── Pricing/Shipping Hint Card ─────────────────────────── */
+
+.shipping-hint {
+  margin: 8px 0 16px;
+  padding: 10px 12px;
+  background: var(--el-fill-color-light);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--el-text-color-regular);
+}
+
+.shipping-hint__title {
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--el-text-color-primary);
+}
+
+.shipping-hint__list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.shipping-hint__list li {
+  line-height: 1.7;
+}
+
 /* ─── Variant Card ───────────────────────────────────────── */
 
 .variant-card {
