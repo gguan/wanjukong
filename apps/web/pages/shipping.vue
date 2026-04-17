@@ -18,11 +18,20 @@ useSeoMeta({
 
     <div class="info-body">
       <section class="info-section">
+        <p class="info-intro">
+          We ship worldwide from our fulfilment centre in mainland China using DHL, FedEx, EMS
+          or SF Express depending on destination. Shipping is free on every order — the rates
+          below are for delivery-time reference only.
+        </p>
+      </section>
+
+      <section class="info-section">
         <h2 class="info-h2">Processing Time</h2>
         <p>
-          In-stock orders are processed and shipped within <strong>3–5 business days</strong>
-          of payment confirmation. Orders placed over the weekend are processed the following
-          Monday.
+          In-stock orders are picked, packed and handed to the carrier within
+          <strong>3–5 business days</strong> of payment confirmation. Orders placed Friday
+          evening through Sunday are processed the following Monday. During major holiday
+          periods (Chinese New Year, Golden Week) expect 3–7 extra days.
         </p>
       </section>
 
@@ -36,19 +45,29 @@ useSeoMeta({
           </div>
           <!-- TODO: Confirm carriers + delivery windows for each region. -->
           <div class="rate-row">
+            <span>Mainland China</span>
+            <span>2–5 business days</span>
+            <span>SF Express</span>
+          </div>
+          <div class="rate-row">
+            <span>Hong Kong / Taiwan / Macau</span>
+            <span>3–7 business days</span>
+            <span>SF / EMS</span>
+          </div>
+          <div class="rate-row">
+            <span>Japan / South Korea / Singapore</span>
+            <span>5–10 business days</span>
+            <span>EMS / DHL</span>
+          </div>
+          <div class="rate-row">
             <span>United States &amp; Canada</span>
             <span>7–14 business days</span>
             <span>DHL / FedEx</span>
           </div>
           <div class="rate-row">
-            <span>Europe</span>
+            <span>Europe (EU / UK)</span>
             <span>10–18 business days</span>
             <span>DHL / EMS</span>
-          </div>
-          <div class="rate-row">
-            <span>Asia Pacific</span>
-            <span>5–12 business days</span>
-            <span>SF / EMS</span>
           </div>
           <div class="rate-row">
             <span>Australia &amp; New Zealand</span>
@@ -56,22 +75,56 @@ useSeoMeta({
             <span>DHL</span>
           </div>
           <div class="rate-row">
-            <span>Rest of World</span>
+            <span>Middle East / South America</span>
             <span>14–25 business days</span>
+            <span>EMS</span>
+          </div>
+          <div class="rate-row">
+            <span>Rest of World</span>
+            <span>14–30 business days</span>
             <span>EMS</span>
           </div>
         </div>
         <p class="info-note">
-          Delivery estimates exclude customs clearance time, which varies by country.
+          Delivery estimates are business days (Mon–Fri), exclude processing time, and exclude
+          customs clearance time, which varies by destination. We are not liable for delays
+          once the parcel leaves the warehouse.
         </p>
       </section>
 
       <section class="info-section">
         <h2 class="info-h2">Pre-Order Shipping</h2>
         <p>
-          Pre-order items ship once the product is received from the manufacturer. Estimated
-          ship dates are shown on each product page and are subject to change based on
-          manufacturer schedules. You will be notified of any material delay.
+          Pre-order items ship once the product arrives at our warehouse from the manufacturer.
+          The estimated ship window is shown on each product page (e.g. "Ships Q3 2026") and
+          is determined by the manufacturer's release schedule — it can and does shift.
+        </p>
+        <p>
+          When a pre-order arrives, we email you a balance-due reminder. Once the balance is
+          paid, the order ships within 3–5 business days. If the manufacturer delays the
+          release by more than 90 days past the original window, we will notify you and you
+          may cancel for a full refund of any amount paid.
+        </p>
+      </section>
+
+      <section class="info-section">
+        <h2 class="info-h2">Multi-Item Orders</h2>
+        <p>
+          When an order contains both an in-stock item and a pre-order item, we hold it and
+          ship everything together once the pre-order arrives — unless you email us to split
+          the shipment. Items purchased across separate orders cannot be combined after the
+          fact.
+        </p>
+      </section>
+
+      <section class="info-section">
+        <h2 class="info-h2">Tracking</h2>
+        <p>
+          You will receive the tracking number by email the moment your parcel is handed to
+          the carrier. You can also check status from your
+          <NuxtLink to="/account/orders" class="inline-link">account orders page</NuxtLink>.
+          Some destinations show "label created" status for up to 72 hours before the carrier
+          scans the parcel in transit — this is normal.
         </p>
       </section>
 
@@ -79,28 +132,48 @@ useSeoMeta({
         <h2 class="info-h2">Customs &amp; Duties</h2>
         <p>
           <!-- TODO: Confirm duties policy. -->
-          Import duties and taxes (if any) are the buyer's responsibility and are not included
-          in the item price. Rates vary by destination country.
+          Import duties, VAT or other taxes assessed by the destination country are the
+          buyer's responsibility and are <strong>not</strong> included in the item price.
+          Rates vary by country and by declared item value.
+        </p>
+        <p>
+          By default we declare the full invoice value on the customs form. If you require
+          any particular handling, email us before the order ships — we cannot falsify
+          customs declarations.
         </p>
       </section>
 
       <section class="info-section">
-        <h2 class="info-h2">Tracking</h2>
+        <h2 class="info-h2">Address Changes</h2>
         <p>
-          You will receive a tracking number by email the moment your order ships. You can
-          also view the status in your
-          <NuxtLink to="/account/orders" class="inline-link">account orders page</NuxtLink>.
+          You can change the shipping address from your account page as long as the order is
+          still in <em>Processing</em> status. Once the parcel is handed to the carrier we
+          can no longer redirect it — contact the carrier directly using the tracking number.
         </p>
       </section>
 
       <section class="info-section">
-        <h2 class="info-h2">Lost or Delayed Packages</h2>
+        <h2 class="info-h2">Delivery Issues</h2>
         <p>
-          If your package hasn't arrived within the delivery window plus 5 business days,
-          email us at
-          <a href="mailto:support@overrealm.shop">support@overrealm.shop</a>
-          with your order number. We'll work with the carrier to locate it or issue a
-          replacement.
+          If tracking shows your parcel as delivered but you haven't received it: check with
+          neighbours and your building's front desk, then contact the local carrier within 48
+          hours. Carriers will not investigate claims filed after 7 days.
+        </p>
+        <p>
+          If your parcel is marked <em>in transit</em> but hasn't moved for more than 14 days
+          past the expected delivery window, email
+          <a href="mailto:support@overrealm.shop">support@overrealm.shop</a> with your order
+          number. We'll open a trace with the carrier and, if the parcel is declared lost,
+          ship a replacement or issue a full refund.
+        </p>
+      </section>
+
+      <section class="info-section">
+        <h2 class="info-h2">Refused / Returned Parcels</h2>
+        <p>
+          If a parcel is refused at the destination or returned to us because the address was
+          incorrect or nobody was home to accept repeated delivery attempts, we will issue a
+          refund of the item price minus actual return-shipping costs charged by the carrier.
         </p>
       </section>
     </div>
@@ -168,6 +241,14 @@ useSeoMeta({
   line-height: 1.75;
   color: #333;
   margin: 0 0 16px;
+}
+
+.info-intro {
+  font-size: 1.05rem;
+  color: #444;
+  border-left: 2px solid #0a0a0a;
+  padding-left: 20px;
+  margin: 0 0 12px !important;
 }
 
 .info-note {

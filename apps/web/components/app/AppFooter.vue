@@ -8,6 +8,7 @@
         <NuxtLink to="/returns">Returns</NuxtLink>
         <NuxtLink to="/faq">FAQ</NuxtLink>
         <NuxtLink to="/privacy">Privacy</NuxtLink>
+        <NuxtLink to="/cookies">Cookies</NuxtLink>
       </div>
       <p class="footer-copy">© {{ new Date().getFullYear() }} wanjukong. All rights reserved.</p>
     </div>
