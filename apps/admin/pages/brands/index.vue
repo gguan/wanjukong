@@ -68,7 +68,7 @@ async function handleLogoUpload(event: Event) {
   if (!files || files.length === 0) return;
 
   try {
-    const results = await uploadFiles(files);
+    const results = await uploadFiles(files, { filenamePrefix: form.value.slug });
     if (results.length > 0) {
       form.value.logo = results[0].imageUrl;
       ElMessage.success('LOGO 上传成功');
@@ -97,7 +97,7 @@ async function onLogoDrop(e: DragEvent) {
   const files = e.dataTransfer?.files;
   if (!files || files.length === 0) return;
   try {
-    const results = await uploadFiles(files);
+    const results = await uploadFiles(files, { filenamePrefix: form.value.slug });
     if (results.length > 0) {
       form.value.logo = results[0].imageUrl;
       ElMessage.success('LOGO 上传成功');

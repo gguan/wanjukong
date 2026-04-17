@@ -28,6 +28,20 @@ interface UploadOptions {
   prefix?: string;
 }
 
+/**
+ * Per-upload path options.
+ * - `subdir` adds subdirectories under the prefix: `{prefix}/{subdir}/{filename}`
+ * - `filenamePrefix` prepends to the filename: `{prefix}/{filenamePrefix}-{timestamp}-{rand}.jpg`
+ */
+export interface UploadPathOptions {
+  subdir?: string;
+  filenamePrefix?: string;
+}
+
+function sanitizeSlug(s: string): string {
+  return s.replace(/[^a-z0-9-/]/gi, '').toLowerCase();
+}
+
 const DEFAULT_ALLOWED_TYPES = [
   'image/jpeg', 'image/jpg', 'image/png', 'image/webp',
   'image/bmp', 'image/tiff', 'image/gif',
@@ -119,9 +133,16 @@ export function useImageUpload(options: UploadOptions = {}) {
    * Validate + convert + upload files. Returns uploaded image records.
    * Throws user-friendly error messages.
    */
-  async function uploadFiles(files: FileList | File[]): Promise<UploadResult[]> {
+  async function uploadFiles(
+    files: FileList | File[],
+    pathOpts: UploadPathOptions = {},
+  ): Promise<UploadResult[]> {
     const fileArray = Array.from(files);
     if (fileArray.length === 0) return [];
+
+    const subdir = pathOpts.subdir ? sanitizeSlug(pathOpts.subdir) : '';
+    const filenamePrefix = pathOpts.filenamePrefix ? sanitizeSlug(pathOpts.filenamePrefix) : '';
+    const fullPrefix = subdir ? `${prefix}/${subdir}` : prefix;
 
     // Pre-validate all files before uploading any
     const errors: string[] = [];
@@ -140,8 +161,8 @@ export function useImageUpload(options: UploadOptions = {}) {
     progress.value = 0;
 
     try {
-      // Get STS credentials
-      const sts = await api.get<StsResponse>(`/api/admin/uploads/cos-sts?prefix=${prefix}`);
+      // Get STS credentials scoped to full prefix (incl. subdir)
+      const sts = await api.get<StsResponse>(`/api/admin/uploads/cos-sts?prefix=${encodeURIComponent(fullPrefix)}`);
       const cos = new COS({
         SecretId: sts.tmpSecretId,
         SecretKey: sts.tmpSecretKey,
@@ -159,8 +180,12 @@ export function useImageUpload(options: UploadOptions = {}) {
         // Convert to JPG
         const jpgBlob = await convertToJpg(img, jpgQuality);
 
-        // Generate key with .jpg extension
-        const key = `${sts.keyPrefix}${Date.now()}-${Math.random().toString(36).substring(2, 8)}.jpg`;
+        // Generate key: {prefix}/{filenamePrefix-}{timestamp}-{rand}.jpg
+        const rand = Math.random().toString(36).substring(2, 8);
+        const filename = filenamePrefix
+          ? `${filenamePrefix}-${Date.now()}-${rand}.jpg`
+          : `${Date.now()}-${rand}.jpg`;
+        const key = `${sts.keyPrefix}${filename}`;
 
         // Upload to COS
         await new Promise<void>((resolve, reject) => {

@@ -5,7 +5,7 @@ const api = useAdminApi();
 const route = useRoute();
 const router = useRouter();
 
-interface Option { id: string; name: string }
+interface Option { id: string; name: string; slug?: string }
 
 const brands = ref<Option[]>([]);
 const categories = ref<Option[]>([]);
@@ -34,6 +34,11 @@ const updatedAt = ref('');
 const store = useAdminAuthStore();
 const isBrandManager = computed(() => store.isBrandManager);
 const isSuperAdmin = computed(() => store.user?.role === 'SUPER_ADMIN');
+
+const brandSlug = computed(() => {
+  const b = brands.value.find((x) => x.id === form.value.brandId);
+  return b?.slug || '';
+});
 
 onMounted(async () => {
 
@@ -213,7 +218,11 @@ async function deleteProduct() {
 
         <!-- Media -->
         <AdminProductEditorSection title="商品图片" description="前台展示给用户的商品图片。">
-          <ProductImagesManager :product-id="(route.params.id as string)" />
+          <ProductImagesManager
+            :product-id="(route.params.id as string)"
+            :brand-slug="brandSlug"
+            :product-slug="form.slug"
+          />
         </AdminProductEditorSection>
 
         <!-- Versions -->

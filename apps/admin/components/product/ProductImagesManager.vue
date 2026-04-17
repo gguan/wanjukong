@@ -1,6 +1,8 @@
 <script setup lang="ts">
 const props = defineProps<{
   productId: string;
+  brandSlug?: string;
+  productSlug?: string;
 }>();
 
 const api = useAdminApi();
@@ -40,8 +42,21 @@ async function loadImages() {
 
 async function doUpload(files: FileList | File[]) {
   error.value = '';
+
+  // Require brand to be selected before uploading
+  if (!props.brandSlug) {
+    const msg = '请先选择商品品牌后再上传图片';
+    error.value = msg;
+    ElMessage.error(msg);
+    return;
+  }
+
+  const subdir = props.productSlug
+    ? `${props.brandSlug}/${props.productSlug}`
+    : props.brandSlug;
+
   try {
-    const results = await uploadFiles(files);
+    const results = await uploadFiles(files, { subdir });
     if (results.length > 0) {
       await api.post(`/api/admin/products/${props.productId}/images`, {
         images: results.map((r) => ({
