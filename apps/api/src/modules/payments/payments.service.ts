@@ -76,7 +76,7 @@ export class PaymentsService {
 
     if (!cartItems?.length) throw new BadRequestException('Cart is empty');
 
-    const { items, totalCents } = await this.resolveCartItems(cartItems);
+    const { items, totalCents } = await this.resolveCartItems(cartItems, currency as 'CNY' | 'USD');
 
     const result = await this.paypalProvider.createOrder({
       items: cartItems,
@@ -836,7 +836,7 @@ export class PaymentsService {
   // Shared helpers
   // ═══════════════════════════════════════════════════════
 
-  private async resolveCartItems(cartItems: CartItemInput[]) {
+  private async resolveCartItems(cartItems: CartItemInput[], currency: 'CNY' | 'USD' = 'CNY') {
     const variantIds = cartItems.map((i) => i.variantId);
     const variants = await this.prisma.productVariant.findMany({
       where: { id: { in: variantIds } },
@@ -891,9 +891,18 @@ export class PaymentsService {
         throw new BadRequestException(`商品 "${product.name}" 单次最多购买10件`);
       }
 
+      // Pick price field based on checkout currency
+      const unitPriceCents = currency === 'USD'
+        ? (variant.usdPriceCents ?? 0)
+        : variant.priceCents;
+
+      if (currency === 'USD' && !variant.usdPriceCents) {
+        throw new BadRequestException(`商品 "${product.name}" 未配置美元价格`);
+      }
+
       return {
         name: product.name + (variant.name ? ` - ${variant.name}` : ''),
-        unitPriceCents: variant.priceCents,
+        unitPriceCents,
         quantity: ci.quantity,
         productId: ci.productId,
         variantId: ci.variantId,

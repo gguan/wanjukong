@@ -184,15 +184,30 @@ export class OrdersService {
       }
     }
 
+    const currency = dto.currency || 'USD';
+
+    // Pick price field based on checkout currency
+    const priceFor = (v: { priceCents: number; usdPriceCents: number | null }) =>
+      currency === 'USD' ? (v.usdPriceCents ?? 0) : v.priceCents;
+
+    // Validate USD prices configured when charging in USD
+    if (currency === 'USD') {
+      for (const item of dto.items) {
+        const v = variants.find((x) => x.id === item.variantId);
+        if (v && !v.usdPriceCents) {
+          throw new BadRequestException(`商品 "${v.product?.name}" 未配置美元价格`);
+        }
+      }
+    }
+
     // Calculate totals
     const subtotalCents = dto.items.reduce((sum, item) => {
       const v = variants.find((v) => v.id === item.variantId)!;
-      return sum + v.priceCents * item.quantity;
+      return sum + priceFor(v) * item.quantity;
     }, 0);
 
     const discountCents = dto.discountCents || 0;
     const totalPriceCents = Math.max(0, subtotalCents - discountCents);
-    const currency = dto.currency || 'USD';
     const orderNo = this.generateOrderNo();
 
     const order = await this.prisma.$transaction(async (tx) => {
@@ -259,9 +274,9 @@ export class OrdersService {
                 categoryNameSnapshot: product.category?.name,
                 coverImageUrlSnapshot: v.coverImageUrl || product.imageUrl,
                 scaleSnapshot: product.scale,
-                unitPriceCents: v.priceCents,
+                unitPriceCents: priceFor(v),
                 quantity: item.quantity,
-                totalPriceCents: v.priceCents * item.quantity,
+                totalPriceCents: priceFor(v) * item.quantity,
               };
             }),
           },

@@ -52,12 +52,12 @@ const form = reactive({
 });
 
 const unitPrice = computed(() => {
-  if (selectedVariant.value) return selectedVariant.value.priceCents / 100;
+  if (selectedVariant.value) return (selectedVariant.value.usdPriceCents ?? 0) / 100;
   return 0;
 });
 
 const subtotalCents = computed(() => {
-  if (selectedVariant.value) return selectedVariant.value.priceCents * quantity.value;
+  if (selectedVariant.value) return (selectedVariant.value.usdPriceCents ?? 0) * quantity.value;
   return 0;
 });
 const subtotal = computed(() => unitPrice.value * quantity.value);
@@ -318,7 +318,7 @@ async function initPayPal() {
                   :disabled="v.isSoldOut"
                 />
                 <span class="variant-option-name">{{ v.name }}</span>
-                <span class="variant-option-price">¥{{ (v.priceCents / 100).toFixed(2) }}</span>
+                <span class="variant-option-price">${{ ((v.usdPriceCents ?? 0) / 100).toFixed(2) }}</span>
                 <span v-if="v.isSoldOut" class="variant-option-state">Sold Out</span>
               </label>
             </div>

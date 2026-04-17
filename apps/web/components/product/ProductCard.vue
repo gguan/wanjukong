@@ -13,12 +13,8 @@ const defaultVariant = computed(() => {
 
 const displayPrice = computed(() => {
   const v = defaultVariant.value;
-  if (!v) return '¥0.00';
-  const cny = `¥${(v.priceCents / 100).toFixed(2)}`;
-  if (v.usdPriceCents) {
-    return `${cny} / $${(v.usdPriceCents / 100).toFixed(2)}`;
-  }
-  return cny;
+  if (!v) return '$0.00';
+  return `$${((v.usdPriceCents ?? 0) / 100).toFixed(2)}`;
 });
 
 const hasMultipleVariants = computed(() => (props.product.variants?.length ?? 0) > 1);
