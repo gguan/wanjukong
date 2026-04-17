@@ -35,6 +35,23 @@ defineProps<{
 }
 
 .brand-logo {
+  min-height: 64px;
+  max-height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.brand-logo img {
+  max-width: 100%;
+  max-height: 96px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+.brand-initial {
   width: 64px;
   height: 64px;
   border-radius: 50%;
@@ -42,17 +59,6 @@ defineProps<{
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 12px;
-  overflow: hidden;
-}
-
-.brand-logo img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.brand-initial {
   font-size: 1.5rem;
   font-weight: 700;
   color: #666;

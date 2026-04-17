@@ -9,6 +9,7 @@ interface Product {
   slug: string;
   status: string;
   saleType: string;
+  imageUrl: string | null;
   brand: { name: string };
   category: { name: string };
 }
@@ -99,6 +100,14 @@ onMounted(load);
     </div>
 
     <ElTable v-loading="loading" :data="products" stripe>
+      <ElTableColumn label="图片" width="72">
+        <template #default="{ row }">
+          <div class="product-thumb">
+            <img v-if="row.imageUrl" :src="row.imageUrl" :alt="row.name" />
+            <span v-else class="product-thumb__empty">无图</span>
+          </div>
+        </template>
+      </ElTableColumn>
       <ElTableColumn prop="name" label="名称" min-width="200" />
       <ElTableColumn label="品牌" width="140">
         <template #default="{ row }">{{ row.brand?.name }}</template>
@@ -153,5 +162,28 @@ onMounted(load);
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+}
+
+.product-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--el-border-color-lighter);
+  background: var(--el-fill-color-lighter);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.product-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.product-thumb__empty {
+  font-size: 11px;
+  color: var(--el-text-color-placeholder);
 }
 </style>
