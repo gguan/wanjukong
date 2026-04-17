@@ -117,9 +117,10 @@ async function autoTranslate() {
         <span class="i18n-toggle__arrow" :class="{ 'i18n-toggle__arrow--open': expanded }">›</span>
       </div>
       <button
+        type="button"
         class="i18n-auto-btn"
         :disabled="translating"
-        @click.stop="autoTranslate"
+        @click.stop.prevent="autoTranslate"
       >
         {{ translating ? '翻译中...' : '🤖 AI 翻译' }}
       </button>

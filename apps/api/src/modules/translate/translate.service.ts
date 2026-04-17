@@ -131,8 +131,10 @@ export class TranslateService {
 
   /**
    * Fallback: MyMemory free API (no key needed, 5000 chars/day).
-   * MyMemory doesn't support HTML, so we strip tags before translating
-   * and wrap the result back in a simple <p>.
+   * MyMemory doesn't understand HTML tags, so for rich-text input we split
+   * the string at tag boundaries, translate only the text chunks, and
+   * reassemble — preserving the original tag structure (p, strong, em,
+   * ul/ol, li, etc.) exactly as the source.
    */
   private async translateWithMyMemory(
     text: string,
@@ -145,12 +147,23 @@ export class TranslateService {
       ja: 'zh-CN|ja',
     };
 
-    // Strip HTML for MyMemory
-    const plainText = isHtml
-      ? text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
-      : text;
-
     const results: Record<string, string> = {};
+
+    const translateChunk = async (chunk: string, pair: string): Promise<string> => {
+      if (!chunk.trim()) return chunk;
+      try {
+        const res = await fetch(
+          `https://api.mymemory.translated.net/get?q=${encodeURIComponent(chunk)}&langpair=${pair}`,
+        );
+        const data = (await res.json()) as {
+          responseData?: { translatedText?: string };
+        };
+        return data.responseData?.translatedText ?? chunk;
+      } catch (err) {
+        this.logger.warn(`MyMemory chunk translate failed:`, err);
+        return chunk;
+      }
+    };
 
     await Promise.all(
       targetLangs.map(async (lang) => {
@@ -158,16 +171,18 @@ export class TranslateService {
         if (!pair) return;
 
         try {
-          const res = await fetch(
-            `https://api.mymemory.translated.net/get?q=${encodeURIComponent(plainText)}&langpair=${pair}`,
-          );
-          const data = (await res.json()) as {
-            responseData?: { translatedText?: string };
-          };
-          if (data.responseData?.translatedText) {
-            const translated = data.responseData.translatedText;
-            // Wrap back in <p> if source was HTML
-            results[lang] = isHtml ? `<p>${translated}</p>` : translated;
+          if (isHtml) {
+            // Split by HTML tags. Even-index items are text, odd-index are tags.
+            const parts = text.split(/(<[^>]+>)/);
+            const translatedParts = await Promise.all(
+              parts.map((part, i) =>
+                i % 2 === 1 ? Promise.resolve(part) : translateChunk(part, pair),
+              ),
+            );
+            results[lang] = translatedParts.join('');
+          } else {
+            const translated = await translateChunk(text, pair);
+            if (translated) results[lang] = translated;
           }
         } catch (err) {
           this.logger.warn(`MyMemory translate failed for ${lang}:`, err);
