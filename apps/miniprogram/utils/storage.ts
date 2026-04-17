@@ -42,6 +42,10 @@ export interface CartItem {
   priceCents: number;
   quantity: number;
   preorderStartAt?: string | null;
+  /** Whether the product is a preorder — needed for deposit/balance split at checkout. */
+  isPreorder?: boolean;
+  /** CNY deposit per unit (from Product.depositCents). Fallback: 10% of priceCents. */
+  depositCents?: number;
 }
 
 export function getCart(): CartItem[] {

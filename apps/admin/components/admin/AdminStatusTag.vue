@@ -23,6 +23,7 @@ const tagType = computed<ElTagType>(() => {
     CANCELLED: 'danger',
     // Payment statuses
     UNPAID: 'warning',
+    DEPOSIT_PAID: 'warning',
     PAID: 'success',
     FAILED: 'danger',
     REFUNDED: 'info',
@@ -48,6 +49,7 @@ const label = computed(() => {
     CANCELLED: '已取消',
     // Payment statuses
     UNPAID: '未付款',
+    DEPOSIT_PAID: '待付尾款',
     PAID: '已付款',
     FAILED: '付款失败',
     REFUNDED: '已退款',

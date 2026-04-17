@@ -95,6 +95,7 @@ model Product {
   preorderEndAt    DateTime?
   estimatedShipAt  DateTime?
   depositCents     Int?
+  usdDepositCents  Int?             // USD deposit for preorder (分), optional
 
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
@@ -298,6 +299,7 @@ model PaymentIntent {
   couponCode            String?
   discountCents         Int?
   status                PaymentIntentStatus @default(CREATED)
+  isBalance             Boolean             @default(false)  // true = balance payment, false = deposit/full
   capturedAt       DateTime?
   orderId          String?
   createdAt        DateTime            @default(now())
@@ -344,6 +346,7 @@ enum OrderStatus {
 
 enum PaymentStatus {
   UNPAID
+  DEPOSIT_PAID   // Deposit paid, balance pending (Sideshow-style preorder)
   PAID
   FAILED
   REFUNDED
@@ -380,6 +383,17 @@ model Order {
   discountCents         Int         @default(0)
   subtotalPriceCents    Int
   totalPriceCents       Int
+
+  // Preorder (Sideshow-style two-phase payment)
+  isPreorder            Boolean       @default(false)
+  depositCents          Int           @default(0)   // Amount paid at checkout (deposit + full-price in-stock items)
+  balanceCents          Int           @default(0)   // Remaining balance for preorder items
+  depositPaidAt         DateTime?
+  balancePaidAt         DateTime?
+  balanceDueBy          DateTime?
+  gracePeriodEndsAt     DateTime?     // createdAt + 24h — cancel freely before this
+  balancePaypalOrderId  String?       // Separate PayPal order for balance payment
+  balanceWechatTransactionId String?  // Separate WeChat transaction for balance
 
   // Payment
   paypalOrderId         String?
@@ -444,6 +458,10 @@ model OrderItem {
   unitPriceCents        Int
   quantity              Int
   totalPriceCents       Int
+
+  // Preorder snapshot
+  isPreorder            Boolean @default(false)
+  depositCents          Int     @default(0)  // Deposit amount for this line (preorder only)
 
   order         Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product       Product         @relation(fields: [productId], references: [id])

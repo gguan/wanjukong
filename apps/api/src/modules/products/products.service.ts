@@ -86,6 +86,7 @@ export class ProductsService {
       data.preorderStartAt = null;
       data.preorderEndAt = null;
       data.depositCents = null;
+      data.usdDepositCents = null;
     }
     // Resolve SKU for default variant before transaction
     const brand = await this.prisma.brand.findUnique({ where: { id: dto.brandId } });
@@ -148,6 +149,7 @@ export class ProductsService {
       data.preorderStartAt = null;
       data.preorderEndAt = null;
       data.depositCents = null;
+      data.usdDepositCents = null;
     }
 
     // Brand manager cannot edit featured settings

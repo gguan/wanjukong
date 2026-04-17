@@ -99,6 +99,11 @@ export class CreateProductDto {
   @IsOptional()
   depositCents?: number;
 
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  usdDepositCents?: number;
+
   @ValidateNested()
   @Type(() => DefaultVariantDto)
   defaultVariant!: DefaultVariantDto;

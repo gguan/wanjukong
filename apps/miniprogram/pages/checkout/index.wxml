@@ -90,6 +90,17 @@
       <text class="price-label">商品总价</text>
       <text class="price-value price-dark">{{subtotalDisplay}}</text>
     </view>
+    <view wx:if="{{hasPreorder}}" class="price-row">
+      <text class="price-label">本次支付（定金）</text>
+      <text class="price-value price-dark">{{depositDisplay}}</text>
+    </view>
+    <view wx:if="{{hasPreorder}}" class="price-row">
+      <text class="price-label">尾款（发货前支付）</text>
+      <text class="price-value price-muted">{{balanceDisplay}}</text>
+    </view>
+    <view wx:if="{{hasPreorder}}" class="price-hint">
+      <text class="price-hint-text">24 小时内取消可全额退款；超过则定金不退。</text>
+    </view>
   </view>
 
   <!-- 底部占位 -->
@@ -99,11 +110,11 @@
   <view class="bottom-bar">
     <view class="bar-left">
       <text class="bar-count">共{{totalQty}}件</text>
-      <text class="bar-total-label">合计：</text>
+      <text class="bar-total-label">{{hasPreorder ? '定金：' : '合计：'}}</text>
       <text class="bar-total-price">{{totalDisplay}}</text>
     </view>
     <view class="settle-btn" bindtap="onPay">
-      <text class="settle-text">结算</text>
+      <text class="settle-text">{{hasPreorder ? '支付定金' : '结算'}}</text>
     </view>
   </view>
 

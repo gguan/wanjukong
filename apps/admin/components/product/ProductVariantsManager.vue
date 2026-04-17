@@ -267,11 +267,11 @@ onMounted(loadVariants);
             </div>
             <div class="form-grid form-grid--3">
               <ElFormItem label="价格（元）" required>
-                <ElInputNumber v-model="newForm.priceYuan" :min="0" :precision="2" :step="1" style="width: 100%" />
+                <ElInputNumber v-model="newForm.priceYuan" :min="0" :precision="0" :step="1" style="width: 100%" />
                 <div class="field-hint">人民币</div>
               </ElFormItem>
               <ElFormItem label="美元价格">
-                <ElInputNumber v-model="newForm.usdPriceDollar" :min="0" :precision="2" :step="1" style="width: 100%" />
+                <ElInputNumber v-model="newForm.usdPriceDollar" :min="0" :precision="0" :step="1" style="width: 100%" />
                 <div class="field-hint">选填，0 表示不设置</div>
               </ElFormItem>
               <ElFormItem label="库存">

@@ -175,7 +175,7 @@ async function handleSave() {
             <ElInputNumber
               v-model="editing.priceYuan"
               :min="0"
-              :precision="2"
+              :precision="0"
               :step="1"
               style="width: 100%"
             />
@@ -185,7 +185,7 @@ async function handleSave() {
             <ElInputNumber
               v-model="editing.usdPriceDollar"
               :min="0"
-              :precision="2"
+              :precision="0"
               :step="1"
               style="width: 100%"
             />

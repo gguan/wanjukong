@@ -25,6 +25,11 @@ Page({
     subtotalDisplay: '',
     discountDisplay: '',
     totalDisplay: '',
+    depositCents: 0,
+    balanceCents: 0,
+    depositDisplay: '',
+    balanceDisplay: '',
+    hasPreorder: false,
     totalQty: 0,
     earnedPoints: 0,
     couponCode: '',
@@ -71,15 +76,34 @@ Page({
       0,
     );
 
+    // Deposit = per-item deposit × qty (preorder) or full price × qty (in-stock).
+    // Balance = subtotal - deposit (covers future balance payment for preorders).
+    const depositCents = rawItems.reduce((sum, item) => {
+      if (item.isPreorder) {
+        const dep = item.depositCents && item.depositCents > 0
+          ? item.depositCents
+          : Math.round(item.priceCents * 0.1);
+        return sum + dep * item.quantity;
+      }
+      return sum + item.priceCents * item.quantity;
+    }, 0);
+    const balanceCents = Math.max(0, subtotalCents - depositCents);
+    const hasPreorder = rawItems.some((i) => i.isPreorder);
+
     const totalQty = rawItems.reduce((sum, item) => sum + item.quantity, 0);
     const earnedPoints = Math.round(subtotalCents / 1000);
 
     this.setData({
       items,
       subtotalCents,
-      totalCents: subtotalCents,
+      totalCents: depositCents,
       subtotalDisplay: formatCNY(subtotalCents),
-      totalDisplay: formatCNY(subtotalCents),
+      totalDisplay: formatCNY(depositCents),
+      depositCents,
+      balanceCents,
+      depositDisplay: formatCNY(depositCents),
+      balanceDisplay: formatCNY(balanceCents),
+      hasPreorder,
       totalQty,
       earnedPoints,
     });
@@ -131,12 +155,17 @@ Page({
 
     try {
       const result = await validateCoupon(code, this.data.subtotalCents);
-      const totalCents = Math.max(0, this.data.subtotalCents - result.discountCents);
+      // Discount applies to balance first, then spills to deposit.
+      const discount = result.discountCents;
+      const balanceAfter = Math.max(0, this.data.balanceCents - discount);
+      const unspent = Math.max(0, discount - this.data.balanceCents);
+      const depositAfter = Math.max(0, this.data.depositCents - unspent);
       this.setData({
-        discountCents: result.discountCents,
-        discountDisplay: `-${formatCNY(result.discountCents)}`,
-        totalCents,
-        totalDisplay: formatCNY(totalCents),
+        discountCents: discount,
+        discountDisplay: `-${formatCNY(discount)}`,
+        totalCents: depositAfter,
+        totalDisplay: formatCNY(depositAfter),
+        balanceDisplay: formatCNY(balanceAfter),
         couponApplied: true,
         couponError: '',
       });
@@ -147,8 +176,9 @@ Page({
         couponApplied: false,
         discountCents: 0,
         discountDisplay: '',
-        totalCents: this.data.subtotalCents,
-        totalDisplay: formatCNY(this.data.subtotalCents),
+        totalCents: this.data.depositCents,
+        totalDisplay: formatCNY(this.data.depositCents),
+        balanceDisplay: formatCNY(this.data.balanceCents),
       });
     }
   },
@@ -160,8 +190,9 @@ Page({
       couponError: '',
       discountCents: 0,
       discountDisplay: '',
-      totalCents: this.data.subtotalCents,
-      totalDisplay: formatCNY(this.data.subtotalCents),
+      totalCents: this.data.depositCents,
+      totalDisplay: formatCNY(this.data.depositCents),
+      balanceDisplay: formatCNY(this.data.balanceCents),
     });
   },
 

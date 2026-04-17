@@ -5,20 +5,97 @@ const route = useRoute();
 const orderNo = route.params.orderNo as string;
 const { getOrder } = useAccount();
 const { logout } = useStorefrontAuth();
+const config = useRuntimeConfig();
 
 const order = ref<any>(null);
 const loading = ref(true);
 const error = ref('');
 
-onMounted(async () => {
+const balanceReady = ref(false);
+const balanceLoading = ref(false);
+const balanceError = ref('');
+const paypalBalanceContainer = ref<HTMLElement | null>(null);
+
+async function refreshOrder() {
   try {
     order.value = await getOrder(orderNo);
   } catch {
     error.value = 'Failed to load order.';
-  } finally {
-    loading.value = false;
   }
+}
+
+onMounted(async () => {
+  await refreshOrder();
+  loading.value = false;
 });
+
+async function initBalancePayPal() {
+  if (balanceReady.value || !order.value) return;
+  balanceError.value = '';
+  balanceLoading.value = true;
+
+  const clientId = config.public.paypalClientId;
+  const apiBase = config.public.apiBase;
+  if (!clientId) {
+    balanceError.value = 'PayPal is not configured.';
+    balanceLoading.value = false;
+    return;
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    if (document.querySelector(`script[data-paypal-sdk]`)) { resolve(); return; }
+    const script = document.createElement('script');
+    script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD`;
+    script.dataset.paypalSdk = 'true';
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Failed to load PayPal SDK'));
+    document.head.appendChild(script);
+  });
+
+  balanceLoading.value = false;
+  balanceReady.value = true;
+  await nextTick();
+
+  // @ts-ignore
+  window.paypal.Buttons({
+    style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'paypal', height: 48 },
+    async createOrder() {
+      const res = await fetch(`${apiBase}/api/public/payments/paypal/create-balance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ orderId: order.value.id }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.message || 'Failed to create balance order');
+      }
+      const data = await res.json();
+      return data.paypalOrderId;
+    },
+    async onApprove(data: { orderID: string }) {
+      try {
+        const res = await fetch(`${apiBase}/api/public/payments/paypal/capture-balance`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ paypalOrderId: data.orderID }),
+        });
+        if (!res.ok) {
+          const d = await res.json().catch(() => ({}));
+          throw new Error(d.message || 'Balance capture failed');
+        }
+        await refreshOrder();
+      } catch (e: any) {
+        balanceError.value = e.message || 'Payment failed. Please try again.';
+      }
+    },
+    onError(err: any) {
+      balanceError.value = 'PayPal encountered an error. Please try again.';
+      console.error('PayPal balance error', err);
+    },
+  }).render(paypalBalanceContainer.value);
+}
 
 function formatCents(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
@@ -42,6 +119,7 @@ function statusLabel(s: string) {
 function paymentLabel(s: string) {
   const map: Record<string, string> = {
     UNPAID: 'Awaiting Payment',
+    DEPOSIT_PAID: 'Balance Due',
     PAID: 'Paid',
     FAILED: 'Payment Failed',
     REFUNDED: 'Refunded',
@@ -142,10 +220,38 @@ async function handleLogout() {
               <span>Subtotal</span>
               <span>{{ formatCents(order.subtotalPriceCents) }}</span>
             </div>
+            <template v-if="order.balanceCents > 0">
+              <div class="total-row">
+                <span>Deposit{{ order.depositPaidAt ? ' (paid)' : '' }}</span>
+                <span>{{ formatCents(order.depositCents) }}</span>
+              </div>
+              <div class="total-row">
+                <span>Balance{{ order.balancePaidAt ? ' (paid)' : ' (due)' }}</span>
+                <span>{{ formatCents(order.balanceCents) }}</span>
+              </div>
+            </template>
             <div class="total-row grand">
               <span>Total ({{ order.currency }})</span>
               <span>{{ formatCents(order.totalPriceCents) }}</span>
             </div>
+          </div>
+
+          <!-- Balance payment (preorder) -->
+          <div v-if="order.paymentStatus === 'DEPOSIT_PAID'" class="section balance-section">
+            <h3>Balance Payment</h3>
+            <p class="balance-summary">
+              Pay the remaining <strong>{{ formatCents(order.balanceCents) }}</strong> before shipping.
+            </p>
+            <p v-if="balanceError" class="form-error">{{ balanceError }}</p>
+            <button
+              v-if="!balanceReady"
+              class="balance-btn"
+              :disabled="balanceLoading"
+              @click="initBalancePayPal"
+            >
+              {{ balanceLoading ? 'Loading PayPal…' : `Pay Balance ${formatCents(order.balanceCents)}` }}
+            </button>
+            <div v-else ref="paypalBalanceContainer" class="paypal-container" />
           </div>
 
           <!-- Shipping -->
@@ -425,6 +531,37 @@ async function handleLogout() {
   line-height: 1.5;
   color: #555;
 }
+
+.balance-section {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.balance-summary {
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.balance-btn {
+  height: 48px;
+  width: 100%;
+  background: #ffc439;
+  color: #111;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.balance-btn:hover:not(:disabled) { background: #f0b429; }
+.balance-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+
+.paypal-container { min-height: 48px; }
+
+.badge.deposit_paid { background: #fef3c7; color: #92400e; }
 
 @media (max-width: 768px) {
   .account-layout {

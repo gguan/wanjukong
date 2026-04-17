@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { items, count, subtotalCents, clearCart } = useCart();
+const { items, count, subtotalCents, depositCents, balanceCents, hasPreorder, clearCart } = useCart();
 const { isLoggedIn, customer } = useStorefrontAuth();
 const router = useRouter();
 const config = useRuntimeConfig();
@@ -405,12 +405,25 @@ async function initPayPal() {
           <span>Shipping</span>
           <span class="free-text">Free</span>
         </div>
+        <template v-if="hasPreorder">
+          <div class="summary-line deposit-line">
+            <span>Deposit due today</span>
+            <span>{{ formatPrice(depositCents) }}</span>
+          </div>
+          <div class="summary-line balance-line">
+            <span>Balance (due before shipping)</span>
+            <span>{{ formatPrice(balanceCents) }}</span>
+          </div>
+          <p class="preorder-hint">
+            Non-refundable deposit after 24 hours per preorder terms.
+          </p>
+        </template>
 
         <div class="summary-divider" />
 
         <div class="summary-total">
-          <span>Total</span>
-          <span>{{ formatPrice(subtotalCents - (appliedCoupon?.discountCents ?? 0)) }}</span>
+          <span>{{ hasPreorder ? 'Pay today' : 'Total' }}</span>
+          <span>{{ formatPrice((hasPreorder ? depositCents : subtotalCents) - (appliedCoupon?.discountCents ?? 0)) }}</span>
         </div>
 
         <NuxtLink to="/cart" class="edit-cart-link">Edit cart</NuxtLink>
@@ -724,6 +737,9 @@ async function initPayPal() {
 .coupon-error { color: #dc2626; font-size: 0.8rem; margin: 6px 0 0; }
 .coupon-success { color: #16a34a; font-size: 0.85rem; margin: 6px 0 0; font-weight: 500; }
 .discount-line { color: #16a34a; }
+.deposit-line { color: #111; font-weight: 600; }
+.balance-line { color: #888; }
+.preorder-hint { font-size: 0.72rem; color: #c75c2a; margin: 6px 0 0; }
 
 @media (max-width: 900px) {
   .checkout-layout {

@@ -133,6 +133,13 @@ const addedToCart = ref(false);
 
 function handleAddToCart() {
   if (!product.value || !selectedVariant.value) return;
+  const isPreorder = product.value.saleType === 'PREORDER';
+  const unitUsd = selectedVariant.value.usdPriceCents ?? 0;
+  const usdDep = (product.value as any).usdDepositCents as number | null | undefined;
+  const depositPerUnit = isPreorder
+    ? (usdDep && usdDep > 0 ? usdDep : Math.round(unitUsd * 0.1))
+    : unitUsd;
+
   addToCart({
     productId: product.value.id,
     variantId: selectedVariant.value.id,
@@ -141,8 +148,10 @@ function handleAddToCart() {
     productSlug: product.value.slug,
     brandName: product.value.brand?.name || '',
     variantName: selectedVariant.value.name,
-    priceCents: selectedVariant.value.usdPriceCents ?? 0,
+    priceCents: unitUsd,
     imageUrl: selectedVariant.value.coverImageUrl || product.value.imageUrl || null,
+    isPreorder,
+    depositCents: depositPerUnit,
   });
   addedToCart.value = true;
   setTimeout(() => { addedToCart.value = false; }, 2000);

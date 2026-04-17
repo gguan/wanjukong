@@ -59,6 +59,7 @@ export function orderStatusLabel(status: string): string {
 export function paymentStatusLabel(status: string): string {
   const map: Record<string, string> = {
     UNPAID: '未支付',
+    DEPOSIT_PAID: '待付尾款',
     PAID: '已支付',
     FAILED: '支付失败',
     REFUNDED: '已退款',
@@ -71,6 +72,7 @@ export function paymentStatusLabel(status: string): string {
  */
 export function orderDisplayStatus(orderStatus: string, paymentStatus: string): string {
   if (paymentStatus === 'UNPAID') return '未支付';
+  if (paymentStatus === 'DEPOSIT_PAID') return '待付尾款';
   if (paymentStatus === 'FAILED') return '支付失败';
   if (paymentStatus === 'REFUNDED') return '已退款';
   const map: Record<string, string> = {

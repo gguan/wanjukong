@@ -64,6 +64,11 @@ export class UpdateProductDto {
   @IsOptional()
   depositCents?: number | null;
 
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  usdDepositCents?: number | null;
+
   @IsBoolean()
   @IsOptional()
   isFeatured?: boolean;

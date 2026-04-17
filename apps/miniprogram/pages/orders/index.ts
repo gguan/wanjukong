@@ -3,7 +3,7 @@ import { ensureAuth } from '../../utils/auth';
 import { formatCNY, orderDisplayStatus } from '../../utils/format';
 import type { OrderSummary } from '../../utils/api';
 
-type TabKey = 'all' | 'unpaid' | 'shipping' | 'receiving';
+type TabKey = 'all' | 'unpaid' | 'balance' | 'shipping' | 'receiving';
 
 interface OrderDisplay extends OrderSummary {
   displayTotal: string;
@@ -15,12 +15,13 @@ interface OrderDisplay extends OrderSummary {
 
 function mapOrder(order: OrderSummary): OrderDisplay {
   const isUnpaid = order.paymentStatus === 'UNPAID';
+  const isDepositPaid = order.paymentStatus === 'DEPOSIT_PAID';
   const isPaid = order.paymentStatus === 'PAID';
   return {
     ...order,
     displayTotal: formatCNY(order.totalPriceCents),
     displayStatus: orderDisplayStatus(order.status, order.paymentStatus),
-    showPayBtn: isUnpaid,
+    showPayBtn: isUnpaid || isDepositPaid,
     showCancelBtn: isUnpaid,
     showViewBtn: isPaid,
   };
@@ -29,6 +30,7 @@ function mapOrder(order: OrderSummary): OrderDisplay {
 function filterOrders(orders: OrderDisplay[], tab: TabKey): OrderDisplay[] {
   if (tab === 'all') return orders;
   if (tab === 'unpaid') return orders.filter((o) => o.paymentStatus === 'UNPAID');
+  if (tab === 'balance') return orders.filter((o) => o.paymentStatus === 'DEPOSIT_PAID');
   if (tab === 'shipping') return orders.filter((o) => o.paymentStatus === 'PAID' && (o.status === 'PENDING' || o.status === 'CONFIRMED'));
   if (tab === 'receiving') return orders.filter((o) => o.paymentStatus === 'PAID' && o.status === 'SHIPPED');
   return orders;
@@ -45,6 +47,7 @@ Page({
     tabs: [
       { key: 'all', label: '全部' },
       { key: 'unpaid', label: '待支付' },
+      { key: 'balance', label: '待付尾款' },
       { key: 'shipping', label: '待发货' },
       { key: 'receiving', label: '待收货' },
     ],

@@ -1,4 +1,4 @@
-import { fetchOrderDetail, retryWechatPayment, cancelUnpaidOrder } from '../../utils/api';
+import { fetchOrderDetail, retryWechatPayment, cancelUnpaidOrder, createBalancePayment } from '../../utils/api';
 import { requestPayment } from '../../utils/payment';
 import { ensureAuth } from '../../utils/auth';
 import { formatCNY, formatDateTimeFull, orderDisplayStatus } from '../../utils/format';
@@ -23,6 +23,11 @@ Page({
     hasShipping: false,
     shippingDisplay: '',
     isUnpaid: false,
+    isDepositPaid: false,
+    hasBalance: false,
+    depositDisplay: '',
+    balanceDisplay: '',
+    graceHoursLeft: 0,
     loading: true,
   },
 
@@ -58,6 +63,14 @@ Page({
         order.addressLine1,
       ].filter(Boolean);
 
+      const depositCents = order.depositCents ?? 0;
+      const balanceCents = order.balanceCents ?? 0;
+      const hasBalance = balanceCents > 0;
+      const graceEnd = order.gracePeriodEndsAt ? new Date(order.gracePeriodEndsAt).getTime() : 0;
+      const graceHoursLeft = graceEnd > Date.now()
+        ? Math.max(0, Math.ceil((graceEnd - Date.now()) / (1000 * 60 * 60)))
+        : 0;
+
       this.setData({
         order,
         displayStatus: orderDisplayStatus(order.status, order.paymentStatus),
@@ -69,6 +82,11 @@ Page({
         hasShipping: addrParts.length > 0,
         shippingDisplay: addrParts.join(' '),
         isUnpaid: order.paymentStatus === 'UNPAID',
+        isDepositPaid: order.paymentStatus === 'DEPOSIT_PAID',
+        hasBalance,
+        depositDisplay: formatCNY(depositCents),
+        balanceDisplay: formatCNY(balanceCents),
+        graceHoursLeft,
         loading: false,
       });
     } catch (err) {
@@ -93,6 +111,21 @@ Page({
       const payParams = await retryWechatPayment(this.data.order.id);
       await requestPayment(payParams);
       wx.showToast({ title: '支付成功', icon: 'success' });
+      setTimeout(() => this.loadOrder(this.data.order!.orderNo), 1500);
+    } catch (err) {
+      const msg = (err as Error).message || '';
+      if (!msg.includes('cancel') && !msg.includes('取消')) {
+        wx.showToast({ title: msg || '支付失败', icon: 'none' });
+      }
+    }
+  },
+
+  async onPayBalance() {
+    if (!this.data.order) return;
+    try {
+      const payParams = await createBalancePayment(this.data.order.id);
+      await requestPayment(payParams);
+      wx.showToast({ title: '尾款支付成功', icon: 'success' });
       setTimeout(() => this.loadOrder(this.data.order!.orderNo), 1500);
     } catch (err) {
       const msg = (err as Error).message || '';

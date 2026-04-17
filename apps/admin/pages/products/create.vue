@@ -24,6 +24,8 @@ const form = ref({
   preorderEndAt: '',
   estimatedShipAt: '',
   depositYuan: 0,
+  usdDepositDollar: 0,
+  usdDepositTouched: false,
   imageUrl: '',
 });
 
@@ -50,6 +52,17 @@ const defaultVariant = ref({
 
 const isBrandManager = computed(() => useAdminAuthStore().isBrandManager);
 const isPreorder = computed(() => form.value.saleType === 'PREORDER');
+
+// Auto-fill USD deposit at 10% of USD price when user hasn't manually edited
+watch(() => defaultVariant.value.usdPriceYuan, (usd) => {
+  if (!form.value.usdDepositTouched && isPreorder.value && usd > 0) {
+    form.value.usdDepositDollar = Math.round(usd * 0.1);
+  }
+});
+
+function onUsdDepositChange() {
+  form.value.usdDepositTouched = true;
+}
 
 onMounted(async () => {
   const store = useAdminAuthStore();
@@ -96,8 +109,11 @@ async function save() {
       payload.preorderEndAt = form.value.preorderEndAt ? new Date(form.value.preorderEndAt).toISOString() : undefined;
       payload.estimatedShipAt = form.value.estimatedShipAt ? new Date(form.value.estimatedShipAt).toISOString() : undefined;
       payload.depositCents = form.value.depositYuan > 0 ? Math.round(form.value.depositYuan * 100) : null;
+      payload.usdDepositCents = form.value.usdDepositDollar > 0 ? Math.round(form.value.usdDepositDollar * 100) : null;
     }
     delete payload.depositYuan;
+    delete payload.usdDepositDollar;
+    delete payload.usdDepositTouched;
 
     const product = await api.post<{ id: string }>('/api/admin/products', payload);
     ElMessage.success('商品已创建');
@@ -183,11 +199,11 @@ async function save() {
 
             <div class="form-grid form-grid--3">
               <ElFormItem label="价格（元）" required>
-                <ElInputNumber v-model="defaultVariant.priceYuan" :min="0" :precision="2" :step="1" style="width: 100%" />
+                <ElInputNumber v-model="defaultVariant.priceYuan" :min="0" :precision="0" :step="1" style="width: 100%" />
                 <div class="field-hint">人民币</div>
               </ElFormItem>
               <ElFormItem label="美元价格">
-                <ElInputNumber v-model="defaultVariant.usdPriceYuan" :min="0" :precision="2" :step="1" style="width: 100%" />
+                <ElInputNumber v-model="defaultVariant.usdPriceYuan" :min="0" :precision="0" :step="1" style="width: 100%" />
                 <div class="field-hint">选填，0 表示不设置</div>
               </ElFormItem>
               <ElFormItem label="库存" required>
@@ -238,9 +254,20 @@ async function save() {
               <ElFormItem label="预计发货时间">
                 <ElInput v-model="form.estimatedShipAt" type="datetime-local" />
               </ElFormItem>
-              <ElFormItem label="定金（元）" style="margin-bottom: 0">
-                <ElInputNumber v-model="form.depositYuan" :min="0" :precision="2" :step="10" style="width: 100%" />
+              <ElFormItem label="定金（元）">
+                <ElInputNumber v-model="form.depositYuan" :min="0" :precision="0" :step="10" style="width: 100%" />
                 <div class="field-hint">为 0 则不收定金，全款预购</div>
+              </ElFormItem>
+              <ElFormItem label="美元定金（$）" style="margin-bottom: 0">
+                <ElInputNumber
+                  v-model="form.usdDepositDollar"
+                  :min="0"
+                  :precision="0"
+                  :step="1"
+                  style="width: 100%"
+                  @change="onUsdDepositChange"
+                />
+                <div class="field-hint">默认按版本美元价 10% 自动填充，可手动修改</div>
               </ElFormItem>
             </template>
           </ElForm>

@@ -305,6 +305,15 @@
   font-weight: 600;
 }
 
+.price-hint-row {
+  margin-top: 8rpx;
+}
+
+.price-hint-text {
+  font-size: 22rpx;
+  color: #c75c2a;
+}
+
 /* ─── 空状态 ─────────────────────────────────────────────── */
 
 .empty-wrap {

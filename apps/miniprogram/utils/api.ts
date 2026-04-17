@@ -145,6 +145,13 @@ export function retryWechatPayment(orderId: string) {
   });
 }
 
+export function createBalancePayment(orderId: string) {
+  return request<WechatPayParams>('/miniprogram/payment/wechat/balance-payment', {
+    method: 'POST',
+    data: { orderId },
+  });
+}
+
 export function cancelUnpaidOrder(orderId: string) {
   return request('/miniprogram/payment/wechat/cancel-order', {
     method: 'POST',
@@ -322,6 +329,14 @@ export interface OrderSummary {
   totalPriceCents: number;
   currency: string;
   createdAt: string;
+  // Preorder (two-phase payment)
+  isPreorder?: boolean;
+  depositCents?: number;
+  balanceCents?: number;
+  depositPaidAt?: string | null;
+  balancePaidAt?: string | null;
+  balanceDueBy?: string | null;
+  gracePeriodEndsAt?: string | null;
   items: Array<{
     productNameSnapshot: string;
     coverImageUrlSnapshot: string | null;

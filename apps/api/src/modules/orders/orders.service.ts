@@ -201,6 +201,16 @@ export class OrdersService {
       }
     }
 
+    // Compute per-item deposit (preorder) or full price (in-stock)
+    const depositFor = (v: { priceCents: number; usdPriceCents: number | null; product: { depositCents: number | null; usdDepositCents: number | null; saleType: string } }) => {
+      const price = priceFor(v);
+      if (v.product.saleType !== 'PREORDER') return price;
+      const configured = currency === 'USD' ? v.product.usdDepositCents : v.product.depositCents;
+      if (configured && configured > 0) return Math.min(configured, price);
+      // Fallback: 10% of price, rounded
+      return Math.min(Math.round(price * 0.1), price);
+    };
+
     // Calculate totals
     const subtotalCents = dto.items.reduce((sum, item) => {
       const v = variants.find((v) => v.id === item.variantId)!;
@@ -209,6 +219,19 @@ export class OrdersService {
 
     const discountCents = dto.discountCents || 0;
     const totalPriceCents = Math.max(0, subtotalCents - discountCents);
+
+    // Deposit = sum of per-item deposit; balance = total - deposit
+    const depositSum = dto.items.reduce((sum, item) => {
+      const v = variants.find((v) => v.id === item.variantId)!;
+      return sum + depositFor(v) * item.quantity;
+    }, 0);
+    const depositCentsOrder = Math.max(0, depositSum - discountCents);
+    const balanceCentsOrder = Math.max(0, totalPriceCents - depositCentsOrder);
+    const hasPreorder = dto.items.some((item) => {
+      const v = variants.find((x) => x.id === item.variantId);
+      return v?.product.saleType === 'PREORDER';
+    });
+
     const orderNo = this.generateOrderNo();
 
     const order = await this.prisma.$transaction(async (tx) => {
@@ -257,13 +280,30 @@ export class OrdersService {
           discountCents,
           subtotalPriceCents: subtotalCents,
           totalPriceCents,
+          isPreorder: hasPreorder,
+          depositCents: depositCentsOrder,
+          balanceCents: balanceCentsOrder,
+          gracePeriodEndsAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          depositPaidAt: (dto.paypalOrderId || dto.wechatTransactionId) ? new Date() : null,
+          balancePaidAt:
+            (dto.paypalOrderId || dto.wechatTransactionId) && balanceCentsOrder === 0
+              ? new Date()
+              : null,
           paypalOrderId: dto.paypalOrderId,
           wechatTransactionId: dto.wechatTransactionId,
-          paymentStatus: (dto.paypalOrderId || dto.wechatTransactionId) ? 'PAID' : 'UNPAID',
+          // Payment status depends on preorder + paid state:
+          //   - Paid + no balance = PAID (in-stock only)
+          //   - Paid + has balance = DEPOSIT_PAID (preorder)
+          //   - Not paid = UNPAID
+          paymentStatus: (dto.paypalOrderId || dto.wechatTransactionId)
+            ? (balanceCentsOrder > 0 ? 'DEPOSIT_PAID' : 'PAID')
+            : 'UNPAID',
           items: {
             create: dto.items.map((item) => {
               const v = variants.find((v) => v.id === item.variantId)!;
               const { product } = v;
+              const itemIsPreorder = product.saleType === 'PREORDER';
+              const itemDeposit = itemIsPreorder ? depositFor(v) * item.quantity : 0;
               return {
                 productId: product.id,
                 variantId: v.id,
@@ -278,6 +318,8 @@ export class OrdersService {
                 unitPriceCents: priceFor(v),
                 quantity: item.quantity,
                 totalPriceCents: priceFor(v) * item.quantity,
+                isPreorder: itemIsPreorder,
+                depositCents: itemDeposit,
               };
             }),
           },

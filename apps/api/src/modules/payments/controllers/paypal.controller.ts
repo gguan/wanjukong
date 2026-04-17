@@ -63,4 +63,19 @@ export class PaypalController {
       customerId,
     });
   }
+
+  /**
+   * Create a PayPal balance payment for a DEPOSIT_PAID order.
+   * Returns paypalOrderId; client uses PayPal SDK to approve then calls capture-balance.
+   */
+  @Post('create-balance')
+  createBalance(@Body() body: { orderId: string }, @Req() req: any) {
+    const customerId = req.session?.customerId || null;
+    return this.paymentsService.createPayPalBalancePayment(body.orderId, customerId);
+  }
+
+  @Post('capture-balance')
+  captureBalance(@Body() body: { paypalOrderId: string }) {
+    return this.paymentsService.capturePayPalBalance(body.paypalOrderId);
+  }
 }

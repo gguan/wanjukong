@@ -163,12 +163,21 @@ Page({
       (item) => item.productId === product.id && item.variantId === currentVariant.id,
     );
 
+    const isPreorder = product.saleType === 'PREORDER';
+    const perUnitDeposit = isPreorder
+      ? (product.depositCents && product.depositCents > 0
+          ? product.depositCents
+          : Math.round(currentVariant.priceCents * 0.1))
+      : currentVariant.priceCents;
+
     if (existingIdx >= 0) {
       cart[existingIdx].quantity += 1;
-      // 回填旧数据缺失的预售字段
+      // 回填旧数据缺失的字段
       if (cart[existingIdx].preorderStartAt === undefined) {
         cart[existingIdx].preorderStartAt = product.preorderStartAt || null;
       }
+      cart[existingIdx].isPreorder = isPreorder;
+      cart[existingIdx].depositCents = perUnitDeposit;
     } else {
       const item: CartItem = {
         productId: product.id,
@@ -179,6 +188,8 @@ Page({
         priceCents: currentVariant.priceCents,
         quantity: 1,
         preorderStartAt: product.preorderStartAt || null,
+        isPreorder,
+        depositCents: perUnitDeposit,
       };
       cart.push(item);
     }

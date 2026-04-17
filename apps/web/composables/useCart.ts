@@ -10,6 +10,10 @@ export interface CartItem {
   variantName: string;
   priceCents: number;
   imageUrl: string | null;
+  /** Whether the product is a preorder — needed for deposit/balance split at checkout. */
+  isPreorder?: boolean;
+  /** USD deposit per unit (from Product.usdDepositCents). Fallback: 10% of priceCents. */
+  depositCents?: number;
 }
 
 const STORAGE_KEY = 'wjk-cart';
@@ -75,10 +79,29 @@ export function useCart() {
     _items.value.reduce((sum, i) => sum + i.priceCents * i.quantity, 0),
   );
 
+  /** Deposit total: preorder items use configured deposit (or 10% fallback); in-stock items pay full price. */
+  const depositCents = computed(() =>
+    _items.value.reduce((sum, i) => {
+      if (i.isPreorder) {
+        const dep = i.depositCents && i.depositCents > 0
+          ? i.depositCents
+          : Math.round(i.priceCents * 0.1);
+        return sum + dep * i.quantity;
+      }
+      return sum + i.priceCents * i.quantity;
+    }, 0),
+  );
+
+  const balanceCents = computed(() => Math.max(0, subtotalCents.value - depositCents.value));
+  const hasPreorder = computed(() => _items.value.some((i) => i.isPreorder));
+
   return {
     items: readonly(_items),
     count,
     subtotalCents,
+    depositCents,
+    balanceCents,
+    hasPreorder,
     addToCart,
     removeFromCart,
     updateQuantity,

@@ -26,6 +26,7 @@ const form = ref({
   preorderEndAt: '',
   estimatedShipAt: '',
   depositYuan: 0,
+  usdDepositDollar: 0,
   isFeatured: false,
   featuredSort: 0,
   imageUrl: '',
@@ -73,6 +74,7 @@ onMounted(async () => {
     preorderEndAt: product.preorderEndAt ? toLocalDatetime(product.preorderEndAt as string) : '',
     estimatedShipAt: product.estimatedShipAt ? toLocalDatetime(product.estimatedShipAt as string) : '',
     depositYuan: (product.depositCents as number) ? (product.depositCents as number) / 100 : 0,
+    usdDepositDollar: (product.usdDepositCents as number) ? (product.usdDepositCents as number) / 100 : 0,
     isFeatured: (product.isFeatured as boolean) || false,
     featuredSort: (product.featuredSort as number) || 0,
     imageUrl: (product.imageUrl as string) || '',
@@ -139,13 +141,16 @@ async function save() {
       payload.preorderEndAt = form.value.preorderEndAt ? new Date(form.value.preorderEndAt).toISOString() : null;
       payload.estimatedShipAt = form.value.estimatedShipAt ? new Date(form.value.estimatedShipAt).toISOString() : null;
       payload.depositCents = form.value.depositYuan > 0 ? Math.round(form.value.depositYuan * 100) : null;
+      payload.usdDepositCents = form.value.usdDepositDollar > 0 ? Math.round(form.value.usdDepositDollar * 100) : null;
     } else {
       payload.preorderStartAt = null;
       payload.preorderEndAt = null;
       payload.estimatedShipAt = null;
       payload.depositCents = null;
+      payload.usdDepositCents = null;
     }
     delete payload.depositYuan;
+    delete payload.usdDepositDollar;
 
     await api.put(`/api/admin/products/${route.params.id}`, payload);
     ElMessage.success('商品已更新');
@@ -375,8 +380,12 @@ async function deleteProduct() {
                 <ElInput v-model="form.estimatedShipAt" type="datetime-local" />
               </ElFormItem>
               <ElFormItem label="定金（元）">
-                <ElInputNumber v-model="form.depositYuan" :min="0" :precision="2" :step="10" style="width: 100%" />
+                <ElInputNumber v-model="form.depositYuan" :min="0" :precision="0" :step="10" style="width: 100%" />
                 <div class="field-hint">为 0 则不收定金，全款预购</div>
+              </ElFormItem>
+              <ElFormItem label="美元定金（$）">
+                <ElInputNumber v-model="form.usdDepositDollar" :min="0" :precision="0" :step="1" style="width: 100%" />
+                <div class="field-hint">留 0 则按版本美元价 10% 自动收取</div>
               </ElFormItem>
             </template>
           </ElForm>

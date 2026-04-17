@@ -59,8 +59,18 @@ interface Order {
   currency: string;
   subtotalPriceCents: number;
   totalPriceCents: number;
+  // Preorder deposit/balance
+  isPreorder?: boolean;
+  depositCents?: number;
+  balanceCents?: number;
+  depositPaidAt?: string | null;
+  balancePaidAt?: string | null;
+  balanceDueBy?: string | null;
+  gracePeriodEndsAt?: string | null;
   paypalOrderId: string | null;
+  balancePaypalOrderId?: string | null;
   wechatTransactionId: string | null;
+  balanceWechatTransactionId?: string | null;
   createdAt: string;
   updatedAt: string;
   items: OrderItem[];
@@ -336,6 +346,24 @@ onMounted(load);
                 <span>小计</span>
                 <span>{{ formatPrice(order.subtotalPriceCents) }}</span>
               </div>
+              <template v-if="order.balanceCents && order.balanceCents > 0">
+                <div class="total-line">
+                  <span>
+                    定金
+                    <span v-if="order.depositPaidAt" class="paid-tag">已付 {{ formatDate(order.depositPaidAt) }}</span>
+                    <span v-else class="unpaid-tag">未付</span>
+                  </span>
+                  <span>{{ formatPrice(order.depositCents || 0) }}</span>
+                </div>
+                <div class="total-line">
+                  <span>
+                    尾款
+                    <span v-if="order.balancePaidAt" class="paid-tag">已付 {{ formatDate(order.balancePaidAt) }}</span>
+                    <span v-else class="unpaid-tag">待付</span>
+                  </span>
+                  <span>{{ formatPrice(order.balanceCents) }}</span>
+                </div>
+              </template>
               <div class="total-line total-line--grand">
                 <span>合计</span>
                 <span>{{ formatPrice(order.totalPriceCents) }}</span>
@@ -625,6 +653,8 @@ onMounted(load);
 .order-totals { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--el-border-color); }
 .total-line { display: flex; justify-content: space-between; font-size: 13px; color: var(--el-text-color-regular); padding: 4px 0; }
 .total-line--grand { font-weight: 700; color: var(--el-text-color-primary); font-size: 14px; border-top: 1px solid var(--el-border-color); padding-top: 8px; margin-top: 4px; }
+.paid-tag { margin-left: 6px; font-size: 11px; color: var(--el-color-success); font-weight: 500; }
+.unpaid-tag { margin-left: 6px; font-size: 11px; color: var(--el-color-warning); font-weight: 500; }
 
 /* Shipments */
 .shipment-list { display: flex; flex-direction: column; gap: 12px; }

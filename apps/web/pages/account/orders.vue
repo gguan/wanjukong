@@ -49,6 +49,7 @@ function statusLabel(s: string) {
 function paymentLabel(s: string) {
   const map: Record<string, string> = {
     UNPAID: 'Unpaid',
+    DEPOSIT_PAID: 'Balance Due',
     PAID: 'Paid',
     FAILED: 'Failed',
     REFUNDED: 'Refunded',

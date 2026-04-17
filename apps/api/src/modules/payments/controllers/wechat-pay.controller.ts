@@ -119,6 +119,18 @@ export class WechatPayController {
   }
 
   /**
+   * Pay balance for a DEPOSIT_PAID preorder (miniprogram).
+   */
+  @UseGuards(CustomerSessionAuthGuard)
+  @Post('balance-payment')
+  balancePayment(
+    @Body() body: { orderId: string },
+    @CurrentCustomer() customer: { id: string },
+  ) {
+    return this.paymentsService.createWechatBalancePayment(body.orderId, customer.id);
+  }
+
+  /**
    * Step 2: WeChat Pay servers call this after successful payment.
    * Must return { code: 'SUCCESS' } to acknowledge receipt.
    */

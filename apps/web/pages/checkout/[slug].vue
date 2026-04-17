@@ -90,7 +90,22 @@ function removeCoupon() {
   couponError.value = ''
 }
 
-const total = computed(() => subtotal.value - (appliedCoupon.value ? appliedCoupon.value.discountCents / 100 : 0));
+const isPreorder = computed(() => product.value?.saleType === 'PREORDER');
+const depositCentsComputed = computed(() => {
+  if (!isPreorder.value) return subtotalCents.value;
+  const unit = selectedVariant.value?.usdPriceCents ?? 0;
+  const configured = (product.value as any)?.usdDepositCents as number | null | undefined;
+  const perUnit = configured && configured > 0 ? configured : Math.round(unit * 0.1);
+  return perUnit * quantity.value;
+});
+const balanceCentsComputed = computed(() => Math.max(0, subtotalCents.value - depositCentsComputed.value));
+const depositAfterDiscount = computed(() => {
+  const discount = appliedCoupon.value?.discountCents ?? 0;
+  const balanceAfter = Math.max(0, balanceCentsComputed.value - discount);
+  const unspent = Math.max(0, discount - balanceCentsComputed.value);
+  return Math.max(0, depositCentsComputed.value - unspent);
+});
+const total = computed(() => (isPreorder.value ? depositAfterDiscount.value / 100 : subtotal.value - (appliedCoupon.value ? appliedCoupon.value.discountCents / 100 : 0)));
 
 function formatPrice(val: number) {
   return `$${val.toFixed(2)}`;
@@ -490,11 +505,24 @@ async function initPayPal() {
             <span>Shipping</span>
             <span class="free-text">Free</span>
           </div>
+          <template v-if="isPreorder">
+            <div class="summary-line deposit-line">
+              <span>Deposit due today</span>
+              <span>{{ formatPrice(depositCentsComputed / 100) }}</span>
+            </div>
+            <div class="summary-line balance-line">
+              <span>Balance (due before shipping)</span>
+              <span>{{ formatPrice(balanceCentsComputed / 100) }}</span>
+            </div>
+            <p class="preorder-hint">
+              Non-refundable deposit after 24 hours per preorder terms.
+            </p>
+          </template>
 
           <div class="summary-divider" />
 
           <div class="summary-total">
-            <span>Total</span>
+            <span>{{ isPreorder ? 'Pay today' : 'Total' }}</span>
             <span>{{ formatPrice(total) }}</span>
           </div>
 
@@ -821,6 +849,9 @@ async function initPayPal() {
 .coupon-error { color: #dc2626; font-size: 0.8rem; margin: 6px 0 0; }
 .coupon-success { color: #16a34a; font-size: 0.85rem; margin: 6px 0 0; font-weight: 500; }
 .discount-line { color: #16a34a; }
+.deposit-line { color: #111; font-weight: 600; }
+.balance-line { color: #888; }
+.preorder-hint { font-size: 0.72rem; color: #c75c2a; margin: 6px 0 0; }
 
 .back-link {
   display: inline-block;

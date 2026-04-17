@@ -76,11 +76,16 @@ export class PaymentsService {
 
     if (!cartItems?.length) throw new BadRequestException('Cart is empty');
 
-    const { items, totalCents } = await this.resolveCartItems(cartItems, currency as 'CNY' | 'USD');
+    const { items, totalDepositCents } = await this.resolveCartItems(cartItems, currency as 'CNY' | 'USD');
+
+    // PayPal charges deposit only (Sideshow-style); balance charged later.
+    // Coupon discount is applied to balance first at order creation; for PayPal
+    // we don't yet support coupon-at-deposit, so charge full deposit here.
+    const amountToCharge = totalDepositCents;
 
     const result = await this.paypalProvider.createOrder({
       items: cartItems,
-      amountCents: totalCents,
+      amountCents: amountToCharge,
       currency,
       outTradeNo: `PP-${Date.now()}`,
       description: items.map((i) => i.name).join(', '),
@@ -93,13 +98,13 @@ export class PaymentsService {
         customerId: customerId || null,
         email: email || null,
         currency,
-        amountCents: totalCents,
+        amountCents: amountToCharge,
         cartSnapshotJson: JSON.stringify(cartItems),
         status: 'CREATED',
       },
     });
 
-    return { paypalOrderId: result.providerOrderId, totalCents };
+    return { paypalOrderId: result.providerOrderId, totalCents: amountToCharge };
   }
 
   async captureAndCreateOrder(
@@ -221,7 +226,7 @@ export class PaymentsService {
     const openid = customer.wechatOpenId;
 
     // Validate items (stock, status, availability, preorder)
-    const { totalCents } = await this.resolveCartItems(cartItems);
+    const { totalCents, totalDepositCents, totalBalanceCents } = await this.resolveCartItems(cartItems);
 
     // Apply coupon if provided — atomically reserve to prevent double-use
     let reservedCouponCode: string | null = null;
@@ -231,7 +236,15 @@ export class PaymentsService {
       discountCents = couponResult.discountCents;
       reservedCouponCode = couponResult.code;
     }
-    const amountCents = totalCents - discountCents;
+
+    // Apply discount to balance first, then deposit.
+    // Ensures preorder users still pay a deposit even with large coupons.
+    const balanceAfterDiscount = Math.max(0, totalBalanceCents - discountCents);
+    const unspentDiscount = Math.max(0, discountCents - totalBalanceCents);
+    const depositAfterDiscount = Math.max(0, totalDepositCents - unspentDiscount);
+
+    // Amount to charge now = deposit (or full price for in-stock-only orders)
+    const amountCents = depositAfterDiscount;
 
     // Resolve shipping address — verify ownership
     let shippingAddr: Record<string, string | null> | null = null;
@@ -322,6 +335,174 @@ export class PaymentsService {
   }
 
   /**
+   * Create a balance payment for a DEPOSIT_PAID preorder (WeChat).
+   * Charges `balanceCents` and marks the PaymentIntent as isBalance=true
+   * so the notification handler knows to flip the order to PAID.
+   */
+  async createWechatBalancePayment(
+    orderId: string,
+    customerId: string,
+  ): Promise<Record<string, string>> {
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, customerId },
+    });
+    if (!order) throw new NotFoundException('订单不存在');
+    if (order.paymentStatus !== 'DEPOSIT_PAID') {
+      throw new BadRequestException('该订单不在待付尾款状态');
+    }
+    if (order.currency !== 'CNY') {
+      throw new BadRequestException('该订单不是人民币订单');
+    }
+    if (order.balanceCents <= 0) {
+      throw new BadRequestException('订单尾款金额为 0');
+    }
+
+    const customer = await this.prisma.customer.findUnique({
+      where: { id: customerId },
+      select: { wechatOpenId: true },
+    });
+    if (!customer?.wechatOpenId) {
+      throw new BadRequestException('未绑定微信');
+    }
+
+    // Close any pending balance PaymentIntent for this order
+    const pending = await this.prisma.paymentIntent.findMany({
+      where: { orderId, isBalance: true, status: 'CREATED' },
+    });
+    for (const old of pending) {
+      if (old.wechatOutTradeNo) {
+        this.wechatPayProvider.closeOrder(old.wechatOutTradeNo).catch(() => {});
+      }
+    }
+    if (pending.length) {
+      await this.prisma.paymentIntent.updateMany({
+        where: { orderId, isBalance: true, status: 'CREATED' },
+        data: { status: 'FAILED' },
+      });
+    }
+
+    const outTradeNo = `WXB-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+    const result = await this.wechatPayProvider.createOrder({
+      items: [],
+      amountCents: order.balanceCents,
+      currency: 'CNY',
+      outTradeNo,
+      openid: customer.wechatOpenId,
+    });
+
+    await this.prisma.paymentIntent.create({
+      data: {
+        provider: 'WECHAT_PAY',
+        wechatPrepayId: result.providerOrderId,
+        wechatOutTradeNo: outTradeNo,
+        currency: 'CNY',
+        amountCents: order.balanceCents,
+        customerId,
+        orderId: order.id,
+        cartSnapshotJson: '[]',
+        isBalance: true,
+        status: 'CREATED',
+      },
+    });
+
+    return result.clientPayload as Record<string, string>;
+  }
+
+  /**
+   * Create a balance payment for a DEPOSIT_PAID preorder (PayPal).
+   * Returns PayPal order id; client must then call capture endpoint.
+   */
+  async createPayPalBalancePayment(
+    orderId: string,
+    customerId: string | null,
+  ): Promise<{ paypalOrderId: string; amountCents: number }> {
+    const order = await this.prisma.order.findFirst({
+      where: {
+        id: orderId,
+        OR: customerId ? [{ customerId }] : [{ customerId: null }],
+      },
+    });
+    if (!order) throw new NotFoundException('订单不存在');
+    if (order.paymentStatus !== 'DEPOSIT_PAID') {
+      throw new BadRequestException('Order is not in deposit-paid state');
+    }
+    if (order.currency !== 'USD') {
+      throw new BadRequestException('Order is not in USD');
+    }
+    if (order.balanceCents <= 0) {
+      throw new BadRequestException('Order has no balance due');
+    }
+
+    const result = await this.paypalProvider.createOrder({
+      items: [],
+      amountCents: order.balanceCents,
+      currency: 'USD',
+      outTradeNo: `PPB-${Date.now()}`,
+      description: `Balance for order ${order.orderNo}`,
+    });
+
+    await this.prisma.paymentIntent.create({
+      data: {
+        provider: 'PAYPAL',
+        paypalOrderId: result.providerOrderId,
+        customerId: customerId || null,
+        currency: 'USD',
+        amountCents: order.balanceCents,
+        cartSnapshotJson: '[]',
+        orderId: order.id,
+        isBalance: true,
+        status: 'CREATED',
+      },
+    });
+
+    return { paypalOrderId: result.providerOrderId, amountCents: order.balanceCents };
+  }
+
+  /**
+   * Capture a PayPal balance payment (called after user approves on PayPal).
+   */
+  async capturePayPalBalance(paypalOrderId: string): Promise<{ orderNo: string }> {
+    const pi = await this.prisma.paymentIntent.findUnique({
+      where: { paypalOrderId },
+    });
+    if (!pi || !pi.isBalance) throw new NotFoundException('Balance payment not found');
+
+    if (pi.status === 'ORDER_CREATED') {
+      const order = await this.prisma.order.findUnique({ where: { id: pi.orderId! } });
+      return { orderNo: order!.orderNo };
+    }
+
+    const captureResult = await this.paypalProvider.captureOrder(paypalOrderId);
+    const capturedAmount = captureResult?.purchase_units?.[0]?.payments?.captures?.[0]?.amount;
+    if (capturedAmount) {
+      const capturedCents = Math.round(parseFloat(capturedAmount.value) * 100);
+      if (capturedCents !== pi.amountCents) {
+        await this.prisma.paymentIntent.update({
+          where: { id: pi.id },
+          data: { status: 'FAILED' },
+        });
+        throw new BadRequestException('Balance payment amount mismatch');
+      }
+    }
+
+    await this.prisma.paymentIntent.update({
+      where: { id: pi.id },
+      data: { status: 'ORDER_CREATED', capturedAt: new Date() },
+    });
+
+    const order = await this.prisma.order.update({
+      where: { id: pi.orderId! },
+      data: {
+        paymentStatus: 'PAID',
+        balancePaidAt: new Date(),
+        balancePaypalOrderId: paypalOrderId,
+      },
+    });
+
+    return { orderNo: order.orderNo };
+  }
+
+  /**
    * Retry payment for an existing UNPAID order.
    * Creates a new PaymentIntent + WeChat prepay order.
    */
@@ -386,43 +567,130 @@ export class PaymentsService {
   }
 
   /**
-   * Cancel an UNPAID order — restore stock and release coupon.
+   * Cancel an order by the customer.
+   *
+   * Rules (Sideshow-style grace period for preorders):
+   * - UNPAID: direct cancel — restore stock + release coupon.
+   * - DEPOSIT_PAID within `gracePeriodEndsAt`: refund deposit via the original
+   *   channel (WeChat / PayPal), restore stock, release coupon.
+   * - DEPOSIT_PAID after grace period: rejected (deposit is non-refundable;
+   *   user must contact customer service).
+   * - PAID / REFUNDED / FAILED: rejected (user cannot self-cancel).
    */
   async cancelUnpaidOrder(orderId: string, customerId: string): Promise<void> {
     const order = await this.prisma.order.findFirst({
-      where: { id: orderId, customerId, paymentStatus: 'UNPAID' },
-      include: { items: true },
+      where: { id: orderId, customerId },
+      include: { items: true, refunds: true },
     });
-    if (!order) throw new NotFoundException('未找到待支付订单');
+    if (!order) throw new NotFoundException('订单不存在');
 
-    await this.prisma.$transaction(async (tx) => {
-      // Restore stock for all items
-      for (const item of order.items) {
-        if (item.variantId) {
-          await tx.productVariant.update({
-            where: { id: item.variantId },
-            data: { stock: { increment: item.quantity } },
-          });
+    if (order.paymentStatus === 'UNPAID') {
+      await this.prisma.$transaction(async (tx) => {
+        for (const item of order.items) {
+          if (item.variantId) {
+            await tx.productVariant.update({
+              where: { id: item.variantId },
+              data: { stock: { increment: item.quantity } },
+            });
+          }
         }
+
+        await tx.order.update({
+          where: { id: order.id },
+          data: { status: 'CANCELLED', paymentStatus: 'FAILED' },
+        });
+
+        await tx.paymentIntent.updateMany({
+          where: { orderId: order.id, status: 'CREATED' },
+          data: { status: 'FAILED' },
+        });
+      });
+
+      if (order.couponCode) {
+        await this.ordersService.releaseCoupon(order.couponCode).catch(() => {});
+      }
+      return;
+    }
+
+    if (order.paymentStatus === 'DEPOSIT_PAID') {
+      const now = new Date();
+      if (!order.gracePeriodEndsAt || order.gracePeriodEndsAt <= now) {
+        throw new BadRequestException(
+          '定金支付已超过 24 小时宽限期，无法自助取消。如需取消请联系客服。',
+        );
       }
 
-      // Cancel the order
-      await tx.order.update({
-        where: { id: order.id },
-        data: { status: 'CANCELLED', paymentStatus: 'FAILED' },
+      const depositPaidCents = order.depositCents;
+      if (depositPaidCents <= 0) {
+        throw new BadRequestException('订单无定金记录，无法取消');
+      }
+
+      // Refund the deposit through the original channel
+      if (order.currency === 'CNY') {
+        if (!order.wechatTransactionId) {
+          throw new BadRequestException('订单无微信支付记录，无法退款');
+        }
+        const outRefundNo = `RF-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+        const result = await this.wechatPayProvider.refundOrder({
+          transactionId: order.wechatTransactionId,
+          outRefundNo,
+          refundCents: depositPaidCents,
+          totalCents: depositPaidCents,
+          reason: '24小时宽限期内用户取消订单',
+        });
+
+        await this.prisma.refund.create({
+          data: {
+            orderId: order.id,
+            amountCents: depositPaidCents,
+            reason: '24小时宽限期内用户取消（全额退定金）',
+            status: result.status === 'SUCCESS' ? 'SUCCESS' : 'PENDING',
+            wechatRefundId: result.refundId,
+            wechatRefundNo: outRefundNo,
+            createdBy: customerId,
+            processedAt: result.status === 'SUCCESS' ? new Date() : null,
+          },
+        });
+      } else if (order.currency === 'USD') {
+        // TODO: implement PayPal refund path — requires storing capture ID
+        // and adding a refundOrder method to PaypalProvider. For now, USD
+        // customers must contact support within the grace period.
+        throw new BadRequestException(
+          'USD orders cannot be cancelled automatically. Please contact customer service within 24 hours of payment for a full refund.',
+        );
+      } else {
+        throw new BadRequestException(`不支持的订单币种：${order.currency}`);
+      }
+
+      // Restore stock + cancel order + release coupon
+      await this.prisma.$transaction(async (tx) => {
+        for (const item of order.items) {
+          if (item.variantId) {
+            await tx.productVariant.update({
+              where: { id: item.variantId },
+              data: { stock: { increment: item.quantity } },
+            });
+          }
+        }
+
+        await tx.order.update({
+          where: { id: order.id },
+          data: { status: 'CANCELLED', paymentStatus: 'REFUNDED' },
+        });
+
+        await tx.paymentIntent.updateMany({
+          where: { orderId: order.id, status: 'CREATED' },
+          data: { status: 'FAILED' },
+        });
       });
 
-      // Cancel all CREATED PaymentIntents
-      await tx.paymentIntent.updateMany({
-        where: { orderId: order.id, status: 'CREATED' },
-        data: { status: 'FAILED' },
-      });
-    });
-
-    // Release coupon
-    if (order.couponCode) {
-      await this.ordersService.releaseCoupon(order.couponCode).catch(() => {});
+      if (order.couponCode) {
+        await this.ordersService.releaseCoupon(order.couponCode).catch(() => {});
+      }
+      return;
     }
+
+    throw new BadRequestException('当前订单状态不允许自助取消，请联系客服');
   }
 
   /**
@@ -599,15 +867,36 @@ export class PaymentsService {
       },
     });
 
-    // Update existing Order to PAID (order was created at checkout as UNPAID)
+    // Update existing Order based on whether this was a deposit or balance payment
     if (pi.orderId) {
-      await this.prisma.order.update({
-        where: { id: pi.orderId },
-        data: {
-          paymentStatus: 'PAID',
-          wechatTransactionId: transaction.transaction_id,
-        },
-      });
+      const existing = await this.prisma.order.findUnique({ where: { id: pi.orderId } });
+      if (!existing) return;
+
+      if (pi.isBalance) {
+        // Balance payment for existing preorder
+        await this.prisma.order.update({
+          where: { id: pi.orderId },
+          data: {
+            paymentStatus: 'PAID',
+            balancePaidAt: new Date(),
+            balanceWechatTransactionId: transaction.transaction_id,
+          },
+        });
+      } else {
+        // Deposit or full payment
+        // If order has balance > 0, this is deposit only → DEPOSIT_PAID
+        // Otherwise full paid → PAID
+        const newStatus = existing.balanceCents > 0 ? 'DEPOSIT_PAID' : 'PAID';
+        await this.prisma.order.update({
+          where: { id: pi.orderId },
+          data: {
+            paymentStatus: newStatus,
+            depositPaidAt: new Date(),
+            balancePaidAt: newStatus === 'PAID' ? new Date() : null,
+            wechatTransactionId: transaction.transaction_id,
+          },
+        });
+      }
 
       // Send confirmation email
       const openid = transaction.payer.openid;
@@ -900,12 +1189,34 @@ export class PaymentsService {
         throw new BadRequestException(`商品 "${product.name}" 未配置美元价格`);
       }
 
+      // Compute per-line deposit for preorder items
+      const isPreorder = product.saleType === 'PREORDER';
+      let depositCents = unitPriceCents * ci.quantity; // default: full price
+      if (isPreorder) {
+        const productDeposit = currency === 'USD'
+          ? product.usdDepositCents
+          : product.depositCents;
+        if (productDeposit && productDeposit > 0) {
+          depositCents = productDeposit * ci.quantity;
+        }
+        // Fallback: if no deposit configured, use 10% of unit price
+        else {
+          depositCents = Math.round(unitPriceCents * 0.1) * ci.quantity;
+        }
+        // Sanity: deposit should not exceed full price
+        if (depositCents > unitPriceCents * ci.quantity) {
+          depositCents = unitPriceCents * ci.quantity;
+        }
+      }
+
       return {
         name: product.name + (variant.name ? ` - ${variant.name}` : ''),
         unitPriceCents,
         quantity: ci.quantity,
         productId: ci.productId,
         variantId: ci.variantId,
+        isPreorder,
+        depositCents,
       };
     });
 
@@ -913,7 +1224,10 @@ export class PaymentsService {
       (sum, i) => sum + i.unitPriceCents * i.quantity,
       0,
     );
+    const totalDepositCents = items.reduce((sum, i) => sum + i.depositCents, 0);
+    const totalBalanceCents = totalCents - totalDepositCents;
+    const hasPreorder = items.some((i) => i.isPreorder);
 
-    return { items, totalCents };
+    return { items, totalCents, totalDepositCents, totalBalanceCents, hasPreorder };
   }
 }
