@@ -1,7 +1,7 @@
 <script setup lang="ts">
 useSeoMeta({
-  title: 'About — Wanjukong',
-  description: 'Learn about Wanjukong, your destination for premium collectible figures.',
+  title: 'About — Over Realm',
+  description: 'Learn about Over Realm, your destination for premium collectible figures.',
 })
 </script>
 
@@ -12,7 +12,7 @@ useSeoMeta({
       <h1 class="info-title">Curated collectibles,<br />handled with care.</h1>
       <p class="info-lede">
         <!-- TODO: Replace with your brand story — 1–2 sentences. -->
-        Wanjukong is a dedicated online store for collectible action figure enthusiasts.
+        Over Realm is a dedicated online store for collectible action figure enthusiasts.
         We specialize in premium 1/6, 1/4, and 1/12 scale figures from the world's leading manufacturers.
       </p>
     </header>
@@ -65,7 +65,7 @@ useSeoMeta({
         <h2 class="info-h2">Story</h2>
         <p>
           <!-- TODO: Replace with your founding story — when, why, who. -->
-          Founded in 2024 by a small team of lifelong collectors, Wanjukong started as a way to
+          Founded in 2024 by a small team of lifelong collectors, Over Realm started as a way to
           solve the frustrations we ourselves faced: confusing listings, opaque pre-order terms,
           and unreliable international shipping. We built the store we wanted to shop at.
         </p>

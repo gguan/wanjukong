@@ -31,6 +31,7 @@ export class TranslateService {
     if (!trimmed) return '';
 
     // ASCII-only fast path — no translation needed
+    // eslint-disable-next-line no-control-regex
     if (/^[\x00-\x7F]+$/.test(trimmed)) {
       return this.slugify(trimmed);
     }

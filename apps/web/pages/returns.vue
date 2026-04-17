@@ -1,6 +1,6 @@
 <script setup lang="ts">
 useSeoMeta({
-  title: 'Returns & Refunds — Wanjukong',
+  title: 'Returns & Refunds — Over Realm',
   description: 'Our return and refund policy for collectible figures.',
 })
 </script>

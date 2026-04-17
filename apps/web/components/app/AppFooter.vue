@@ -10,7 +10,7 @@
         <NuxtLink to="/privacy">Privacy</NuxtLink>
         <NuxtLink to="/cookies">Cookies</NuxtLink>
       </div>
-      <p class="footer-copy">© {{ new Date().getFullYear() }} wanjukong. All rights reserved.</p>
+      <p class="footer-copy">© {{ new Date().getFullYear() }} Over Realm. All rights reserved.</p>
     </div>
   </footer>
 </template>

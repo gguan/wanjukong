@@ -57,8 +57,8 @@ const isLoading = computed(() => brandStatus.value === 'pending' || productsStat
 watchEffect(() => {
   if (!brand.value) return;
   useSeoMeta({
-    title: `${brand.value.name} — Wanjukong`,
-    description: `Browse all ${brand.value.name} collectible figures available at Wanjukong.`,
+    title: `${brand.value.name} — Over Realm`,
+    description: `Browse all ${brand.value.name} collectible figures available at Over Realm.`,
   })
 })
 </script>

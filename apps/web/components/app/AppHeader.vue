@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Lang } from '~/composables/useLang';
 
-const APP_NAME = 'wanjukong';
+const APP_NAME = 'Over Realm';
 const router = useRouter();
 const { count } = useCart();
 const { isLoggedIn, customer } = useStorefrontAuth();

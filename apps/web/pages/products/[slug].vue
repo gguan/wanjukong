@@ -161,7 +161,7 @@ function handleAddToCart() {
 watchEffect(() => {
   if (!product.value) return;
   useSeoMeta({
-    title: `${product.value.name} — Wanjukong`,
+    title: `${product.value.name} — Over Realm`,
     description: `${product.value.name} by ${product.value.brand?.name}. ${product.value.scale || ''} scale collectible figure.`,
     ogTitle: product.value.name,
     ogDescription: `${product.value.name} by ${product.value.brand?.name}`,

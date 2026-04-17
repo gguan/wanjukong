@@ -1,6 +1,6 @@
 <script setup lang="ts">
 useSeoMeta({
-  title: 'Brands — Wanjukong',
+  title: 'Brands — Over Realm',
   description: 'Browse collectible figure brands including Hot Toys, DAM Toys, Threezero and more.',
 })
 

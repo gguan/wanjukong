@@ -1,6 +1,6 @@
 <script setup lang="ts">
 useSeoMeta({
-  title: 'Shipping & Delivery — Wanjukong',
+  title: 'Shipping & Delivery — Over Realm',
   description: 'Learn about our shipping options and delivery times.',
 })
 </script>

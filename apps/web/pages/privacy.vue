@@ -1,7 +1,7 @@
 <script setup lang="ts">
 useSeoMeta({
-  title: 'Privacy Policy — Wanjukong',
-  description: 'Privacy policy and data practices for Wanjukong.',
+  title: 'Privacy Policy — Over Realm',
+  description: 'Privacy policy and data practices for Over Realm.',
 })
 </script>
 
@@ -22,7 +22,7 @@ useSeoMeta({
       <section class="info-section">
         <p class="info-intro">
           This Privacy Policy explains what information we collect when you visit or order from
-          wanjukong, how we use it, and the rights you have over it. By using the site you
+          Over Realm, how we use it, and the rights you have over it. By using the site you
           agree to the practices described here.
         </p>
       </section>

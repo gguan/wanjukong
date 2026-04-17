@@ -1,7 +1,7 @@
 <script setup lang="ts">
 useSeoMeta({
-  title: 'Contact — Wanjukong',
-  description: 'Get in touch with the Wanjukong team.',
+  title: 'Contact — Over Realm',
+  description: 'Get in touch with the Over Realm team.',
 })
 
 // Placeholder form — wire to backend when contact endpoint exists.

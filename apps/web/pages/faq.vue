@@ -1,7 +1,7 @@
 <script setup lang="ts">
 useSeoMeta({
-  title: 'FAQ — Wanjukong',
-  description: 'Frequently asked questions about ordering, shipping and products at Wanjukong.',
+  title: 'FAQ — Over Realm',
+  description: 'Frequently asked questions about ordering, shipping and products at Over Realm.',
 })
 
 interface FaqItem {
