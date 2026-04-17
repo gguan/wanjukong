@@ -326,8 +326,11 @@ export class WechatPayProvider implements IPaymentProvider {
    *   timestamp + "\n" + nonce + "\n" + body + "\n"
    * Then verifies with RSA-SHA256 against the platform public key.
    *
-   * Returns true if verification succeeds or if no platform cert is configured
-   * (for development environments). Logs a warning in the latter case.
+   * Fail-closed: in production, a missing WECHAT_PAY_PUBLIC_KEY rejects the
+   * notification. In non-production, we allow through with a loud warning so
+   * local dev without a real cert still works. main.ts also asserts the env
+   * var at startup in production, so this branch should be unreachable in
+   * prod — it's here as defence in depth.
    */
   verifyNotificationSignature(
     headers: WechatPayNotificationHeaders,
@@ -335,9 +338,15 @@ export class WechatPayProvider implements IPaymentProvider {
   ): boolean {
     const pubKey = this.wechatPublicKey;
     if (!pubKey) {
+      if (process.env.NODE_ENV === 'production') {
+        this.logger.error(
+          'WECHAT_PAY_PUBLIC_KEY not configured in production — rejecting notification.',
+        );
+        return false;
+      }
       this.logger.warn(
         'WECHAT_PAY_PUBLIC_KEY not configured — skipping signature verification. ' +
-          'Set this env var for production!',
+          'DEV ONLY. Set this env var for production!',
       );
       return true;
     }

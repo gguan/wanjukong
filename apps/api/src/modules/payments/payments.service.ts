@@ -409,20 +409,52 @@ export class PaymentsService {
   }
 
   /**
+   * Authorize a caller to act on a specific order.
+   * Returns the order if the caller is its owning customer OR presents the
+   * matching guest access token. Throws NotFound otherwise (no enumeration).
+   */
+  private async authorizeOrderAccess(
+    orderId: string,
+    customerId: string | null,
+    guestToken: string | null,
+  ) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) throw new NotFoundException('订单不存在');
+
+    // Logged-in customer must match.
+    if (customerId && order.customerId === customerId) return order;
+
+    // Guest path: order is a guest order AND the token matches.
+    if (guestToken && order.guestAccessTokenHash) {
+      const tokenHash = crypto.createHash('sha256').update(guestToken).digest('hex');
+      if (
+        tokenHash.length === order.guestAccessTokenHash.length &&
+        crypto.timingSafeEqual(
+          Buffer.from(tokenHash),
+          Buffer.from(order.guestAccessTokenHash),
+        )
+      ) {
+        return order;
+      }
+    }
+
+    throw new NotFoundException('订单不存在');
+  }
+
+  /**
    * Create a balance payment for a DEPOSIT_PAID preorder (PayPal).
    * Returns PayPal order id; client must then call capture endpoint.
+   *
+   * Authorization: caller must own the order (logged-in customer match) OR
+   * present the guest access token issued at original checkout.
    */
   async createPayPalBalancePayment(
     orderId: string,
     customerId: string | null,
+    guestToken: string | null = null,
   ): Promise<{ paypalOrderId: string; amountCents: number }> {
-    const order = await this.prisma.order.findFirst({
-      where: {
-        id: orderId,
-        OR: customerId ? [{ customerId }] : [{ customerId: null }],
-      },
-    });
-    if (!order) throw new NotFoundException('订单不存在');
+    const order = await this.authorizeOrderAccess(orderId, customerId, guestToken);
+
     if (order.paymentStatus !== 'DEPOSIT_PAID') {
       throw new BadRequestException('Order is not in deposit-paid state');
     }
@@ -460,15 +492,29 @@ export class PaymentsService {
 
   /**
    * Capture a PayPal balance payment (called after user approves on PayPal).
+   *
+   * Authorization: the PaymentIntent is looked up by paypalOrderId, then the
+   * caller must own the associated order (session match) OR present the
+   * guest access token. This prevents a third party who happens to learn
+   * a PaypalOrderId from finalising someone else's order.
    */
-  async capturePayPalBalance(paypalOrderId: string): Promise<{ orderNo: string }> {
+  async capturePayPalBalance(
+    paypalOrderId: string,
+    customerId: string | null,
+    guestToken: string | null = null,
+  ): Promise<{ orderNo: string }> {
     const pi = await this.prisma.paymentIntent.findUnique({
       where: { paypalOrderId },
     });
-    if (!pi || !pi.isBalance) throw new NotFoundException('Balance payment not found');
+    if (!pi || !pi.isBalance || !pi.orderId) {
+      throw new NotFoundException('Balance payment not found');
+    }
+
+    // Authorization on the linked order.
+    await this.authorizeOrderAccess(pi.orderId, customerId, guestToken);
 
     if (pi.status === 'ORDER_CREATED') {
-      const order = await this.prisma.order.findUnique({ where: { id: pi.orderId! } });
+      const order = await this.prisma.order.findUnique({ where: { id: pi.orderId } });
       return { orderNo: order!.orderNo };
     }
 
@@ -491,7 +537,7 @@ export class PaymentsService {
     });
 
     const order = await this.prisma.order.update({
-      where: { id: pi.orderId! },
+      where: { id: pi.orderId },
       data: {
         paymentStatus: 'PAID',
         balancePaidAt: new Date(),

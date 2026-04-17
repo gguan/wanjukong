@@ -7,6 +7,12 @@ import {
 } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { ProductStatus, Prisma } from '@prisma/client';
+
+/** Constant-time string comparison to prevent timing-based token discovery. */
+function timingSafeEqualStrings(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+}
 import { deriveProductDisplayAvailability } from '../../utils/product-sale-state';
 import { toPublicUrl } from '../../utils/image-url';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -333,8 +339,23 @@ export class OrdersService {
 
   /**
    * Find an order by its public-facing order number.
+   *
+   * Authorization: the caller must be either the order's owning customer
+   * (matched by session customerId) OR present a valid guest access token
+   * (for orders placed as a guest). All other access returns 404 to avoid
+   * enumeration of other customers' orders.
+   *
+   * Authenticated account lookups go via `/public/account/orders/:orderNo`
+   * (see StorefrontAccountService.getOrder) — that path enforces the
+   * customerId match at the DB query level. This method supplements that
+   * for the post-checkout thank-you page which may be hit before a
+   * session is established.
    */
-  async findByOrderNo(orderNo: string) {
+  async findByOrderNoAuthorized(
+    orderNo: string,
+    customerId: string | null,
+    token: string | null,
+  ) {
     const order = await this.prisma.order.findUnique({
       where: { orderNo },
       include: { items: true },
@@ -344,6 +365,32 @@ export class OrdersService {
       throw new NotFoundException('Order not found');
     }
 
+    // Logged-in customer: must match the order's customerId.
+    if (customerId && order.customerId === customerId) {
+      return this.serializeOrder(order);
+    }
+
+    // Guest path: order must have a stored token hash AND the presented
+    // token must match it. Empty string counts as absent.
+    if (token && order.guestAccessTokenHash) {
+      const tokenHash = crypto
+        .createHash('sha256')
+        .update(token)
+        .digest('hex');
+
+      if (timingSafeEqualStrings(tokenHash, order.guestAccessTokenHash)) {
+        return this.serializeOrder(order);
+      }
+    }
+
+    // No valid credential — return 404 to avoid revealing existence.
+    throw new NotFoundException('Order not found');
+  }
+
+  private serializeOrder(order: {
+    items: Array<{ coverImageUrlSnapshot: string | null; [k: string]: unknown }>;
+    [k: string]: unknown;
+  }) {
     return {
       ...order,
       items: order.items.map((i) => ({
@@ -610,29 +657,12 @@ export class OrdersService {
   /**
    * Guest order lookup: requires valid access token.
    */
+  /**
+   * @deprecated Use findByOrderNoAuthorized instead. Kept for back-compat
+   * with any internal callers; new code must go through the authorized path.
+   */
   async findGuestOrderByOrderNoAndToken(orderNo: string, token: string) {
-    const tokenHash = crypto
-      .createHash('sha256')
-      .update(token)
-      .digest('hex');
-
-    const order = await this.prisma.order.findUnique({
-      where: { orderNo },
-      include: { items: true },
-    });
-
-    if (!order) {
-      throw new NotFoundException('Order not found');
-    }
-
-    // If order has a guest token, validate it
-    if (order.guestAccessTokenHash) {
-      if (order.guestAccessTokenHash !== tokenHash) {
-        throw new ForbiddenException('Invalid access token');
-      }
-    }
-
-    return order;
+    return this.findByOrderNoAuthorized(orderNo, null, token);
   }
 
   /**

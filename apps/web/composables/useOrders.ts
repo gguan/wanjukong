@@ -34,33 +34,18 @@ export interface Order {
   items: OrderItem[];
 }
 
-export interface BuyNowPayload {
-  productId: string;
-  variantId: string;
-  quantity: number;
-  fullName: string;
-  email: string;
-  phone?: string;
-  country: string;
-  stateOrProvince?: string;
-  city: string;
-  addressLine1: string;
-  addressLine2?: string;
-  postalCode?: string;
-  currency?: string;
-}
-
 export function useOrders() {
-  const { get, post } = usePublicApi();
+  const { get } = usePublicApi();
 
-  function createBuyNowOrder(payload: BuyNowPayload) {
-    return post<Order>('/public/orders/buy-now', payload);
-  }
-
+  /**
+   * Fetch an order by its order number. Authorization on the server:
+   * either the caller's session matches the order's customerId, or the
+   * caller presents the guest access token emailed at checkout.
+   */
   function fetchOrderByNo(orderNo: string, token?: string) {
     const query = token ? `?token=${encodeURIComponent(token)}` : '';
     return get<Order>(`/public/orders/${orderNo}${query}`);
   }
 
-  return { createBuyNowOrder, fetchOrderByNo };
+  return { fetchOrderByNo };
 }
