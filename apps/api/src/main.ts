@@ -34,12 +34,13 @@ async function bootstrap() {
       secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
       resave: false,
       saveUninitialized: false,
+      rolling: true, // Extend cookie expiry on each request
       name: 'wk.sid',
       cookie: {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days (rolling keeps it fresh)
       },
     }),
   );
