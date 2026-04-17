@@ -54,6 +54,7 @@ model Brand {
   slug      String   @unique
   code      String?
   logo      String?
+  notes     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
