@@ -22,6 +22,42 @@ export class TranslateService {
   }
 
   /**
+   * Generate a URL-safe slug from a product name.
+   * If the name contains non-ASCII characters (Chinese/Japanese),
+   * translates to English first via DeepL/MyMemory, then slugifies.
+   */
+  async generateSlug(name: string): Promise<string> {
+    const trimmed = name.trim();
+    if (!trimmed) return '';
+
+    // ASCII-only fast path — no translation needed
+    if (/^[\x00-\x7F]+$/.test(trimmed)) {
+      return this.slugify(trimmed);
+    }
+
+    // Translate to English, then slugify
+    try {
+      const translations = await this.translateToAll(trimmed, ['en']);
+      const english = translations.en?.trim();
+      if (english) return this.slugify(english);
+    } catch (err) {
+      this.logger.warn('Slug generation via translation failed', err);
+    }
+
+    // Fallback: strip non-ASCII, keep what's translatable
+    return this.slugify(trimmed);
+  }
+
+  private slugify(text: string): string {
+    return text
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 100); // cap length
+  }
+
+  /**
    * Translate text from zh-CN to multiple target languages.
    * @param isHtml  When true, preserves HTML tags during translation (for rich text).
    */

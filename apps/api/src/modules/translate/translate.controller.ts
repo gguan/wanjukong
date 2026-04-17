@@ -16,6 +16,11 @@ class TranslateDto {
   isHtml?: boolean;
 }
 
+class GenerateSlugDto {
+  @IsString()
+  name!: string;
+}
+
 @Controller('admin/translate')
 export class TranslateController {
   constructor(private readonly translateService: TranslateService) {}
@@ -27,5 +32,11 @@ export class TranslateController {
       dto.targetLangs,
       dto.isHtml,
     );
+  }
+
+  @Post('generate-slug')
+  async generateSlug(@Body() dto: GenerateSlugDto) {
+    const slug = await this.translateService.generateSlug(dto.name);
+    return { slug };
   }
 }
