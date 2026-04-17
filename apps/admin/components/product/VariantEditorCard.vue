@@ -170,17 +170,17 @@ async function handleSave() {
             <ElInputNumber
               v-model="editing.priceYuan"
               :min="0"
-              :precision="0"
+              :precision="2"
               :step="1"
               style="width: 100%"
             />
-            <div class="field-hint">人民币，整数</div>
+            <div class="field-hint">人民币</div>
           </ElFormItem>
           <ElFormItem label="美元价格">
             <ElInputNumber
               v-model="editing.usdPriceDollar"
               :min="0"
-              :precision="0"
+              :precision="2"
               :step="1"
               style="width: 100%"
             />

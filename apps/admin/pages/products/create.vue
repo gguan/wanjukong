@@ -28,7 +28,11 @@ const form = ref({
 
 const defaultVariant = ref({
   name: '标准版',
+  nameI18n: {} as Record<string, string>,
   subtitle: '',
+  subtitleI18n: {} as Record<string, string>,
+  specifications: '',
+  specificationsI18n: {} as Record<string, string>,
   sku: '',
   manufacturerSku: '',
   priceYuan: 0,
@@ -66,7 +70,11 @@ async function save() {
       ...form.value,
       defaultVariant: {
         name: defaultVariant.value.name,
+        nameI18n: defaultVariant.value.nameI18n,
         subtitle: defaultVariant.value.subtitle || undefined,
+        subtitleI18n: defaultVariant.value.subtitleI18n,
+        specifications: defaultVariant.value.specifications || undefined,
+        specificationsI18n: defaultVariant.value.specificationsI18n,
         sku: defaultVariant.value.sku || undefined,
         manufacturerSku: defaultVariant.value.manufacturerSku || undefined,
         priceCents: Math.round(defaultVariant.value.priceYuan * 100),
@@ -130,15 +138,14 @@ async function save() {
         <!-- Default Variant -->
         <AdminProductEditorSection title="默认版本" description="保存商品时会同步创建默认版本，保存后可继续新增其他版本。">
           <ElForm label-position="top">
-            <div class="form-grid form-grid--2">
-              <ElFormItem label="版本名称" required>
-                <ElInput v-model="defaultVariant.name" />
-              </ElFormItem>
-              <ElFormItem label="排序值" />
-            </div>
+            <ElFormItem label="版本名称" required>
+              <ElInput v-model="defaultVariant.name" />
+              <AdminI18nInput v-model="defaultVariant.nameI18n" :source-text="defaultVariant.name" label="版本名称" />
+            </ElFormItem>
 
             <ElFormItem label="版本描述">
               <ElInput v-model="defaultVariant.subtitle" placeholder="例如：含额外配件..." />
+              <AdminI18nInput v-model="defaultVariant.subtitleI18n" :source-text="defaultVariant.subtitle" label="版本描述" />
             </ElFormItem>
 
             <div class="form-grid form-grid--2">
@@ -156,17 +163,22 @@ async function save() {
 
             <div class="form-grid form-grid--3">
               <ElFormItem label="价格（元）" required>
-                <ElInputNumber v-model="defaultVariant.priceYuan" :min="0" :precision="0" :step="1" style="width: 100%" />
-                <div class="field-hint">人民币，整数</div>
+                <ElInputNumber v-model="defaultVariant.priceYuan" :min="0" :precision="2" :step="1" style="width: 100%" />
+                <div class="field-hint">人民币</div>
               </ElFormItem>
               <ElFormItem label="美元价格">
-                <ElInputNumber v-model="defaultVariant.usdPriceYuan" :min="0" :precision="0" :step="1" style="width: 100%" />
+                <ElInputNumber v-model="defaultVariant.usdPriceYuan" :min="0" :precision="2" :step="1" style="width: 100%" />
                 <div class="field-hint">选填，0 表示不设置</div>
               </ElFormItem>
               <ElFormItem label="库存" required>
                 <ElInputNumber v-model="defaultVariant.stock" :min="0" style="width: 100%" />
               </ElFormItem>
             </div>
+
+            <ElFormItem label="说明信息">
+              <ProductRichTextEditor v-model="defaultVariant.specifications" />
+              <AdminI18nInput v-model="defaultVariant.specificationsI18n" :source-text="defaultVariant.specifications" label="说明信息" type="textarea" :rows="4" />
+            </ElFormItem>
           </ElForm>
         </AdminProductEditorSection>
 

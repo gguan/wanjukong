@@ -5,13 +5,16 @@ const api = useAdminApi();
 interface Variant {
   id: string;
   name: string;
+  nameI18n?: Record<string, string>;
   sku: string;
   manufacturerSku: string | null;
   priceCents: number;
   usdPriceCents: number | null;
   stock: number;
   subtitle: string | null;
+  subtitleI18n?: Record<string, string>;
   specifications: string | null;
+  specificationsI18n?: Record<string, string>;
   isDefault: boolean;
   sortOrder: number;
   coverImageUrl: string | null;
@@ -26,12 +29,16 @@ const expandedIds = ref<Set<string>>(new Set());
 const showNewForm = ref(false);
 const newForm = reactive({
   name: '',
+  nameI18n: {} as Record<string, string>,
   sku: '',
   manufacturerSku: '',
-  priceCents: 0,
+  priceYuan: 0,
+  usdPriceDollar: 0,
   stock: 0,
   subtitle: '',
+  subtitleI18n: {} as Record<string, string>,
   specifications: '',
+  specificationsI18n: {} as Record<string, string>,
   sortOrder: 0,
   coverImageUrl: '',
 });
@@ -39,12 +46,16 @@ const creatingNew = ref(false);
 
 function resetNewForm() {
   newForm.name = '';
+  newForm.nameI18n = {};
   newForm.sku = '';
   newForm.manufacturerSku = '';
-  newForm.priceCents = 0;
+  newForm.priceYuan = 0;
+  newForm.usdPriceDollar = 0;
   newForm.stock = 0;
   newForm.subtitle = '';
+  newForm.subtitleI18n = {};
   newForm.specifications = '';
+  newForm.specificationsI18n = {};
   newForm.sortOrder = variants.value.length;
   newForm.coverImageUrl = '';
 }
@@ -94,14 +105,18 @@ async function createVariant() {
   creatingNew.value = true;
   try {
     const payload = {
-      ...newForm,
-      priceCents: Number(newForm.priceCents),
+      name: newForm.name,
+      nameI18n: newForm.nameI18n,
+      priceCents: Math.round(newForm.priceYuan * 100),
+      usdPriceCents: newForm.usdPriceDollar > 0 ? Math.round(newForm.usdPriceDollar * 100) : undefined,
       stock: Number(newForm.stock),
       sortOrder: Number(newForm.sortOrder),
       sku: newForm.sku || undefined,
       manufacturerSku: newForm.manufacturerSku || undefined,
       subtitle: newForm.subtitle || undefined,
+      subtitleI18n: newForm.subtitleI18n,
       specifications: newForm.specifications || undefined,
+      specificationsI18n: newForm.specificationsI18n,
       coverImageUrl: newForm.coverImageUrl || undefined,
     };
     const created = await api.post<Variant>(
@@ -196,11 +211,16 @@ onMounted(loadVariants);
             <div class="form-grid form-grid--2">
               <ElFormItem label="版本名称" required>
                 <ElInput v-model="newForm.name" placeholder="例如：豪华版、限定版" />
+                <AdminI18nInput v-model="newForm.nameI18n" :source-text="newForm.name" label="版本名称" />
               </ElFormItem>
               <ElFormItem label="排序值">
                 <ElInputNumber v-model="newForm.sortOrder" :min="0" style="width: 100%" />
               </ElFormItem>
             </div>
+            <ElFormItem label="版本描述">
+              <ElInput v-model="newForm.subtitle" placeholder="例如：含额外配件..." />
+              <AdminI18nInput v-model="newForm.subtitleI18n" :source-text="newForm.subtitle" label="版本描述" />
+            </ElFormItem>
             <div class="form-grid form-grid--2">
               <ElFormItem label="货号">
                 <ElInput v-model="newForm.sku" placeholder="留空自动生成" />
@@ -210,22 +230,25 @@ onMounted(loadVariants);
                 <ElInput v-model="newForm.manufacturerSku" placeholder="例如：MMS617" />
               </ElFormItem>
             </div>
-            <div class="form-grid form-grid--2">
-              <ElFormItem label="价格（分）" required>
-                <ElInputNumber v-model="newForm.priceCents" :min="0" style="width: 100%" />
+            <div class="form-grid form-grid--3">
+              <ElFormItem label="价格（元）" required>
+                <ElInputNumber v-model="newForm.priceYuan" :min="0" :precision="2" :step="1" style="width: 100%" />
+                <div class="field-hint">人民币</div>
+              </ElFormItem>
+              <ElFormItem label="美元价格">
+                <ElInputNumber v-model="newForm.usdPriceDollar" :min="0" :precision="2" :step="1" style="width: 100%" />
+                <div class="field-hint">选填，0 表示不设置</div>
               </ElFormItem>
               <ElFormItem label="库存">
                 <ElInputNumber v-model="newForm.stock" :min="0" style="width: 100%" />
               </ElFormItem>
             </div>
-            <ElFormItem label="副标题">
-              <ElInput v-model="newForm.subtitle" placeholder="例如：含额外配件..." />
-            </ElFormItem>
             <ElFormItem label="封面图链接">
               <ElInput v-model="newForm.coverImageUrl" placeholder="可选的版本专属图片" />
             </ElFormItem>
             <ElFormItem label="说明信息">
               <ProductRichTextEditor v-model="newForm.specifications" />
+              <AdminI18nInput v-model="newForm.specificationsI18n" :source-text="newForm.specifications" label="说明信息" type="textarea" :rows="4" />
             </ElFormItem>
             <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px">
               <ElButton @click="showNewForm = false">取消</ElButton>
