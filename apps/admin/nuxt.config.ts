@@ -6,7 +6,9 @@ try {
     const m = line.match(/^([^#=][^=]*)=(.*)/);
     if (m && !process.env[m[1].trim()]) process.env[m[1].trim()] = m[2].trim();
   }
-} catch {}
+} catch {
+  // .env not found — use defaults
+}
 
 export default defineNuxtConfig({
   devtools: { enabled: true },
