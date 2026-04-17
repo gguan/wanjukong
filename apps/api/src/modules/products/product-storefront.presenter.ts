@@ -6,12 +6,15 @@ import { toPublicUrl } from '../../utils/image-url';
 
 type StorefrontVariant = { stock: number; coverImageUrl?: string | null };
 
+type StorefrontBrand = { logo?: string | null; [k: string]: unknown };
+
 type StorefrontProduct<TVariant extends StorefrontVariant> = {
   status: 'DRAFT' | 'PENDING_REVIEW' | 'ACTIVE' | 'INACTIVE';
   saleType: 'IN_STOCK' | 'PREORDER';
   preorderStartAt: Date | null;
   preorderEndAt: Date | null;
   imageUrl?: string | null;
+  brand?: StorefrontBrand | null;
   variants: TVariant[];
   images?: Array<{ imageUrl: string; [k: string]: unknown }>;
 };
@@ -40,6 +43,14 @@ export function toPublicProductView<
     imageUrl: toPublicUrl(product.imageUrl),
     displayAvailability,
     isPurchasable,
+    ...(product.brand
+      ? {
+          brand: {
+            ...product.brand,
+            logo: toPublicUrl((product.brand.logo as string | null | undefined) ?? null),
+          },
+        }
+      : {}),
     variants: product.variants.map((variant) => ({
       ...variant,
       coverImageUrl: toPublicUrl(variant.coverImageUrl),

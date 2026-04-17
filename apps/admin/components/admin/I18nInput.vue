@@ -9,8 +9,8 @@ const props = defineProps<{
   modelValue: Record<string, string>;
   /** The source text (zh-CN) to translate from */
   sourceText?: string;
-  /** Input type: 'input' or 'textarea' */
-  type?: 'input' | 'textarea';
+  /** Input type: 'input', 'textarea', or 'richtext' */
+  type?: 'input' | 'textarea' | 'richtext';
   /** Textarea rows */
   rows?: number;
   /** Placeholder prefix */
@@ -104,20 +104,30 @@ async function autoTranslate() {
     </div>
 
     <div v-if="expanded" class="i18n-fields">
-      <div v-for="lang in langs" :key="lang.code" class="i18n-field">
+      <div
+        v-for="lang in langs"
+        :key="lang.code"
+        class="i18n-field"
+        :class="{ 'i18n-field--stacked': type === 'richtext' }"
+      >
         <span class="i18n-field__flag">{{ lang.flag }}</span>
         <span class="i18n-field__label">{{ lang.label }}</span>
         <div class="i18n-field__input">
+          <ProductRichTextEditor
+            v-if="type === 'richtext'"
+            :model-value="modelValue?.[lang.code] || ''"
+            @update:model-value="update(lang.code, $event)"
+          />
           <ElInput
-            v-if="type !== 'textarea'"
+            v-else-if="type === 'textarea'"
+            type="textarea"
+            :rows="rows || 3"
             :model-value="modelValue?.[lang.code] || ''"
             :placeholder="`${label || ''} (${lang.label})`"
             @update:model-value="update(lang.code, $event)"
           />
           <ElInput
             v-else
-            type="textarea"
-            :rows="rows || 3"
             :model-value="modelValue?.[lang.code] || ''"
             :placeholder="`${label || ''} (${lang.label})`"
             @update:model-value="update(lang.code, $event)"
@@ -209,6 +219,15 @@ async function autoTranslate() {
   display: flex;
   align-items: flex-start;
   gap: 8px;
+}
+
+.i18n-field--stacked {
+  flex-wrap: wrap;
+}
+
+.i18n-field--stacked .i18n-field__input {
+  flex: 1 1 100%;
+  margin-top: 4px;
 }
 
 .i18n-field__flag {

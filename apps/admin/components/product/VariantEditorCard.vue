@@ -246,7 +246,7 @@ async function handleSave() {
 
         <ElFormItem label="说明信息">
           <ProductRichTextEditor v-model="editing.specifications" />
-          <AdminI18nInput v-model="editing.specificationsI18n" :source-text="editing.specifications" label="说明信息" type="textarea" :rows="4" />
+          <AdminI18nInput v-model="editing.specificationsI18n" :source-text="editing.specifications" label="说明信息" type="richtext" />
         </ElFormItem>
 
         <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px">

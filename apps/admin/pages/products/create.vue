@@ -250,7 +250,7 @@ async function save() {
 
             <ElFormItem label="说明信息">
               <ProductRichTextEditor v-model="defaultVariant.specifications" />
-              <AdminI18nInput v-model="defaultVariant.specificationsI18n" :source-text="defaultVariant.specifications" label="说明信息" type="textarea" :rows="4" />
+              <AdminI18nInput v-model="defaultVariant.specificationsI18n" :source-text="defaultVariant.specifications" label="说明信息" type="richtext" />
             </ElFormItem>
           </ElForm>
         </AdminProductEditorSection>
