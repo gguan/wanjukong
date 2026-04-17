@@ -110,8 +110,12 @@ export function useLang(): {
 
   function setLang(l: Lang) {
     langCookie.value = l;
-    // Reload page with new lang query param to re-fetch localized data
-    navigateTo({ query: { ...route.query, lang: l } });
+    // Full page reload with new lang query param to re-fetch all localized data
+    if (import.meta.client) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('lang', l);
+      window.location.href = url.toString();
+    }
   }
 
   return { lang, setLang, supported: SUPPORTED_LANGS, labels: LANG_LABELS };
