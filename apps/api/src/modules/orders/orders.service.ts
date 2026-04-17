@@ -8,6 +8,7 @@ import {
 import * as crypto from 'crypto';
 import { ProductStatus, Prisma } from '@prisma/client';
 import { deriveProductDisplayAvailability } from '../../utils/product-sale-state';
+import { toPublicUrl } from '../../utils/image-url';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateBuyNowOrderDto } from './dto/create-buy-now-order.dto';
 import { CreateCartOrderDto } from './dto/create-cart-order.dto';
@@ -301,7 +302,13 @@ export class OrdersService {
       throw new NotFoundException('Order not found');
     }
 
-    return order;
+    return {
+      ...order,
+      items: order.items.map((i) => ({
+        ...i,
+        coverImageUrlSnapshot: toPublicUrl(i.coverImageUrlSnapshot),
+      })),
+    };
   }
 
   /**
@@ -356,7 +363,16 @@ export class OrdersService {
       ? data.map((order) => this.maskOrderItems(order, query.brandIds!))
       : data;
 
-    return { data: maskedData, total, page, limit };
+    // Transform object keys to public URLs
+    const transformed = maskedData.map((order) => ({
+      ...order,
+      items: order.items.map((i: any) => ({
+        ...i,
+        coverImageUrlSnapshot: toPublicUrl(i.coverImageUrlSnapshot),
+      })),
+    }));
+
+    return { data: transformed, total, page, limit };
   }
 
   /**
@@ -463,11 +479,17 @@ export class OrdersService {
       throw new NotFoundException('Order not found');
     }
 
-    if (brandIds?.length) {
-      return this.maskOrderItems(order, brandIds);
-    }
+    const masked = brandIds?.length
+      ? this.maskOrderItems(order, brandIds)
+      : order;
 
-    return order;
+    return {
+      ...masked,
+      items: masked.items.map((i: any) => ({
+        ...i,
+        coverImageUrlSnapshot: toPublicUrl(i.coverImageUrlSnapshot),
+      })),
+    };
   }
 
   /**

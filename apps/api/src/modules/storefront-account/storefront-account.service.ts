@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { CreateAddressDto } from './dto/create-address.dto';
 import { UpdateAddressDto } from './dto/update-address.dto';
+import { toPublicUrl } from '../../utils/image-url';
 
 @Injectable()
 export class StorefrontAccountService {
@@ -133,11 +134,18 @@ export class StorefrontAccountService {
   }
 
   async listOrders(customerId: string) {
-    return this.prisma.order.findMany({
+    const orders = await this.prisma.order.findMany({
       where: { customerId },
       orderBy: { createdAt: 'desc' },
       include: { items: true },
     });
+    return orders.map((o) => ({
+      ...o,
+      items: o.items.map((i) => ({
+        ...i,
+        coverImageUrlSnapshot: toPublicUrl(i.coverImageUrlSnapshot),
+      })),
+    }));
   }
 
   async getOrder(customerId: string, orderNo: string) {
@@ -150,6 +158,12 @@ export class StorefrontAccountService {
       throw new NotFoundException('Order not found');
     }
 
-    return order;
+    return {
+      ...order,
+      items: order.items.map((i) => ({
+        ...i,
+        coverImageUrlSnapshot: toPublicUrl(i.coverImageUrlSnapshot),
+      })),
+    };
   }
 }

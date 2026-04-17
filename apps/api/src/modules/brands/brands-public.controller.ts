@@ -1,6 +1,11 @@
 import { Controller, Get, Param, Query, NotFoundException } from '@nestjs/common';
 import { BrandsService } from './brands.service';
 import { localizeObject, localizeProduct, Lang, DEFAULT_LANG } from '../../utils/i18n';
+import { toPublicUrl } from '../../utils/image-url';
+
+function withLogoUrl(brand: Record<string, unknown>): Record<string, unknown> {
+  return { ...brand, logo: toPublicUrl(brand.logo as string | null) };
+}
 
 @Controller('public/brands')
 export class BrandsPublicController {
@@ -10,7 +15,9 @@ export class BrandsPublicController {
   async findAll(@Query('lang') lang?: string) {
     const brands = await this.brandsService.findAll();
     const l = (lang as Lang) || DEFAULT_LANG;
-    return brands.map((b: Record<string, unknown>) => localizeObject(b, l));
+    return brands.map((b: Record<string, unknown>) =>
+      withLogoUrl(localizeObject(b, l) as Record<string, unknown>),
+    );
   }
 
   @Get(':slug')
@@ -26,7 +33,7 @@ export class BrandsPublicController {
       await this.brandsService.findActiveProductsByBrandSlug(slug);
     const l = (lang as Lang) || DEFAULT_LANG;
     return {
-      ...localizeObject(brand as Record<string, unknown>, l),
+      ...withLogoUrl(localizeObject(brand as Record<string, unknown>, l) as Record<string, unknown>),
       products: products.map((p: Record<string, unknown>) => localizeProduct(p, l)),
     };
   }

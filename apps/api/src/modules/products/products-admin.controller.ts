@@ -22,6 +22,19 @@ import { ReorderProductImagesDto } from './dto/reorder-product-images.dto';
 import { CreateProductVariantDto } from './dto/create-product-variant.dto';
 import { UpdateProductVariantDto } from './dto/update-product-variant.dto';
 import { BrandPermissionGuard } from '../admin-auth/guards/brand-permission.guard';
+import { toPublicUrl, normalizeKey } from '../../utils/image-url';
+
+function withImageUrl<T extends { imageUrl?: string | null }>(p: T): T {
+  return { ...p, imageUrl: toPublicUrl(p.imageUrl) };
+}
+
+function withImagesUrls<T extends { imageUrl: string }>(imgs: T[]): T[] {
+  return imgs.map((i) => ({ ...i, imageUrl: toPublicUrl(i.imageUrl) as string }));
+}
+
+function withVariantUrls<T extends { coverImageUrl?: string | null }>(v: T): T {
+  return { ...v, coverImageUrl: toPublicUrl(v.coverImageUrl) };
+}
 
 @UseGuards(BrandPermissionGuard)
 @Controller('admin/products')
@@ -33,7 +46,7 @@ export class ProductsAdminController {
   ) {}
 
   @Get()
-  findAll(
+  async findAll(
     @Req() req: Request,
     @Query('search') search?: string,
     @Query('status') status?: string,
@@ -41,28 +54,37 @@ export class ProductsAdminController {
     @Query('limit') limit?: string,
   ) {
     const allowedBrandIds = (req as any).allowedBrandIds;
-    return this.productsService.findAll(allowedBrandIds, {
+    const result = await this.productsService.findAll(allowedBrandIds, {
       search,
       status,
       page: page ? parseInt(page, 10) : undefined,
       limit: limit ? parseInt(limit, 10) : undefined,
     });
+    return { ...result, data: result.data.map(withImageUrl) };
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.productsService.findOne(id);
+  async findOne(@Param('id') id: string) {
+    const product = await this.productsService.findOne(id);
+    return withImageUrl(product);
   }
 
   @Post()
-  create(@Body() dto: CreateProductDto) {
-    return this.productsService.create(dto);
+  async create(@Body() dto: CreateProductDto) {
+    const normalized = { ...dto, imageUrl: normalizeKey(dto.imageUrl) ?? undefined };
+    const product = await this.productsService.create(normalized);
+    return withImageUrl(product);
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateProductDto, @Req() req: Request) {
+  async update(@Param('id') id: string, @Body() dto: UpdateProductDto, @Req() req: Request) {
     const isBrandManager = (req as any).session?.adminRole === 'BRAND_MANAGER';
-    return this.productsService.update(id, dto, isBrandManager);
+    const normalized = {
+      ...dto,
+      ...(dto.imageUrl !== undefined ? { imageUrl: normalizeKey(dto.imageUrl) ?? undefined } : {}),
+    };
+    const product = await this.productsService.update(id, normalized, isBrandManager);
+    return withImageUrl(product);
   }
 
   @Delete(':id')
@@ -111,21 +133,29 @@ export class ProductsAdminController {
   // ── Product Images ──────────────────────────────────────
 
   @Get(':id/images')
-  getImages(@Param('id') id: string) {
-    return this.productImagesService.findByProductId(id);
+  async getImages(@Param('id') id: string) {
+    const imgs = await this.productImagesService.findByProductId(id);
+    return withImagesUrls(imgs);
   }
 
   @Post(':id/images')
-  addImages(@Param('id') id: string, @Body() dto: AddProductImagesDto) {
-    return this.productImagesService.addImages(id, dto.images);
+  async addImages(@Param('id') id: string, @Body() dto: AddProductImagesDto) {
+    // Normalize incoming URLs to object keys
+    const images = dto.images.map((img) => ({
+      ...img,
+      imageUrl: normalizeKey(img.imageUrl) ?? img.imageUrl,
+    }));
+    const result = await this.productImagesService.addImages(id, images);
+    return Array.isArray(result) ? withImagesUrls(result) : result;
   }
 
   @Patch(':id/images/reorder')
-  reorderImages(
+  async reorderImages(
     @Param('id') id: string,
     @Body() dto: ReorderProductImagesDto,
   ) {
-    return this.productImagesService.reorder(id, dto.items);
+    const result = await this.productImagesService.reorder(id, dto.items);
+    return Array.isArray(result) ? withImagesUrls(result) : result;
   }
 
   @Patch(':id/images/:imageId/primary')
@@ -147,33 +177,45 @@ export class ProductsAdminController {
   // ── Product Variants ────────────────────────────────────
 
   @Get(':id/variants')
-  getVariants(@Param('id') id: string) {
-    return this.productVariantsService.findByProductId(id);
+  async getVariants(@Param('id') id: string) {
+    const variants = await this.productVariantsService.findByProductId(id);
+    return variants.map(withVariantUrls);
   }
 
   @Post(':id/variants')
-  createVariant(
+  async createVariant(
     @Param('id') id: string,
     @Body() dto: CreateProductVariantDto,
   ) {
-    return this.productVariantsService.create(id, dto);
+    const normalized = {
+      ...dto,
+      ...(dto.coverImageUrl !== undefined ? { coverImageUrl: normalizeKey(dto.coverImageUrl) ?? undefined } : {}),
+    };
+    const v = await this.productVariantsService.create(id, normalized);
+    return withVariantUrls(v);
   }
 
   @Get(':id/variants/:variantId')
-  getVariant(
+  async getVariant(
     @Param('id') id: string,
     @Param('variantId') variantId: string,
   ) {
-    return this.productVariantsService.findOne(id, variantId);
+    const v = await this.productVariantsService.findOne(id, variantId);
+    return withVariantUrls(v);
   }
 
   @Patch(':id/variants/:variantId')
-  updateVariant(
+  async updateVariant(
     @Param('id') id: string,
     @Param('variantId') variantId: string,
     @Body() dto: UpdateProductVariantDto,
   ) {
-    return this.productVariantsService.update(id, variantId, dto);
+    const normalized = {
+      ...dto,
+      ...(dto.coverImageUrl !== undefined ? { coverImageUrl: normalizeKey(dto.coverImageUrl) ?? undefined } : {}),
+    };
+    const v = await this.productVariantsService.update(id, variantId, normalized);
+    return withVariantUrls(v);
   }
 
   @Delete(':id/variants/:variantId')

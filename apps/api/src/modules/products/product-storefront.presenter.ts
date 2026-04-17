@@ -2,15 +2,18 @@ import {
   deriveProductDisplayAvailability,
   deriveVariantPurchasability,
 } from '../../utils/product-sale-state';
+import { toPublicUrl } from '../../utils/image-url';
 
-type StorefrontVariant = { stock: number };
+type StorefrontVariant = { stock: number; coverImageUrl?: string | null };
 
 type StorefrontProduct<TVariant extends StorefrontVariant> = {
   status: 'DRAFT' | 'PENDING_REVIEW' | 'ACTIVE' | 'INACTIVE';
   saleType: 'IN_STOCK' | 'PREORDER';
   preorderStartAt: Date | null;
   preorderEndAt: Date | null;
+  imageUrl?: string | null;
   variants: TVariant[];
+  images?: Array<{ imageUrl: string; [k: string]: unknown }>;
 };
 
 export function toPublicProductView<
@@ -34,10 +37,12 @@ export function toPublicProductView<
 
   return {
     ...product,
+    imageUrl: toPublicUrl(product.imageUrl),
     displayAvailability,
     isPurchasable,
     variants: product.variants.map((variant) => ({
       ...variant,
+      coverImageUrl: toPublicUrl(variant.coverImageUrl),
       ...deriveVariantPurchasability({
         productStatus: product.status,
         saleType: product.saleType,
@@ -47,5 +52,13 @@ export function toPublicProductView<
         variantStock: variant.stock,
       }),
     })),
+    ...(product.images
+      ? {
+          images: product.images.map((img) => ({
+            ...img,
+            imageUrl: toPublicUrl(img.imageUrl),
+          })),
+        }
+      : {}),
   };
 }
