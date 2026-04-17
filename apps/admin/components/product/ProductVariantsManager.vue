@@ -1,5 +1,9 @@
 <script setup lang="ts">
-const props = defineProps<{ productId: string }>();
+const props = defineProps<{
+  productId: string;
+  brandSlug?: string;
+  productSlug?: string;
+}>();
 const api = useAdminApi();
 
 interface Variant {
@@ -170,6 +174,27 @@ function startCreate() {
   showNewForm.value = true;
 }
 
+function copyFromLast() {
+  // Copy fields from the last existing variant (sorted by sortOrder desc)
+  if (variants.value.length === 0) return;
+  const last = [...variants.value].sort((a, b) => b.sortOrder - a.sortOrder)[0];
+  newForm.name = last.name + ' (副本)';
+  newForm.nameI18n = { ...(last.nameI18n || {}) };
+  newForm.subtitle = last.subtitle || '';
+  newForm.subtitleI18n = { ...(last.subtitleI18n || {}) };
+  newForm.specifications = last.specifications || '';
+  newForm.specificationsI18n = { ...(last.specificationsI18n || {}) };
+  newForm.manufacturerSku = last.manufacturerSku || '';
+  newForm.priceYuan = last.priceCents / 100;
+  newForm.usdPriceDollar = (last.usdPriceCents ?? 0) / 100;
+  newForm.stock = last.stock;
+  newForm.coverImageUrl = last.coverImageUrl || '';
+  newForm.sortOrder = variants.value.length;
+  // Don't copy SKU — user should set a new one or leave blank to auto-generate
+  newForm.sku = '';
+  ElMessage.success('已复制上一版本信息');
+}
+
 onMounted(loadVariants);
 </script>
 
@@ -187,6 +212,8 @@ onMounted(loadVariants);
           :key="v.id"
           :variant="v"
           :expanded="expandedIds.has(v.id)"
+          :brand-slug="brandSlug"
+          :product-slug="productSlug"
           @toggle="toggleExpand(v.id)"
           @save="(data) => saveVariant(v.id, data)"
           @delete="deleteVariant(v.id)"
@@ -203,6 +230,14 @@ onMounted(loadVariants);
             <span class="variant-card__name">新建版本</span>
           </div>
           <div class="variant-card__actions">
+            <ElButton
+              v-if="variants.length > 0"
+              size="small"
+              text
+              @click="copyFromLast"
+            >
+              复制上一版本
+            </ElButton>
             <ElButton size="small" text @click="showNewForm = false">取消</ElButton>
           </div>
         </div>
@@ -243,8 +278,15 @@ onMounted(loadVariants);
                 <ElInputNumber v-model="newForm.stock" :min="0" style="width: 100%" />
               </ElFormItem>
             </div>
-            <ElFormItem label="封面图链接">
-              <ElInput v-model="newForm.coverImageUrl" placeholder="可选的版本专属图片" />
+            <ElFormItem label="封面图">
+              <AdminImageUploadField
+                v-model="newForm.coverImageUrl"
+                prefix="products"
+                :brand-slug="brandSlug"
+                :product-slug="productSlug"
+                label="点击或拖拽上传版本封面图"
+                hint="支持 JPG/PNG/WebP，最大 5MB，自动转为 JPG"
+              />
             </ElFormItem>
             <ElFormItem label="说明信息">
               <ProductRichTextEditor v-model="newForm.specifications" />

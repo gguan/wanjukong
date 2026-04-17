@@ -20,6 +20,8 @@ interface Variant {
 const props = defineProps<{
   variant: Variant;
   expanded: boolean;
+  brandSlug?: string;
+  productSlug?: string;
 }>();
 
 const emit = defineEmits<{
@@ -42,6 +44,7 @@ const editing = reactive({
   specifications: '',
   specificationsI18n: {} as Record<string, string>,
   sortOrder: 0,
+  coverImageUrl: '',
 });
 
 const dirty = ref(false);
@@ -62,6 +65,7 @@ watch(
     editing.specifications = v.specifications || '';
     editing.specificationsI18n = (v as any).specificationsI18n || {};
     editing.sortOrder = v.sortOrder;
+    editing.coverImageUrl = v.coverImageUrl || '';
     dirty.value = false;
   },
   { immediate: true },
@@ -105,6 +109,7 @@ async function handleSave() {
     specifications: editing.specifications || undefined,
     specificationsI18n: editing.specificationsI18n,
     sortOrder: Number(editing.sortOrder),
+    coverImageUrl: editing.coverImageUrl || null,
   } as any);
   await nextTick();
   saving.value = false;
@@ -190,6 +195,17 @@ async function handleSave() {
             <ElInputNumber v-model="editing.stock" :min="0" style="width: 100%" />
           </ElFormItem>
         </div>
+
+        <ElFormItem label="封面图">
+          <AdminImageUploadField
+            v-model="editing.coverImageUrl"
+            prefix="products"
+            :brand-slug="brandSlug"
+            :product-slug="productSlug"
+            label="点击或拖拽上传版本封面图"
+            hint="支持 JPG/PNG/WebP，最大 5MB，自动转为 JPG"
+          />
+        </ElFormItem>
 
         <ElFormItem label="说明信息">
           <ProductRichTextEditor v-model="editing.specifications" />

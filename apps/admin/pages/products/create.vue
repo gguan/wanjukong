@@ -4,7 +4,7 @@ definePageMeta({ middleware: 'auth', layout: 'admin' });
 const api = useAdminApi();
 const router = useRouter();
 
-interface Option { id: string; name: string }
+interface Option { id: string; name: string; slug?: string }
 
 const brands = ref<Option[]>([]);
 const categories = ref<Option[]>([]);
@@ -24,6 +24,14 @@ const form = ref({
   preorderEndAt: '',
   estimatedShipAt: '',
   depositYuan: 0,
+  imageUrl: '',
+});
+
+// Computed brand slug for upload path
+interface OptionWithSlug extends Option { slug?: string }
+const brandSlug = computed(() => {
+  const b = brands.value.find((x) => x.id === form.value.brandId) as OptionWithSlug | undefined;
+  return b?.slug || '';
 });
 
 const defaultVariant = ref({
@@ -132,6 +140,18 @@ async function save() {
             :brands="brands"
             :categories="categories"
             @blur-name="generateSlug"
+          />
+        </AdminProductEditorSection>
+
+        <!-- Product Main Image -->
+        <AdminProductEditorSection title="商品主图" description="商品列表和首页展示的主图。保存后可在商品编辑页添加更多图片。">
+          <AdminImageUploadField
+            v-model="form.imageUrl"
+            prefix="products"
+            :brand-slug="brandSlug"
+            :product-slug="form.slug"
+            label="点击或拖拽上传商品主图"
+            hint="支持 JPG/PNG/WebP，最大 5MB，自动转为 JPG。请先选择品牌和填写 URL 标识。"
           />
         </AdminProductEditorSection>
 

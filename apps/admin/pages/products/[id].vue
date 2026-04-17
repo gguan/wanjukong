@@ -28,6 +28,7 @@ const form = ref({
   depositYuan: 0,
   isFeatured: false,
   featuredSort: 0,
+  imageUrl: '',
 });
 
 const updatedAt = ref('');
@@ -74,6 +75,7 @@ onMounted(async () => {
     depositYuan: (product.depositCents as number) ? (product.depositCents as number) / 100 : 0,
     isFeatured: (product.isFeatured as boolean) || false,
     featuredSort: (product.featuredSort as number) || 0,
+    imageUrl: (product.imageUrl as string) || '',
   };
 
   if (product.updatedAt) {
@@ -216,8 +218,20 @@ async function deleteProduct() {
 
 
 
-        <!-- Media -->
-        <AdminProductEditorSection title="商品图片" description="前台展示给用户的商品图片。">
+        <!-- Main Image -->
+        <AdminProductEditorSection title="商品主图" description="商品列表和首页展示的主图。">
+          <AdminImageUploadField
+            v-model="form.imageUrl"
+            prefix="products"
+            :brand-slug="brandSlug"
+            :product-slug="form.slug"
+            label="点击或拖拽上传商品主图"
+            hint="支持 JPG/PNG/WebP，最大 5MB，自动转为 JPG"
+          />
+        </AdminProductEditorSection>
+
+        <!-- Media Gallery -->
+        <AdminProductEditorSection title="商品图集" description="商品详情页展示的多张图片。">
           <ProductImagesManager
             :product-id="(route.params.id as string)"
             :brand-slug="brandSlug"
@@ -227,7 +241,11 @@ async function deleteProduct() {
 
         <!-- Versions -->
         <AdminProductEditorSection title="商品版本" description="管理可售版本，如标准版、豪华版和限定版。">
-          <ProductVariantsManager :product-id="(route.params.id as string)" />
+          <ProductVariantsManager
+            :product-id="(route.params.id as string)"
+            :brand-slug="brandSlug"
+            :product-slug="form.slug"
+          />
         </AdminProductEditorSection>
 
         <!-- Product Details section removed: brand/category/scale already in sidebar -->
