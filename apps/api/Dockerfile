@@ -30,4 +30,6 @@ WORKDIR /app/apps/api
 RUN npx prisma generate
 
 EXPOSE 3001
-CMD ["node", "dist/main"]
+# Apply pending migrations on startup, then launch the server.
+# `migrate deploy` is safe for production — only applies committed migrations.
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]
