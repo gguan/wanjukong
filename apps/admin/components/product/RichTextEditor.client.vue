@@ -6,16 +6,22 @@ import Placeholder from '@tiptap/extension-placeholder';
 const props = defineProps<{ modelValue: string }>();
 const emit = defineEmits<{ (e: 'update:modelValue', v: string): void }>();
 
+// Flush editor content to the v-model. TipTap fires onUpdate after each
+// transaction, but we also flush on blur so that clicking a button outside
+// the editor (e.g. 🤖AI翻译) always sees the freshest content in the prop.
+function flush(e: { editor: { getHTML: () => string } }) {
+  const html = e.editor.getHTML();
+  emit('update:modelValue', html === '<p></p>' ? '' : html);
+}
+
 const editor = useEditor({
   content: props.modelValue || '',
   extensions: [
     StarterKit,
     Placeholder.configure({ placeholder: '请输入说明信息...' }),
   ],
-  onUpdate({ editor: e }) {
-    const html = e.getHTML();
-    emit('update:modelValue', html === '<p></p>' ? '' : html);
-  },
+  onUpdate: flush,
+  onBlur: flush,
 });
 
 // Sync external model changes (e.g. when variant data loads)

@@ -46,13 +46,37 @@ const filledCount = computed(() => {
 
 /**
  * One-click translate: calls /api/admin/translate with the source text,
- * fills all empty language fields with the result.
+ * overwrites all language fields with the fresh translation.
+ *
+ * NOTE: we deliberately overwrite existing translations. Common case:
+ * user copied a variant (which also copied stale translations) and then
+ * edited the source — expecting a click of 🤖AI翻译 to give fresh results.
+ * Keeping old translations caused the "translates the other variant"
+ * confusion reported in the admin UI.
  */
 async function autoTranslate() {
+  // Flush any pending reactive updates from the source rich-text editor
+  // (TipTap emits onUpdate synchronously but we wait a tick for safety).
+  await nextTick();
+
   const text = props.sourceText;
   if (!text?.trim()) {
     ElMessage.warning('请先填写原文内容');
     return;
+  }
+
+  // Confirm overwrite if existing translations are non-empty.
+  const hasExisting = langs.some((l) => props.modelValue?.[l.code]?.trim());
+  if (hasExisting) {
+    try {
+      await ElMessageBox.confirm(
+        '已有翻译内容，将被新的翻译覆盖，是否继续？',
+        '重新翻译',
+        { confirmButtonText: '覆盖', cancelButtonText: '取消', type: 'warning' },
+      );
+    } catch {
+      return; // user cancelled
+    }
   }
 
   translating.value = true;
@@ -67,12 +91,10 @@ async function autoTranslate() {
       { text, targetLangs: langs.map((l) => l.code), isHtml },
     );
 
-    // Merge: only fill empty fields, don't overwrite existing translations
-    const next = { ...props.modelValue };
+    // Overwrite: replace existing translations with the fresh result.
+    const next: Record<string, string> = {};
     for (const [lang, translated] of Object.entries(result)) {
-      if (!next[lang]?.trim() && translated?.trim()) {
-        next[lang] = translated;
-      }
+      if (translated?.trim()) next[lang] = translated;
     }
     emit('update:modelValue', next);
     ElMessage.success('翻译完成');
