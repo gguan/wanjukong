@@ -1,12 +1,33 @@
 <script setup lang="ts">
+import type { Lang } from '~/composables/useLang';
+
 const APP_NAME = 'wanjukong';
 const router = useRouter();
 const { count } = useCart();
 const { isLoggedIn, customer } = useStorefrontAuth();
+const { lang, setLang, supported, labels } = useLang();
 
 const searchOpen = ref(false);
 const searchInput = ref('');
 const mobileMenuOpen = ref(false);
+const langMenuOpen = ref(false);
+
+function onPickLang(l: Lang) {
+  langMenuOpen.value = false;
+  if (l !== lang.value) setLang(l);
+}
+
+function toggleLangMenu() {
+  langMenuOpen.value = !langMenuOpen.value;
+}
+
+// Close lang menu when clicking outside
+onMounted(() => {
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    if (!target.closest('.lang-switcher')) langMenuOpen.value = false;
+  });
+});
 
 function toggleSearch() {
   searchOpen.value = !searchOpen.value;
@@ -40,6 +61,31 @@ function submitSearch() {
             <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
         </button>
+
+        <!-- Language switcher -->
+        <ClientOnly>
+          <div class="lang-switcher">
+            <button class="lang-toggle" aria-label="Language" @click="toggleLangMenu">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="2" y1="12" x2="22" y2="12" />
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+              </svg>
+            </button>
+            <div v-if="langMenuOpen" class="lang-menu">
+              <button
+                v-for="l in supported"
+                :key="l"
+                class="lang-option"
+                :class="{ 'is-active': l === lang }"
+                @click="onPickLang(l)"
+              >
+                {{ labels[l] }}
+              </button>
+            </div>
+          </div>
+        </ClientOnly>
+
         <NuxtLink to="/cart" class="cart-link" aria-label="Cart">
           <svg class="cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
             <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
@@ -199,6 +245,65 @@ function submitSearch() {
 }
 
 .search-toggle:hover {
+  color: #111;
+}
+
+/* Language switcher */
+.lang-switcher {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.lang-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #555;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  transition: color 0.15s;
+}
+
+.lang-toggle:hover {
+  color: #111;
+}
+
+.lang-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  min-width: 140px;
+  padding: 4px;
+  z-index: 200;
+}
+
+.lang-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px 12px;
+  font-size: 0.875rem;
+  color: #333;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.lang-option:hover {
+  background: #f3f4f6;
+}
+
+.lang-option.is-active {
+  background: #f3f4f6;
+  font-weight: 600;
   color: #111;
 }
 
