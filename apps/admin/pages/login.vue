@@ -23,6 +23,20 @@ const canSubmit = computed(
     !!captchaAnswer.value,
 );
 
+function extractErrorMessage(e: any, fallback: string) {
+  const message =
+    e?.data?.message ??
+    e?.response?._data?.message ??
+    e?.response?.data?.message ??
+    e?.message;
+
+  if (Array.isArray(message)) {
+    return message.find((item) => typeof item === 'string' && item.trim()) || fallback;
+  }
+
+  return typeof message === 'string' && message.trim() ? message : fallback;
+}
+
 async function refreshCaptcha() {
   captchaLoading.value = true;
   captchaError.value = '';
@@ -32,7 +46,7 @@ async function refreshCaptcha() {
     captchaId.value = res.id;
     captchaSvg.value = res.svg;
   } catch (e: any) {
-    captchaError.value = e?.data?.message || e?.message || '验证码加载失败';
+    captchaError.value = extractErrorMessage(e, '验证码加载失败');
   } finally {
     captchaLoading.value = false;
   }
@@ -52,10 +66,10 @@ async function handleLogin() {
       captchaAnswer: captchaAnswer.value,
     });
   } catch (e: any) {
-    error.value = e?.data?.message || e?.message || '登录失败';
+    error.value = extractErrorMessage(e, '登录失败');
     // Captcha is single-use on the server — always refresh after a failed
     // attempt so the next submit starts with a fresh challenge.
-    refreshCaptcha();
+    await refreshCaptcha();
   } finally {
     loading.value = false;
   }
@@ -64,12 +78,7 @@ async function handleLogin() {
 
 <template>
   <div class="login-page">
-    <!-- action="javascript:void(0)" is a belt-and-braces for the case
-         where the user clicks submit before Vue hydration attaches the
-         @submit.prevent handler — without it the browser would do a
-         native GET /login?email=...&password=... reload and the form
-         state would appear to silently vanish. -->
-    <form class="login-form" action="javascript:void(0)" @submit.prevent="handleLogin">
+    <div class="login-form" @keydown.enter.prevent="handleLogin">
       <h1>管理后台登录</h1>
 
       <div v-if="error" class="login-form__error">{{ error }}</div>
@@ -114,10 +123,10 @@ async function handleLogin() {
         </div>
       </label>
 
-      <button type="submit" :disabled="loading || !canSubmit">
+      <button type="button" :disabled="loading || !canSubmit" @click="handleLogin">
         {{ loading ? '登录中...' : '登录' }}
       </button>
-    </form>
+    </div>
   </div>
 </template>
 
@@ -224,7 +233,7 @@ async function handleLogin() {
   color: #b45309;
 }
 
-.login-form button[type='submit'] {
+.login-form button[type='button'] {
   width: 100%;
   padding: 11px;
   background: #111;
@@ -237,11 +246,11 @@ async function handleLogin() {
   transition: background 0.15s;
 }
 
-.login-form button[type='submit']:hover:not(:disabled) {
+.login-form button[type='button']:hover:not(:disabled) {
   background: #333;
 }
 
-.login-form button[type='submit']:disabled {
+.login-form button[type='button']:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
