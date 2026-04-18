@@ -1,8 +1,7 @@
-import { Controller, Post, Get, Param, Body, Query } from '@nestjs/common';
+import { Controller, Post, Get, Param, Body, Query, Req } from '@nestjs/common';
+import { Request } from 'express';
 import { Public } from '../../admin-auth/decorators/public.decorator';
 import { OrdersService } from '../orders.service';
-import { CreateBuyNowOrderDto } from '../dto/create-buy-now-order.dto';
-import { CreateCartOrderDto } from '../dto/create-cart-order.dto';
 import { ValidateCouponDto } from '../dto/validate-coupon.dto';
 
 @Public()
@@ -15,27 +14,28 @@ export class PublicOrdersController {
     return this.ordersService.validateCoupon(dto.code, dto.subtotalCents);
   }
 
-  @Post('buy-now')
-  createBuyNow(@Body() dto: CreateBuyNowOrderDto) {
-    return this.ordersService.createBuyNow(dto);
-  }
-
-  @Post('cart')
-  createCartOrder(@Body() dto: CreateCartOrderDto) {
-    return this.ordersService.createCartOrder(dto);
-  }
-
+  /**
+   * Lookup an order by its public-facing order number.
+   *
+   * Authorization (enforced by the service):
+   *   - Logged-in customer whose session matches the order's customerId, OR
+   *   - Guest with a valid access token (sent as ?token=... — issued at
+   *     checkout-capture time, hashed in the DB).
+   *
+   * Anything else returns 404 to prevent enumeration.
+   */
   @Get(':orderNo')
   findByOrderNo(
     @Param('orderNo') orderNo: string,
-    @Query('token') token?: string,
+    @Query('token') token: string | undefined,
+    @Req() req: Request,
   ) {
-    if (token) {
-      return this.ordersService.findGuestOrderByOrderNoAndToken(
-        orderNo,
-        token,
-      );
-    }
-    return this.ordersService.findByOrderNo(orderNo);
+    const customerId: string | null = (req as unknown as { session?: { customerId?: string } })
+      .session?.customerId ?? null;
+    return this.ordersService.findByOrderNoAuthorized(
+      orderNo,
+      customerId,
+      token ?? null,
+    );
   }
 }
