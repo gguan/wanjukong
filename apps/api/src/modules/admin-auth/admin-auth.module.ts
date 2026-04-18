@@ -5,6 +5,7 @@ import { AdminUsersController } from './admin-users.controller';
 import { AdminAuthService } from './admin-auth.service';
 import { AdminAuditService } from './admin-audit.service';
 import { AdminUsersService } from './admin-users.service';
+import { CaptchaService } from './captcha.service';
 import { SessionAuthGuard } from './guards/session-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 
@@ -14,6 +15,7 @@ import { RolesGuard } from './guards/roles.guard';
     AdminAuthService,
     AdminAuditService,
     AdminUsersService,
+    CaptchaService,
     // Global guards — order matters: session first, then roles
     {
       provide: APP_GUARD,

@@ -4,7 +4,11 @@ export function useAdminAuth() {
   const store = useAdminAuthStore();
   const api = useAdminApi();
 
-  async function login(email: string, password: string, captcha?: { captchaTicket?: string; captchaRandstr?: string }) {
+  async function login(
+    email: string,
+    password: string,
+    captcha: { captchaId: string; captchaAnswer: string },
+  ) {
     const user = await api.post<{
       id: string;
       email: string;
@@ -13,10 +17,15 @@ export function useAdminAuth() {
     }>('/api/admin/auth/login', {
       email,
       password,
-      ...(captcha || {}),
+      captchaId: captcha.captchaId,
+      captchaAnswer: captcha.captchaAnswer,
     });
     store.setUser(user);
     navigateTo('/');
+  }
+
+  async function fetchCaptcha() {
+    return api.get<{ id: string; svg: string }>('/api/admin/auth/captcha');
   }
 
   async function logout() {
@@ -57,5 +66,6 @@ export function useAdminAuth() {
     login,
     logout,
     bootstrap,
+    fetchCaptcha,
   };
 }

@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Get,
@@ -12,6 +11,7 @@ import { Throttle } from '@nestjs/throttler';
 import { Request } from 'express';
 import { AdminAuthService } from './admin-auth.service';
 import { AdminAuditService } from './admin-audit.service';
+import { CaptchaService } from './captcha.service';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { Public } from './decorators/public.decorator';
@@ -22,7 +22,19 @@ export class AdminAuthController {
   constructor(
     private authService: AdminAuthService,
     private audit: AdminAuditService,
+    private captcha: CaptchaService,
   ) {}
+
+  /**
+   * Issue a new SVG captcha challenge. Client renders `svg` inline and sends
+   * `id` + user-typed answer back with the login request.
+   */
+  @Public()
+  @Throttle({ default: { ttl: 60_000, limit: 30 } })
+  @Get('captcha')
+  getCaptcha() {
+    return this.captcha.generate();
+  }
 
   @Public()
   @Throttle({ default: { ttl: 60000, limit: 5 } })
@@ -32,12 +44,10 @@ export class AdminAuthController {
     const ip = req.ip || req.socket.remoteAddress;
     const ua = req.headers['user-agent'];
 
-    // Verify TCaptcha before attempting login
-    if (dto.captchaTicket && dto.captchaRandstr) {
-      await this.authService.verifyCaptcha(dto.captchaTicket, dto.captchaRandstr, ip);
-    } else if (process.env.TCAPTCHA_APP_ID) {
-      throw new BadRequestException('请完成验证码验证');
-    }
+    // Verify captcha BEFORE touching the password store. Captcha is
+    // single-use per entry — a failed password attempt still consumes the
+    // challenge so the next login attempt needs a fresh one.
+    this.captcha.verify(dto.captchaId, dto.captchaAnswer);
 
     const user = await this.authService.validateCredentials(
       dto.email,

@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength, IsOptional } from 'class-validator';
+import { IsEmail, IsString, MinLength } from 'class-validator';
 
 export class LoginDto {
   @IsEmail()
@@ -8,13 +8,12 @@ export class LoginDto {
   @MinLength(1)
   password!: string;
 
-  /** TCaptcha ticket */
+  /** Server-issued captcha challenge id (from GET /admin/auth/captcha) */
   @IsString()
-  @IsOptional()
-  captchaTicket?: string;
+  captchaId!: string;
 
-  /** TCaptcha randstr */
+  /** User-typed answer; validated case-insensitively, single-use */
   @IsString()
-  @IsOptional()
-  captchaRandstr?: string;
+  @MinLength(1)
+  captchaAnswer!: string;
 }
