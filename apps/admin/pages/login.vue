@@ -1,70 +1,46 @@
 <script setup lang="ts">
 definePageMeta({ layout: false, middleware: 'auth' });
 
-const { login } = useAdminAuth();
-const config = useRuntimeConfig();
+const { login, fetchCaptcha } = useAdminAuth();
 
 const email = ref('');
 const password = ref('');
 const loading = ref(false);
 const error = ref('');
 
-// TCaptcha state
-const captchaAppId = String(config.public.captchaAppId || '');
-const captchaVerified = ref(false);
-const captchaTicket = ref('');
-const captchaRandstr = ref('');
-const captchaContainerRef = ref<HTMLElement | null>(null);
-let captchaInstance: any = null;
+// Local SVG captcha — fetched from /api/admin/auth/captcha.
+const captchaId = ref('');
+const captchaSvg = ref('');
+const captchaAnswer = ref('');
+const captchaLoading = ref(false);
+const captchaError = ref('');
 
-const canSubmit = computed(() =>
-  email.value && password.value && (captchaVerified.value || !captchaAppId),
+const canSubmit = computed(
+  () =>
+    !!email.value &&
+    !!password.value &&
+    !!captchaId.value &&
+    !!captchaAnswer.value,
 );
 
-onMounted(() => {
-  if (!captchaAppId) return;
-
-  // Load TCaptcha 2.0 SDK
-  const script = document.createElement('script');
-  script.src = 'https://turing.captcha.qcloud.com/TJCaptcha.js';
-  script.onload = () => initCaptcha();
-  document.head.appendChild(script);
-});
-
-function initCaptcha() {
-  const TencentCaptcha = (window as any).TencentCaptcha;
-  if (!TencentCaptcha || !captchaContainerRef.value) return;
-
-  captchaVerified.value = false;
-  captchaTicket.value = '';
-  captchaRandstr.value = '';
-
-  captchaInstance = new TencentCaptcha(
-    captchaContainerRef.value,
-    captchaAppId,
-    (res: any) => {
-      if (res.ret === 0) {
-        captchaVerified.value = true;
-        captchaTicket.value = res.ticket;
-        captchaRandstr.value = res.randstr;
-      } else {
-        captchaVerified.value = false;
-      }
-    },
-    { type: 'embed' },
-  );
-  captchaInstance.show();
-}
-
-function resetCaptcha() {
-  captchaVerified.value = false;
-  captchaTicket.value = '';
-  captchaRandstr.value = '';
-  if (captchaInstance) {
-    try { captchaInstance.destroy(); } catch {}
+async function refreshCaptcha() {
+  captchaLoading.value = true;
+  captchaError.value = '';
+  captchaAnswer.value = '';
+  try {
+    const res = await fetchCaptcha();
+    captchaId.value = res.id;
+    captchaSvg.value = res.svg;
+  } catch (e: any) {
+    captchaError.value = e?.data?.message || e?.message || '验证码加载失败';
+  } finally {
+    captchaLoading.value = false;
   }
-  nextTick(() => initCaptcha());
 }
+
+onMounted(() => {
+  refreshCaptcha();
+});
 
 async function handleLogin() {
   if (!canSubmit.value) return;
@@ -72,12 +48,14 @@ async function handleLogin() {
   error.value = '';
   try {
     await login(email.value, password.value, {
-      captchaTicket: captchaTicket.value || undefined,
-      captchaRandstr: captchaRandstr.value || undefined,
+      captchaId: captchaId.value,
+      captchaAnswer: captchaAnswer.value,
     });
   } catch (e: any) {
     error.value = e?.data?.message || e?.message || '登录失败';
-    resetCaptcha();
+    // Captcha is single-use on the server — always refresh after a failed
+    // attempt so the next submit starts with a fresh challenge.
+    refreshCaptcha();
   } finally {
     loading.value = false;
   }
@@ -101,11 +79,35 @@ async function handleLogin() {
         <input v-model="password" type="password" placeholder="请输入密码" required autocomplete="current-password" />
       </label>
 
-      <!-- TCaptcha embedded -->
-      <div v-if="captchaAppId" class="captcha-section">
-        <div v-show="!captchaVerified" ref="captchaContainerRef" class="captcha-embed" />
-        <div v-if="captchaVerified" class="captcha-success">✓ 验证通过</div>
-      </div>
+      <label>
+        验证码
+        <div class="captcha-row">
+          <input
+            v-model="captchaAnswer"
+            type="text"
+            placeholder="请输入右侧字符"
+            required
+            autocomplete="off"
+            spellcheck="false"
+            maxlength="8"
+            class="captcha-input"
+          />
+          <button
+            type="button"
+            class="captcha-svg"
+            :disabled="captchaLoading"
+            :title="captchaLoading ? '加载中' : '点击刷新验证码'"
+            @click="refreshCaptcha"
+          >
+            <span v-if="captchaLoading" class="captcha-placeholder">...</span>
+            <span v-else-if="captchaError" class="captcha-placeholder captcha-placeholder--error">
+              加载失败
+            </span>
+            <!-- v-html is safe here: SVG comes from our own API and is not user-controlled -->
+            <span v-else class="captcha-svg__inner" v-html="captchaSvg" />
+          </button>
+        </div>
+      </label>
 
       <button type="submit" :disabled="loading || !canSubmit">
         {{ loading ? '登录中...' : '登录' }}
@@ -166,25 +168,60 @@ async function handleLogin() {
   box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.08);
 }
 
-.captcha-section {
-  margin-bottom: 16px;
+.captcha-row {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  margin-top: 6px;
 }
 
-.captcha-embed {
+.captcha-input {
+  flex: 1;
+  margin-top: 0 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.captcha-svg {
+  width: 140px;
+  height: 44px;
+  padding: 0;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
+  background: #f9fafb;
+  cursor: pointer;
   overflow: hidden;
-  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, opacity 0.15s;
 }
 
-.captcha-success {
-  margin-top: 8px;
+.captcha-svg:hover:not(:disabled) {
+  border-color: #111;
+}
+
+.captcha-svg:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.captcha-svg__inner :deep(svg) {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.captcha-placeholder {
   font-size: 0.85rem;
-  color: #16a34a;
-  font-weight: 500;
+  color: #888;
 }
 
-.login-form button {
+.captcha-placeholder--error {
+  color: #b45309;
+}
+
+.login-form button[type='submit'] {
   width: 100%;
   padding: 11px;
   background: #111;
@@ -197,11 +234,11 @@ async function handleLogin() {
   transition: background 0.15s;
 }
 
-.login-form button:hover:not(:disabled) {
+.login-form button[type='submit']:hover:not(:disabled) {
   background: #333;
 }
 
-.login-form button:disabled {
+.login-form button[type='submit']:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
