@@ -178,8 +178,6 @@ async function handleLogin() {
 .captcha-input {
   flex: 1;
   margin-top: 0 !important;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
 }
 
 .captcha-svg {
