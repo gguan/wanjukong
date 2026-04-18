@@ -15,6 +15,7 @@ const captchaVerified = ref(false);
 const captchaTicket = ref('');
 const captchaRandstr = ref('');
 const captchaContainerRef = ref<HTMLElement | null>(null);
+const captchaLoadError = ref('');
 let captchaInstance: any = null;
 
 const canSubmit = computed(() =>
@@ -38,17 +39,29 @@ function initCaptcha() {
   captchaVerified.value = false;
   captchaTicket.value = '';
   captchaRandstr.value = '';
+  captchaLoadError.value = '';
 
   captchaInstance = new TencentCaptcha(
     captchaContainerRef.value,
     captchaAppId,
     (res: any) => {
-      if (res.ret === 0) {
+      // `trerror_` prefix means Tencent's own config/service failed (error 1006
+      // etc.) and the SDK is "softly" calling us back with a fake success so
+      // the form doesn't hang. If we trust it, we'd ship an invalid ticket.
+      // Most common cause: the captchaAppId is not allowlisted for the current
+      // domain in the Tencent Captcha console. Surface a clear error instead.
+      const isFallback = typeof res.ticket === 'string' && res.ticket.startsWith('trerror_');
+      if (res.ret === 0 && !isFallback) {
         captchaVerified.value = true;
         captchaTicket.value = res.ticket;
         captchaRandstr.value = res.randstr;
       } else {
         captchaVerified.value = false;
+        if (isFallback) {
+          captchaLoadError.value =
+            `验证码加载失败（${res.errorMessage || res.errorCode || 'unknown'}）。` +
+            `请确认 Tencent Captcha 控制台已将当前域名加入白名单，或联系管理员。`;
+        }
       }
     },
     { type: 'embed' },
@@ -105,6 +118,7 @@ async function handleLogin() {
       <div v-if="captchaAppId" class="captcha-section">
         <div v-show="!captchaVerified" ref="captchaContainerRef" class="captcha-embed" />
         <div v-if="captchaVerified" class="captcha-success">✓ 验证通过</div>
+        <div v-if="captchaLoadError" class="captcha-error">{{ captchaLoadError }}</div>
       </div>
 
       <button type="submit" :disabled="loading || !canSubmit">
@@ -182,6 +196,17 @@ async function handleLogin() {
   font-size: 0.85rem;
   color: #16a34a;
   font-weight: 500;
+}
+
+.captcha-error {
+  margin-top: 8px;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  padding: 8px 12px;
 }
 
 .login-form button {

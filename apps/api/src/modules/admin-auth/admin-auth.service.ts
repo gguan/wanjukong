@@ -26,6 +26,16 @@ export class AdminAuthService {
    * Skips verification if TCAPTCHA_APP_ID is not configured (dev mode).
    */
   async verifyCaptcha(ticket: string, randstr: string, userIp?: string): Promise<void> {
+    // Defense-in-depth: the Tencent TJCaptcha SDK can return a fake-success
+    // callback with ticket = `trerror_<code>_...` when it can't fetch its own
+    // config (domain allowlist miss, network error, etc). These tickets must
+    // never be accepted — they indicate the captcha challenge never actually
+    // ran. Reject up front regardless of env configuration.
+    if (typeof ticket === 'string' && ticket.startsWith('trerror_')) {
+      this.logger.warn(`Rejecting TCaptcha fallback ticket: ${ticket}`);
+      throw new BadRequestException('验证码加载失败，请刷新页面重试');
+    }
+
     const captchaAppId = process.env.TCAPTCHA_APP_ID;
     const secretId = process.env.TENCENT_COS_SECRET_ID;
     const secretKey = process.env.TENCENT_COS_SECRET_KEY;
