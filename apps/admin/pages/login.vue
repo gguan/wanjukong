@@ -64,7 +64,12 @@ async function handleLogin() {
 
 <template>
   <div class="login-page">
-    <form class="login-form" @submit.prevent="handleLogin">
+    <!-- action="javascript:void(0)" is a belt-and-braces for the case
+         where the user clicks submit before Vue hydration attaches the
+         @submit.prevent handler — without it the browser would do a
+         native GET /login?email=...&password=... reload and the form
+         state would appear to silently vanish. -->
+    <form class="login-form" action="javascript:void(0)" @submit.prevent="handleLogin">
       <h1>管理后台登录</h1>
 
       <div v-if="error" class="login-form__error">{{ error }}</div>
