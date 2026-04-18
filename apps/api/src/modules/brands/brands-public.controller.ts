@@ -1,4 +1,5 @@
 import { Controller, Get, Param, Query, NotFoundException } from '@nestjs/common';
+import { Public } from '../admin-auth/decorators/public.decorator';
 import { BrandsService } from './brands.service';
 import { localizeObject, localizeProduct, Lang, DEFAULT_LANG } from '../../utils/i18n';
 import { toPublicUrl } from '../../utils/image-url';
@@ -7,6 +8,7 @@ function withLogoUrl(brand: Record<string, unknown>): Record<string, unknown> {
   return { ...brand, logo: toPublicUrl(brand.logo as string | null) };
 }
 
+@Public()
 @Controller('public/brands')
 export class BrandsPublicController {
   constructor(private readonly brandsService: BrandsService) {}
