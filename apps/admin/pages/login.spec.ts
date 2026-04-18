@@ -8,7 +8,7 @@ describe('admin login page', () => {
   it('avoids native form submission so clicking login cannot trigger a page reload', () => {
     expect(source).not.toContain('<form');
     expect(source).toContain('@keydown.enter.prevent="handleLogin"');
-    expect(source).toContain('<button type="button" :disabled="loading || !canSubmit" @click="handleLogin">');
+    expect(source).toContain('<button type="button" class="login-submit" :disabled="loading || !canSubmit" @click="handleLogin">');
   });
 
   it('extracts API error messages from fetch response payloads', () => {

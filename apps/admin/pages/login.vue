@@ -123,7 +123,7 @@ async function handleLogin() {
         </div>
       </label>
 
-      <button type="button" :disabled="loading || !canSubmit" @click="handleLogin">
+      <button type="button" class="login-submit" :disabled="loading || !canSubmit" @click="handleLogin">
         {{ loading ? '登录中...' : '登录' }}
       </button>
     </div>
@@ -233,7 +233,7 @@ async function handleLogin() {
   color: #b45309;
 }
 
-.login-form button[type='button'] {
+.login-submit {
   width: 100%;
   padding: 11px;
   background: #111;
@@ -246,11 +246,11 @@ async function handleLogin() {
   transition: background 0.15s;
 }
 
-.login-form button[type='button']:hover:not(:disabled) {
+.login-submit:hover:not(:disabled) {
   background: #333;
 }
 
-.login-form button[type='button']:disabled {
+.login-submit:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
