@@ -5,12 +5,36 @@ import * as connectPgSimple from 'connect-pg-simple';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 
+const IS_PROD = process.env.NODE_ENV === 'production';
+
+/**
+ * Normalise NODE_ENV. If an operator sets `NODE_ENV=Production` or `PROD`,
+ * the string comparison above silently treats the deploy as dev mode —
+ * meaning `secure: false` cookies and permissive fallbacks. Warn loudly.
+ */
+function assertSaneNodeEnv(): void {
+  const raw = process.env.NODE_ENV;
+  if (raw === undefined) {
+    // eslint-disable-next-line no-console
+    console.warn('⚠️  NODE_ENV is unset. Treating as development.');
+    return;
+  }
+  if (raw !== 'production' && raw !== 'development' && raw !== 'test') {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `⚠️  NODE_ENV='${raw}' is not one of production|development|test. ` +
+        "Security-sensitive defaults (cookie secure flag, env-var asserts) only " +
+        "apply when NODE_ENV === 'production' exactly. Double-check your deploy config.",
+    );
+  }
+}
+
 /**
  * Refuse to start in production if a required secret is missing.
  * Fail-closed — do not silently fall back to insecure defaults.
  */
 function assertProductionSecrets(): void {
-  if (process.env.NODE_ENV !== 'production') return;
+  if (!IS_PROD) return;
 
   const required: Array<{ name: string; why: string }> = [
     { name: 'SESSION_SECRET', why: 'signs session cookies; default would let anyone forge admin sessions' },
@@ -33,15 +57,42 @@ function assertProductionSecrets(): void {
   }
 }
 
+/**
+ * Resolve the `secure` cookie flag. Default is production-only, but can be
+ * forced with COOKIE_SECURE=true (e.g. staging over HTTPS) or disabled with
+ * COOKIE_SECURE=false (e.g. a dev tunnel that needs session persistence).
+ * We refuse to disable secure cookies in production.
+ */
+function resolveCookieSecure(): boolean {
+  const override = process.env.COOKIE_SECURE?.toLowerCase();
+  if (override === 'true') return true;
+  if (override === 'false') {
+    if (IS_PROD) {
+      // eslint-disable-next-line no-console
+      console.error(
+        '🔒 SECURITY: COOKIE_SECURE=false is forbidden in production. Ignoring override.',
+      );
+      return true;
+    }
+    return false;
+  }
+  return IS_PROD;
+}
+
 async function bootstrap() {
+  assertSaneNodeEnv();
   assertProductionSecrets();
 
   const app = await NestFactory.create(AppModule, {
     rawBody: true, // Preserve raw body for WeChat Pay signature verification
   });
 
-  // Trust Nginx reverse proxy — required for secure cookies behind proxy
-  app.getHttpAdapter().getInstance().set('trust proxy', 1);
+  // Trust Nginx reverse proxy — required for secure cookies behind proxy.
+  // Adjust via TRUST_PROXY env var if you run behind multiple layers
+  // (e.g. Cloudflare → Nginx → app). Bad values here break client IP
+  // detection and session cookie issuance.
+  const trustProxy = Number(process.env.TRUST_PROXY ?? '1');
+  app.getHttpAdapter().getInstance().set('trust proxy', Number.isFinite(trustProxy) ? trustProxy : 1);
 
   app.setGlobalPrefix('api');
 
@@ -55,7 +106,7 @@ async function bootstrap() {
   // Server-side session with PostgreSQL store
   const PgSession = connectPgSimple(session);
   const sessionSecret = process.env.SESSION_SECRET || 'dev-secret-change-in-production';
-  if (!process.env.SESSION_SECRET && process.env.NODE_ENV !== 'production') {
+  if (!process.env.SESSION_SECRET && !IS_PROD) {
     Logger.warn(
       'SESSION_SECRET is unset; using an insecure dev default. Set this in production.',
       'Bootstrap',
@@ -75,7 +126,7 @@ async function bootstrap() {
       name: 'wk.sid',
       cookie: {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: resolveCookieSecure(),
         sameSite: 'lax',
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days (rolling keeps it fresh)
       },

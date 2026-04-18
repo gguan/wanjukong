@@ -586,10 +586,17 @@ export class PaymentsService {
       });
     }
 
+    // Charge the first-stage amount. For preorder, this is the deposit;
+    // for in-stock orders, deposit === total (computed at order creation).
+    // We deliberately DO NOT charge totalPriceCents here — a preorder user
+    // who cancels the wx.requestPayment sheet and retries should not be
+    // silently upgraded to a full-price charge.
+    const amountCents = order.depositCents > 0 ? order.depositCents : order.totalPriceCents;
+
     const outTradeNo = `WX-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
     const result = await this.wechatPayProvider.createOrder({
       items: [],
-      amountCents: order.totalPriceCents,
+      amountCents,
       currency: 'CNY',
       outTradeNo,
       openid: customer.wechatOpenId,
@@ -601,7 +608,7 @@ export class PaymentsService {
         wechatPrepayId: result.providerOrderId,
         wechatOutTradeNo: outTradeNo,
         currency: 'CNY',
-        amountCents: order.totalPriceCents,
+        amountCents,
         customerId,
         orderId: order.id,
         cartSnapshotJson: '[]',

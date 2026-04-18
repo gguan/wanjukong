@@ -1,4 +1,5 @@
 import { Controller, Post, Body } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { IsString, IsOptional, IsArray, IsBoolean } from 'class-validator';
 import { TranslateService } from './translate.service';
 
@@ -21,6 +22,10 @@ class GenerateSlugDto {
   name!: string;
 }
 
+// Per-admin quota on AI translate. DeepL bills by character; a compromised
+// admin account without a cap could rack up thousands of dollars in hours.
+// 30 calls/minute gives normal UI usage plenty of headroom.
+@Throttle({ default: { ttl: 60_000, limit: 30 } })
 @Controller('admin/translate')
 export class TranslateController {
   constructor(private readonly translateService: TranslateService) {}
