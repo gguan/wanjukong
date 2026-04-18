@@ -91,8 +91,22 @@ async function bootstrap() {
   // Adjust via TRUST_PROXY env var if you run behind multiple layers
   // (e.g. Cloudflare → Nginx → app). Bad values here break client IP
   // detection and session cookie issuance.
-  const trustProxy = Number(process.env.TRUST_PROXY ?? '1');
-  app.getHttpAdapter().getInstance().set('trust proxy', Number.isFinite(trustProxy) ? trustProxy : 1);
+  //
+  // We treat empty string the same as unset. docker-compose's
+  // `${TRUST_PROXY:-}` expansion forwards an empty string when the host
+  // .env is missing the key, which `??` does NOT catch — and Number('')
+  // is 0, which disables trust proxy entirely, which in turn makes
+  // req.secure=false behind Nginx, which makes express-session drop
+  // Set-Cookie for the freshly regenerated session. Default to 1.
+  const trustProxyRaw = process.env.TRUST_PROXY;
+  const trustProxy =
+    trustProxyRaw && trustProxyRaw.trim() !== ''
+      ? Number(trustProxyRaw)
+      : 1;
+  app
+    .getHttpAdapter()
+    .getInstance()
+    .set('trust proxy', Number.isFinite(trustProxy) ? trustProxy : 1);
 
   app.setGlobalPrefix('api');
 
