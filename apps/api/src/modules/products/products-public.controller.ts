@@ -5,9 +5,11 @@ import {
   Query,
   NotFoundException,
 } from '@nestjs/common';
+import { Public } from '../admin-auth/decorators/public.decorator';
 import { ProductsService } from './products.service';
 import { localizeProduct, Lang, DEFAULT_LANG } from '../../utils/i18n';
 
+@Public()
 @Controller('public/products')
 export class ProductsPublicController {
   constructor(private readonly productsService: ProductsService) {}
