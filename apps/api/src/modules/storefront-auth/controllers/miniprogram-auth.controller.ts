@@ -25,7 +25,12 @@ class BindPhoneDto {
 /**
  * Mini program auth endpoints.
  * Route prefix: /api/miniprogram/auth
+ *
+ * Class is @Public (bypass admin session guard); individual methods either
+ * stay public (wechat/login, logout) or opt into customer session auth
+ * (bind-phone).
  */
+@Public()
 @Controller('miniprogram/auth')
 export class MiniProgramAuthController {
   constructor(private readonly authService: StorefrontAuthService) {}
