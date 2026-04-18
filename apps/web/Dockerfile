@@ -21,8 +21,13 @@ FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-COPY --from=build /app/apps/web/.output ./apps/web/.output
-COPY apps/web/package.json ./apps/web/
+# Non-root user so any RCE inside the container has minimal reach.
+RUN addgroup -S app && adduser -S -G app app
+
+COPY --from=build --chown=app:app /app/apps/web/.output ./apps/web/.output
+COPY --chown=app:app apps/web/package.json ./apps/web/
+
+USER app
 
 EXPOSE 3000
 CMD ["node", "apps/web/.output/server/index.mjs"]
