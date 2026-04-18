@@ -46,6 +46,7 @@ services:
       WECHAT_PAY_API_V3_KEY: ${WECHAT_PAY_API_V3_KEY}
       WECHAT_PAY_PRIVATE_KEY: ${WECHAT_PAY_PRIVATE_KEY}
       WECHAT_PAY_CERT_SERIAL: ${WECHAT_PAY_CERT_SERIAL}
+      WECHAT_PAY_PUBLIC_KEY: ${WECHAT_PAY_PUBLIC_KEY}
       WECHAT_PAY_NOTIFY_URL: ${WECHAT_PAY_NOTIFY_URL}
       WECHAT_APP_SECRET: ${WECHAT_APP_SECRET}
       # Email
@@ -55,8 +56,12 @@ services:
       SMTP_PASS: ${SMTP_PASS}
       SMTP_FROM: ${SMTP_FROM}
       APP_BASE_URL: ${SITE_URL}
-      TCAPTCHA_APP_ID: ${TCAPTCHA_APP_ID:-}
-      TCAPTCHA_APP_SECRET_KEY: ${TCAPTCHA_APP_SECRET_KEY:-}
+      # Translation (admin AI translate)
+      DEEPL_API_KEY: ${DEEPL_API_KEY:-}
+      # Optional runtime overrides
+      COOKIE_SECURE: ${COOKIE_SECURE:-}
+      TRUST_PROXY: ${TRUST_PROXY:-}
+      UPLOAD_TEMP_EXPIRE_HOURS: ${UPLOAD_TEMP_EXPIRE_HOURS:-}
 
   web:
     image: ghcr.io/gguan/wanjukong-web:latest
@@ -85,7 +90,6 @@ services:
       PORT: 3002
       # SSR + 客户端都通过 Nginx 同域代理 (admin.wanjukong.com/api/*)
       NUXT_PUBLIC_API_BASE_URL: ${ADMIN_URL:-https://admin.wanjukong.com}
-      NUXT_PUBLIC_CAPTCHA_APP_ID: ${TCAPTCHA_APP_ID:-}
 
 volumes:
   pgdata:
