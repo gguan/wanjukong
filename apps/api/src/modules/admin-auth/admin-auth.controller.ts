@@ -4,7 +4,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Logger,
   Post,
   Req,
 } from '@nestjs/common';
@@ -20,8 +19,6 @@ import { CurrentAdmin } from './decorators/current-admin.decorator';
 
 @Controller('admin/auth')
 export class AdminAuthController {
-  private readonly logger = new Logger(AdminAuthController.name);
-
   constructor(
     private authService: AdminAuthService,
     private audit: AdminAuditService,
@@ -59,38 +56,19 @@ export class AdminAuthController {
       ua,
     );
 
-    // Rotate session to prevent fixation. We explicitly save() after
-    // regenerate so the store write is durable before we return — without
-    // this, express-session's implicit end-of-response save can race with
-    // the Set-Cookie header, and the next request finds a cookie whose
-    // session row isn't in Postgres yet (observed as an immediate 401 on
-    // the dashboard right after a successful login).
+    // Rotate session to prevent fixation. Do NOT call session.save()
+    // explicitly here — express-session's response-end hook performs the
+    // save implicitly before flushing the body, and explicit save() resets
+    // the modified flag, causing shouldSetCookie() to skip Set-Cookie for
+    // the freshly regenerated SID.
     await new Promise<void>((resolve, reject) => {
       req.session.regenerate((err) => {
         if (err) return reject(err);
         req.session.adminUserId = user.id;
         req.session.adminRole = user.role;
-        req.session.save((saveErr) => {
-          if (saveErr) return reject(saveErr);
-          resolve();
-        });
+        resolve();
       });
     });
-
-    // DIAGNOSTIC: log the factors that decide whether express-session
-    // will emit Set-Cookie on this response. If `secure` is true but
-    // `reqSecure` is false, the browser never receives the cookie and
-    // every subsequent request comes in unauthenticated. Remove once
-    // the production login regression is root-caused.
-    this.logger.log(
-      `login-diag sid=${req.sessionID?.slice(0, 8)}… ` +
-        `reqSecure=${(req as Request).secure} ` +
-        `xfp=${req.headers['x-forwarded-proto']} ` +
-        `proto=${(req as Request).protocol} ` +
-        `trustProxy=${req.app?.get('trust proxy fn') ? 'fn' : req.app?.get('trust proxy')} ` +
-        `cookieSecure=${req.session.cookie.secure} ` +
-        `cookieSameSite=${req.session.cookie.sameSite}`,
-    );
 
     return user;
   }
