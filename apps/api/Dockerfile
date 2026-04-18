@@ -20,14 +20,19 @@ FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
-COPY --from=build /app/apps/api/dist ./apps/api/dist
-COPY apps/api/prisma ./apps/api/prisma
-COPY apps/api/package.json ./apps/api/
+# Non-root user so any RCE inside the container has minimal reach.
+RUN addgroup -S app && adduser -S -G app app
+
+COPY --from=deps --chown=app:app /app/node_modules ./node_modules
+COPY --from=deps --chown=app:app /app/apps/api/node_modules ./apps/api/node_modules
+COPY --from=build --chown=app:app /app/apps/api/dist ./apps/api/dist
+COPY --chown=app:app apps/api/prisma ./apps/api/prisma
+COPY --chown=app:app apps/api/package.json ./apps/api/
 
 WORKDIR /app/apps/api
-RUN npx prisma generate
+RUN npx prisma generate && chown -R app:app /app/apps/api
+
+USER app
 
 EXPOSE 3001
 # Apply pending migrations on startup, then launch the server.
