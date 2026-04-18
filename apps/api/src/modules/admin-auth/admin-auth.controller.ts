@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Logger,
   Post,
   Req,
 } from '@nestjs/common';
@@ -19,6 +20,8 @@ import { CurrentAdmin } from './decorators/current-admin.decorator';
 
 @Controller('admin/auth')
 export class AdminAuthController {
+  private readonly logger = new Logger(AdminAuthController.name);
+
   constructor(
     private authService: AdminAuthService,
     private audit: AdminAuditService,
@@ -73,6 +76,21 @@ export class AdminAuthController {
         });
       });
     });
+
+    // DIAGNOSTIC: log the factors that decide whether express-session
+    // will emit Set-Cookie on this response. If `secure` is true but
+    // `reqSecure` is false, the browser never receives the cookie and
+    // every subsequent request comes in unauthenticated. Remove once
+    // the production login regression is root-caused.
+    this.logger.log(
+      `login-diag sid=${req.sessionID?.slice(0, 8)}… ` +
+        `reqSecure=${(req as Request).secure} ` +
+        `xfp=${req.headers['x-forwarded-proto']} ` +
+        `proto=${(req as Request).protocol} ` +
+        `trustProxy=${req.app?.get('trust proxy fn') ? 'fn' : req.app?.get('trust proxy')} ` +
+        `cookieSecure=${req.session.cookie.secure} ` +
+        `cookieSameSite=${req.session.cookie.sameSite}`,
+    );
 
     return user;
   }
