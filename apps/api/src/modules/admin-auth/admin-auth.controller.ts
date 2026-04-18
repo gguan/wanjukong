@@ -56,15 +56,21 @@ export class AdminAuthController {
       ua,
     );
 
-    // Rotate session to prevent fixation
+    // Rotate session to prevent fixation. We explicitly save() after
+    // regenerate so the store write is durable before we return — without
+    // this, express-session's implicit end-of-response save can race with
+    // the Set-Cookie header, and the next request finds a cookie whose
+    // session row isn't in Postgres yet (observed as an immediate 401 on
+    // the dashboard right after a successful login).
     await new Promise<void>((resolve, reject) => {
-      const oldSession = req.session;
-      oldSession.regenerate((err) => {
+      req.session.regenerate((err) => {
         if (err) return reject(err);
-        // Restore session data after regeneration
         req.session.adminUserId = user.id;
         req.session.adminRole = user.role;
-        resolve();
+        req.session.save((saveErr) => {
+          if (saveErr) return reject(saveErr);
+          resolve();
+        });
       });
     });
 
@@ -94,6 +100,7 @@ export class AdminAuthController {
     return { ok: true };
   }
 
+  @Public()
   @Get('me')
   async me(@Req() req: Request) {
     const adminUserId = req.session?.adminUserId;
