@@ -25,6 +25,7 @@ export const useAdminAuthStore = defineStore('admin-auth', {
     email: (state) => state.user?.email ?? null,
     role: (state) => state.user?.role ?? null,
     isBrandManager: (state) => state.user?.role === 'BRAND_MANAGER',
+    isSuperAdmin: (state) => state.user?.role === 'SUPER_ADMIN',
     isAdminOrAbove: (state) =>
       state.user?.role === 'ADMIN' || state.user?.role === 'SUPER_ADMIN',
     allowedBrandIds: (state) =>
