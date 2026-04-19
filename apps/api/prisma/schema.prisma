@@ -399,6 +399,9 @@ model Order {
   paypalOrderId         String?
   wechatTransactionId   String?
 
+  // Locale (for transactional emails and receipts)
+  locale                String        @default("en")
+
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
 

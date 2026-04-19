@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MailerService } from '../mailer/mailer.service';
+import { normalizeLocale } from '../mailer/locale.util';
 
 interface CreateShipmentInput {
   orderId: string;
@@ -273,7 +274,7 @@ export class ShipmentsService {
    * Send shipment notification email
    */
   private async sendShipmentNotification(
-    order: { email: string; fullName: string; orderNo: string },
+    order: { email: string; fullName: string; orderNo: string; locale: string },
     shipment: { carrier: string; carrierName?: string | null; trackingNumber: string },
   ) {
     const carrierLabel =
@@ -290,6 +291,7 @@ export class ShipmentsService {
       carrierLabel,
       trackingNumber: shipment.trackingNumber,
       trackingUrl,
+      locale: normalizeLocale(order.locale),
     });
   }
 }

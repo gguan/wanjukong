@@ -43,6 +43,7 @@ class CapturePayPalOrderDto {
   @IsString() @IsOptional() addressLine2?: string;
   @IsString() @IsOptional() postalCode?: string;
   @IsString() @IsOptional() currency?: string;
+  @IsString() @IsOptional() locale?: string;
 }
 
 class CreateBalanceDto {

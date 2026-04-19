@@ -19,6 +19,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateBuyNowOrderDto } from './dto/create-buy-now-order.dto';
 import { CreateCartOrderDto } from './dto/create-cart-order.dto';
 import { MailerService } from '../mailer/mailer.service';
+import { normalizeLocale } from '../mailer/locale.util';
 
 export interface FindAllOrdersQuery {
   page?: number;
@@ -122,6 +123,7 @@ export class OrdersService {
           addressLine2: dto.addressLine2,
           postalCode: dto.postalCode,
           currency,
+          locale: normalizeLocale(dto.locale),
           subtotalPriceCents: totalItemCents,
           totalPriceCents: totalItemCents,
           items: {
@@ -282,6 +284,7 @@ export class OrdersService {
           addressLine2: dto.addressLine2,
           postalCode: dto.postalCode,
           currency,
+          locale: normalizeLocale(dto.locale),
           couponCode: dto.couponCode || null,
           discountCents,
           subtotalPriceCents: subtotalCents,
@@ -635,6 +638,7 @@ export class OrdersService {
       name: updated.fullName,
       orderNo: updated.orderNo,
       status,
+      locale: normalizeLocale(updated.locale),
     }).catch(() => {});
 
     return updated;

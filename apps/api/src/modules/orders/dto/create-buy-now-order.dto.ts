@@ -53,4 +53,8 @@ export class CreateBuyNowOrderDto {
   @IsString()
   @IsOptional()
   currency?: string;
+
+  @IsString()
+  @IsOptional()
+  locale?: string;
 }

@@ -27,4 +27,5 @@ export class CreateCartOrderDto {
   wechatTransactionId?: string;
   customerId?: string;
   guestAccessTokenHash?: string;
+  locale?: string;
 }

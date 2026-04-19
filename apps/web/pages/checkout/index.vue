@@ -3,6 +3,7 @@ const { items, count, subtotalCents, depositCents, balanceCents, hasPreorder, cl
 const { isLoggedIn, customer } = useStorefrontAuth();
 const router = useRouter();
 const config = useRuntimeConfig();
+const { lang } = useLang();
 
 // Redirect to cart if empty
 if (import.meta.client && count.value === 0) {
@@ -214,6 +215,7 @@ async function initPayPal() {
             addressLine2: form.addressLine2 || undefined,
             postalCode: form.postalCode || undefined,
             currency: 'USD',
+            locale: lang.value,
           }),
         });
         if (!res.ok) {

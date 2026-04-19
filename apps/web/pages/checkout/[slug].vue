@@ -8,6 +8,7 @@ const slug = route.params.slug as string;
 const variantIdFromQuery = (route.query.variant as string) || '';
 const { fetchProductBySlug } = useProducts();
 const { isLoggedIn, customer } = useStorefrontAuth();
+const { lang } = useLang();
 
 const { data: product, status: loadStatus } = useAsyncData(
   `checkout-product-${slug}`,
@@ -272,6 +273,7 @@ async function initPayPal() {
             addressLine2: form.addressLine2 || undefined,
             postalCode: form.postalCode || undefined,
             currency: 'USD',
+            locale: lang.value,
           }),
         });
         if (!res.ok) {

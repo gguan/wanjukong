@@ -10,6 +10,7 @@ import * as crypto from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { OrdersService } from '../orders/orders.service';
 import { MailerService } from '../mailer/mailer.service';
+import { normalizeLocale } from '../mailer/locale.util';
 import { PaypalProvider } from './providers/paypal.provider';
 import { WechatPayProvider } from './providers/wechat-pay.provider';
 import { deriveProductDisplayAvailability } from '../../utils/product-sale-state';
@@ -41,6 +42,7 @@ interface CapturePayPalOrderInput {
   postalCode?: string;
   currency?: string;
   customerId?: string;
+  locale?: string;
 }
 
 // ─── WeChat Pay types ─────────────────────────────────────
@@ -50,6 +52,7 @@ interface CreateWechatOrderInput {
   customerId: string;
   couponCode?: string;
   addressId?: string;
+  locale?: string;
 }
 
 @Injectable()
@@ -174,6 +177,7 @@ export class PaymentsService {
       addressLine2: input.addressLine2,
       postalCode: input.postalCode,
       currency: input.currency,
+      locale: input.locale,
       paypalOrderId,
       customerId: customerId || undefined,
       guestAccessTokenHash,
@@ -193,6 +197,7 @@ export class PaymentsService {
         totalPriceCents: order.totalPriceCents,
         currency: order.currency,
         guestAccessToken,
+        locale: normalizeLocale(order.locale),
       })
       .catch((err) =>
         this.logger.error('Failed to send order confirmation email', err),
@@ -276,6 +281,7 @@ export class PaymentsService {
         email: customer.email || `wechat+${openid}@noreply.wanjukong.com`,
         phone: shippingAddr?.phone || customer.phone || undefined,
         currency: 'CNY',
+        locale: input.locale ?? 'zh-CN',
         couponCode: reservedCouponCode || undefined,
         discountCents: discountCents || undefined,
         customerId,
@@ -970,6 +976,7 @@ export class PaymentsService {
             items: order.items,
             totalPriceCents: order.totalPriceCents,
             currency: order.currency,
+            locale: normalizeLocale(order.locale),
           })
           .catch((err) =>
             this.logger.error('Failed to send WeChat order confirmation', err),

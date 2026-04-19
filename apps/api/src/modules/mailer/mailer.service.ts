@@ -5,9 +5,9 @@ import type { SupportedLocale } from './locale.util';
 import { getVerificationEmail } from './templates/customer-email-verification';
 import { getPasswordResetEmail } from './templates/customer-password-reset';
 import { getWelcomeEmail } from './templates/customer-welcome';
-import { getOrderConfirmationEmailHtml } from './templates/order-confirmation';
-import { getOrderStatusUpdateEmailHtml } from './templates/order-status-update';
-import { getShipmentNotificationEmailHtml } from './templates/shipment-notification';
+import { getOrderConfirmationEmail } from './templates/order-confirmation';
+import { getOrderStatusUpdateEmail } from './templates/order-status-update';
+import { getShipmentNotificationEmail } from './templates/shipment-notification';
 import {
   getContactAcknowledgementEmail,
   type ContactAckParams,
@@ -215,7 +215,9 @@ export class MailerService implements OnModuleInit {
     totalPriceCents: number;
     currency: string;
     guestAccessToken?: string;
+    locale?: SupportedLocale;
   }): Promise<void> {
+    const locale: SupportedLocale = params.locale ?? 'en';
     const baseUrl = process.env.APP_BASE_URL || 'http://localhost:3000';
     const orderUrl = params.guestAccessToken
       ? `${baseUrl}/orders/${params.orderNo}?token=${params.guestAccessToken}`
@@ -223,12 +225,12 @@ export class MailerService implements OnModuleInit {
 
     if (!this.resend && !this.transporter) {
       this.logger.log(
-        `[DEV] Order confirmation email for ${params.email} — Order ${params.orderNo}`,
+        `[DEV] Order confirmation email for ${params.email} (${locale}) — Order ${params.orderNo}`,
       );
       return;
     }
 
-    const html = getOrderConfirmationEmailHtml({
+    const { subject, html } = getOrderConfirmationEmail(locale, {
       name: params.name,
       orderNo: params.orderNo,
       items: params.items,
@@ -237,11 +239,7 @@ export class MailerService implements OnModuleInit {
       orderUrl,
     });
 
-    await this.dispatch({
-      to: params.email,
-      subject: `Order Confirmed — ${params.orderNo}`,
-      html,
-    });
+    await this.dispatch({ to: params.email, subject, html });
   }
 
   async sendOrderStatusUpdateEmail(params: {
@@ -250,7 +248,9 @@ export class MailerService implements OnModuleInit {
     orderNo: string;
     status: string;
     guestAccessToken?: string;
+    locale?: SupportedLocale;
   }): Promise<void> {
+    const locale: SupportedLocale = params.locale ?? 'en';
     const baseUrl = process.env.APP_BASE_URL || 'http://localhost:3000';
     const orderUrl = params.guestAccessToken
       ? `${baseUrl}/orders/${params.orderNo}?token=${params.guestAccessToken}`
@@ -258,23 +258,19 @@ export class MailerService implements OnModuleInit {
 
     if (!this.resend && !this.transporter) {
       this.logger.log(
-        `[DEV] Order status update email for ${params.email} — Order ${params.orderNo} → ${params.status}`,
+        `[DEV] Order status update email for ${params.email} (${locale}) — Order ${params.orderNo} → ${params.status}`,
       );
       return;
     }
 
-    const html = getOrderStatusUpdateEmailHtml({
+    const { subject, html } = getOrderStatusUpdateEmail(locale, {
       name: params.name,
       orderNo: params.orderNo,
       status: params.status,
       orderUrl,
     });
 
-    await this.dispatch({
-      to: params.email,
-      subject: `Order Update — ${params.orderNo}`,
-      html,
-    });
+    await this.dispatch({ to: params.email, subject, html });
   }
 
   async sendShipmentNotificationEmail(params: {
@@ -284,21 +280,25 @@ export class MailerService implements OnModuleInit {
     carrierLabel: string;
     trackingNumber: string;
     trackingUrl?: string;
+    locale?: SupportedLocale;
   }): Promise<void> {
+    const locale: SupportedLocale = params.locale ?? 'en';
     if (!this.resend && !this.transporter) {
       this.logger.log(
-        `[DEV] Shipment notification for ${params.email} — Order ${params.orderNo}, ` +
+        `[DEV] Shipment notification for ${params.email} (${locale}) — Order ${params.orderNo}, ` +
           `${params.carrierLabel} ${params.trackingNumber}`,
       );
       return;
     }
 
-    const html = getShipmentNotificationEmailHtml(params);
-
-    await this.dispatch({
-      to: params.email,
-      subject: `Your order ${params.orderNo} has been shipped!`,
-      html,
+    const { subject, html } = getShipmentNotificationEmail(locale, {
+      name: params.name,
+      orderNo: params.orderNo,
+      carrierLabel: params.carrierLabel,
+      trackingNumber: params.trackingNumber,
+      trackingUrl: params.trackingUrl,
     });
+
+    await this.dispatch({ to: params.email, subject, html });
   }
 }
