@@ -78,7 +78,7 @@ Open `apps/miniprogram` in WeChat DevTools. The mini program auto-connects to `l
 
 ## Environment Variables
 
-See `.env.example` (root) and `apps/api/.env.example` for all variables:
+See `apps/api/.env.example` (local dev) and `deploy/.env.production.example` (production) for all variables:
 
 | Variable | Description |
 |----------|-------------|
@@ -158,7 +158,7 @@ git clone git@github.com:gguan/wanjukong.git /opt/wanjukong
 cd /opt/wanjukong
 
 # Create .env from template
-cp .env.example .env
+cp deploy/.env.production.example .env
 nano .env   # Fill in ALL values (database password, API keys, etc.)
 ```
 
