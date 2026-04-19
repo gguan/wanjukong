@@ -49,12 +49,14 @@ services:
       WECHAT_PAY_PUBLIC_KEY: ${WECHAT_PAY_PUBLIC_KEY}
       WECHAT_PAY_NOTIFY_URL: ${WECHAT_PAY_NOTIFY_URL}
       WECHAT_APP_SECRET: ${WECHAT_APP_SECRET}
-      # Email
+      # Email — Resend preferred, SMTP fallback
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
       SMTP_HOST: ${SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT}
       SMTP_USER: ${SMTP_USER}
       SMTP_PASS: ${SMTP_PASS}
       SMTP_FROM: ${SMTP_FROM}
+      CONTACT_INBOX_EMAIL: ${CONTACT_INBOX_EMAIL:-}
       APP_BASE_URL: ${SITE_URL}
       # Translation (admin AI translate)
       DEEPL_API_KEY: ${DEEPL_API_KEY:-}
