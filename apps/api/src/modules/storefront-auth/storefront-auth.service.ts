@@ -11,6 +11,7 @@ import * as argon2 from 'argon2';
 import * as crypto from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MailerService } from '../mailer/mailer.service';
+import { normalizeLocale } from '../mailer/locale.util';
 import { RegisterCustomerDto } from './dto/register-customer.dto';
 import { LoginCustomerDto } from './dto/login-customer.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
@@ -28,6 +29,7 @@ export class StorefrontAuthService {
 
   async register(dto: RegisterCustomerDto) {
     const email = dto.email.toLowerCase().trim();
+    const locale = normalizeLocale(dto.locale);
 
     const existing = await this.prisma.customer.findUnique({
       where: { email },
@@ -62,6 +64,7 @@ export class StorefrontAuthService {
       customer.email,
       customer.name,
       token,
+      locale,
     );
 
     return {
@@ -155,8 +158,9 @@ export class StorefrontAuthService {
     return { verified: true };
   }
 
-  async resendVerification(email: string) {
+  async resendVerification(email: string, rawLocale?: string) {
     const normalizedEmail = email.toLowerCase().trim();
+    const locale = normalizeLocale(rawLocale);
 
     const customer = await this.prisma.customer.findUnique({
       where: { email: normalizedEmail },
@@ -187,6 +191,7 @@ export class StorefrontAuthService {
         customer.email,
         customer.name,
         token,
+        locale,
       );
     }
 
@@ -196,6 +201,7 @@ export class StorefrontAuthService {
 
   async forgotPassword(dto: ForgotPasswordDto) {
     const email = dto.email.toLowerCase().trim();
+    const locale = normalizeLocale(dto.locale);
 
     const customer = await this.prisma.customer.findUnique({
       where: { email },
@@ -226,6 +232,7 @@ export class StorefrontAuthService {
         customer.email,
         customer.name,
         token,
+        locale,
       );
     }
 

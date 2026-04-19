@@ -593,3 +593,29 @@ model AdminBrandAssignment {
   @@index([adminUserId])
   @@index([brandId])
 }
+
+enum ContactMessageStatus {
+  NEW
+  IN_PROGRESS
+  RESOLVED
+  SPAM
+}
+
+model ContactMessage {
+  id          String               @id @default(cuid())
+  name        String
+  email       String
+  subject     String
+  orderNumber String?
+  message     String               @db.Text
+  locale      String               @default("en")
+  ipAddress   String?
+  userAgent   String?
+  status      ContactMessageStatus @default(NEW)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@index([status])
+  @@index([email])
+  @@index([createdAt])
+}

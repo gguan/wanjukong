@@ -29,8 +29,11 @@ export class StorefrontAuthController {
   }
 
   @Post('resend-verification')
-  resendVerification(@Body('email') email: string) {
-    return this.storefrontAuthService.resendVerification(email);
+  resendVerification(
+    @Body('email') email: string,
+    @Body('locale') locale?: string,
+  ) {
+    return this.storefrontAuthService.resendVerification(email, locale);
   }
 
   @Post('forgot-password')

@@ -1,28 +1,50 @@
 <script setup lang="ts">
 useSeoMeta({
   title: 'Contact — Over Realm',
-  description: 'Get in touch with the Over Realm team.',
+  description: 'Get in touch with the Over Realm customer service team.',
 })
 
-// Placeholder form — wire to backend when contact endpoint exists.
-const form = reactive({ name: '', email: '', orderNo: '', subject: 'general', message: '' })
+const { post } = usePublicApi()
+const { lang } = useLang()
+
+const form = reactive({
+  name: '',
+  email: '',
+  subject: '',
+  orderNumber: '',
+  message: '',
+})
 const submitting = ref(false)
 const submitted = ref(false)
 const error = ref('')
 
 async function submit() {
   error.value = ''
-  if (!form.name.trim() || !form.email.trim() || !form.message.trim()) {
-    error.value = 'Please fill in your name, email and message.'
+  if (
+    !form.name.trim() ||
+    !form.email.trim() ||
+    !form.subject.trim() ||
+    !form.message.trim()
+  ) {
+    error.value = 'Please fill in all required fields.'
     return
   }
   submitting.value = true
   try {
-    // TODO: Wire to /api/public/contact endpoint when available.
-    await new Promise((r) => setTimeout(r, 600))
+    await post('/public/contact', {
+      name: form.name.trim(),
+      email: form.email.trim(),
+      subject: form.subject.trim(),
+      orderNumber: form.orderNumber.trim() || undefined,
+      message: form.message.trim(),
+      locale: lang.value,
+    })
     submitted.value = true
   } catch (e: any) {
-    error.value = e?.message || 'Failed to send. Please try again or email us directly.'
+    error.value =
+      e?.data?.message ||
+      e?.message ||
+      'Failed to send. Please try again or email us directly.'
   } finally {
     submitting.value = false
   }
@@ -32,12 +54,10 @@ async function submit() {
 <template>
   <article class="info">
     <header class="info-hero">
-      <p class="info-eyebrow">Contact</p>
-      <h1 class="info-title">Let's talk.</h1>
+      <h1 class="info-title">Contact OR</h1>
       <p class="info-lede">
-        <!-- TODO: Replace with your preferred greeting. -->
-        Questions about an order, a pre-order, a product detail, or anything else?
-        We read every message personally.
+        Please complete the customer service form. Our staff will respond during business hours.
+        <br />(M–F 10:00 – 18:00, China Timezone)
       </p>
     </header>
 
@@ -45,35 +65,34 @@ async function submit() {
       <!-- Left: info panels -->
       <aside class="contact-info">
         <div class="info-panel">
-          <p class="panel-label">Email</p>
+          <p class="panel-label">Office visits by appointment only</p>
           <p class="panel-value">
-            <!-- TODO: Replace with your support email. -->
+            <!-- TODO: Replace with your registered office address. -->
+            Over Realm Limited<br />
+            Shenzhen, China
+          </p>
+        </div>
+
+        <div class="info-panel">
+          <p class="panel-label">Customer service</p>
+          <p class="panel-value">
             <a href="mailto:support@overrealm.shop">support@overrealm.shop</a>
           </p>
         </div>
 
         <div class="info-panel">
-          <p class="panel-label">Response Time</p>
+          <p class="panel-label">Wholesale inquiries</p>
           <p class="panel-value">
-            <!-- TODO: Confirm response SLA. -->
-            Within 1–2 business days, often sooner.
+            For wholesale and stockist requests, email
+            <a href="mailto:wholesale@overrealm.shop">wholesale@overrealm.shop</a>.
           </p>
         </div>
 
         <div class="info-panel">
-          <p class="panel-label">Order Help</p>
+          <p class="panel-label">Order help</p>
           <p class="panel-value">
-            Include your order number
-            <!-- TODO: Replace with your actual order number format. -->
-            (<code>WJK-XXXXXXXX-XXXXX</code>) so we can help faster.
-          </p>
-        </div>
-
-        <div class="info-panel">
-          <p class="panel-label">Business Hours</p>
-          <p class="panel-value">
-            <!-- TODO: Replace with your time zone and hours. -->
-            Monday – Friday, 10:00 – 18:00 (UTC+8)
+            Please include your order number
+            (<code>WJK-XXXXXXXX-XXXXX</code>) so we can help you faster.
           </p>
         </div>
       </aside>
@@ -81,50 +100,54 @@ async function submit() {
       <!-- Right: form -->
       <section class="contact-form">
         <div v-if="submitted" class="form-success">
-          <h2 class="success-title">Thanks — we got it.</h2>
+          <h2 class="success-title">Thank you!</h2>
           <p class="success-body">
-            Your message is in. We'll reply to <strong>{{ form.email }}</strong> within 1–2 business days.
+            Your message has been received. We'll reply to
+            <strong>{{ form.email }}</strong> during business hours.
           </p>
         </div>
 
         <form v-else class="form" @submit.prevent="submit">
-          <div class="form-row">
-            <label class="field">
-              <span class="field-label">Name</span>
-              <input v-model="form.name" type="text" class="field-input" required />
-            </label>
-            <label class="field">
-              <span class="field-label">Email</span>
-              <input v-model="form.email" type="email" class="field-input" required />
-            </label>
-          </div>
+          <label class="field">
+            <span class="field-label">Name <span class="req">*</span></span>
+            <input v-model="form.name" type="text" class="field-input" required />
+          </label>
 
-          <div class="form-row">
-            <label class="field">
-              <span class="field-label">Order No. (optional)</span>
-              <input v-model="form.orderNo" type="text" class="field-input" placeholder="WJK-XXXXXXXX-XXXXX" />
-            </label>
-            <label class="field">
-              <span class="field-label">Subject</span>
-              <select v-model="form.subject" class="field-input">
-                <option value="general">General Question</option>
-                <option value="order">Order Issue</option>
-                <option value="preorder">Pre-order Question</option>
-                <option value="return">Return / Refund</option>
-                <option value="other">Other</option>
-              </select>
-            </label>
-          </div>
+          <label class="field">
+            <span class="field-label">Email <span class="req">*</span></span>
+            <input v-model="form.email" type="email" class="field-input" required />
+          </label>
 
-          <label class="field field-block">
-            <span class="field-label">Message</span>
-            <textarea v-model="form.message" class="field-input field-textarea" rows="6" required />
+          <label class="field">
+            <span class="field-label">Subject <span class="req">*</span></span>
+            <input v-model="form.subject" type="text" class="field-input" required />
+          </label>
+
+          <label class="field">
+            <span class="field-label">Order Number</span>
+            <input
+              v-model="form.orderNumber"
+              type="text"
+              class="field-input"
+              placeholder="WJK-XXXXXXXX-XXXXX"
+              inputmode="numeric"
+            />
+          </label>
+
+          <label class="field">
+            <span class="field-label">Message <span class="req">*</span></span>
+            <textarea
+              v-model="form.message"
+              class="field-input field-textarea"
+              rows="6"
+              required
+            />
           </label>
 
           <p v-if="error" class="form-error">{{ error }}</p>
 
           <button type="submit" class="form-submit" :disabled="submitting">
-            {{ submitting ? 'Sending…' : 'Send Message' }}
+            {{ submitting ? 'Sending…' : 'Submit' }}
           </button>
         </form>
       </section>
@@ -144,14 +167,6 @@ async function submit() {
   max-width: 780px;
 }
 
-.info-eyebrow {
-  font-size: 0.75rem;
-  letter-spacing: 0.25em;
-  text-transform: uppercase;
-  color: #888;
-  margin: 0 0 20px;
-}
-
 .info-title {
   font-size: clamp(2.2rem, 5vw, 3.6rem);
   font-weight: 500;
@@ -162,16 +177,16 @@ async function submit() {
 }
 
 .info-lede {
-  font-size: 1.15rem;
-  line-height: 1.6;
+  font-size: 1.05rem;
+  line-height: 1.7;
   color: #444;
   margin: 0;
-  max-width: 580px;
+  max-width: 620px;
 }
 
 .contact-layout {
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: 340px 1fr;
   gap: 72px;
   align-items: start;
 }
@@ -185,10 +200,6 @@ async function submit() {
   padding-top: 32px;
 }
 
-.info-panel {
-  /* no card chrome — reads as editorial sidebar */
-}
-
 .panel-label {
   font-size: 0.7rem;
   letter-spacing: 0.2em;
@@ -200,7 +211,7 @@ async function submit() {
 .panel-value {
   font-size: 0.95rem;
   color: #111;
-  line-height: 1.6;
+  line-height: 1.65;
   margin: 0;
 }
 
@@ -229,12 +240,7 @@ async function submit() {
   display: flex;
   flex-direction: column;
   gap: 24px;
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  max-width: 560px;
 }
 
 .field {
@@ -243,15 +249,17 @@ async function submit() {
   gap: 8px;
 }
 
-.field-block {
-  /* full width within form */
-}
-
 .field-label {
   font-size: 0.75rem;
   letter-spacing: 0.15em;
   text-transform: uppercase;
   color: #999;
+}
+
+.req {
+  color: #b91c1c;
+  letter-spacing: 0;
+  margin-left: 2px;
 }
 
 .field-input {
@@ -276,7 +284,7 @@ async function submit() {
 
 .field-textarea {
   resize: vertical;
-  min-height: 140px;
+  min-height: 160px;
   line-height: 1.6;
   border: 1px solid #eee;
   padding: 12px 14px;
@@ -294,12 +302,12 @@ async function submit() {
 
 .form-submit {
   align-self: flex-start;
-  padding: 14px 36px;
+  padding: 14px 40px;
   background: #0a0a0a;
   color: #fff;
   border: 1px solid #0a0a0a;
   font-size: 0.85rem;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   cursor: pointer;
   font-family: inherit;
@@ -318,11 +326,10 @@ async function submit() {
 
 .form-success {
   padding: 40px 0;
-  border-top: 1px solid #eee;
 }
 
 .success-title {
-  font-size: 1.6rem;
+  font-size: 1.8rem;
   font-weight: 500;
   letter-spacing: -0.02em;
   margin: 0 0 16px;
@@ -347,10 +354,6 @@ async function submit() {
 @media (max-width: 600px) {
   .info {
     padding: 48px 24px;
-  }
-
-  .form-row {
-    grid-template-columns: 1fr;
   }
 }
 </style>

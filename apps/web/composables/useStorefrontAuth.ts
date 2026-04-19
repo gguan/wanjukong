@@ -11,6 +11,7 @@ let _fetched = false;
 
 export function useStorefrontAuth() {
   const { get, post } = usePublicApi();
+  const { lang } = useLang();
 
   const customer = readonly(_customer);
   const isLoggedIn = computed(() => !!_customer.value);
@@ -34,7 +35,7 @@ export function useStorefrontAuth() {
   async function register(email: string, password: string, name?: string) {
     const res = await post<{ customer: CustomerProfile; verificationRequired: boolean }>(
       '/public/auth/register',
-      { email, password, name },
+      { email, password, name, locale: lang.value },
     );
     return res;
   }
@@ -55,11 +56,11 @@ export function useStorefrontAuth() {
   }
 
   async function resendVerification(email: string) {
-    return post('/public/auth/resend-verification', { email });
+    return post('/public/auth/resend-verification', { email, locale: lang.value });
   }
 
   async function forgotPassword(email: string) {
-    return post('/public/auth/forgot-password', { email });
+    return post('/public/auth/forgot-password', { email, locale: lang.value });
   }
 
   async function resetPassword(token: string, newPassword: string) {

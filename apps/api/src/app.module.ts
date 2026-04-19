@@ -17,6 +17,7 @@ import { StorefrontAuthModule } from './modules/storefront-auth/storefront-auth.
 import { StorefrontAccountModule } from './modules/storefront-account/storefront-account.module';
 import { ShipmentsModule } from './modules/shipments/shipments.module';
 import { TranslateModule } from './modules/translate/translate.module';
+import { ContactModule } from './modules/contact/contact.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { TranslateModule } from './modules/translate/translate.module';
     ShipmentsModule,
     TranslateModule,
     UploadsModule,
+    ContactModule,
   ],
   providers: [
     // Global throttle guard (applied before auth guards from AdminAuthModule)
