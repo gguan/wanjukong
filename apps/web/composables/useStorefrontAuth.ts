@@ -52,7 +52,10 @@ export function useStorefrontAuth() {
   }
 
   async function verifyEmail(token: string) {
-    return post<{ verified: boolean }>('/public/auth/verify-email', { token });
+    return post<{ verified: boolean }>('/public/auth/verify-email', {
+      token,
+      locale: lang.value,
+    });
   }
 
   async function resendVerification(email: string) {

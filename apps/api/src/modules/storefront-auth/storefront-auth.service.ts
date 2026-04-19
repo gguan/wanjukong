@@ -130,6 +130,7 @@ export class StorefrontAuthService {
       .createHash('sha256')
       .update(dto.token)
       .digest('hex');
+    const locale = normalizeLocale(dto.locale);
 
     const verification =
       await this.prisma.customerEmailVerification.findFirst({
@@ -144,7 +145,7 @@ export class StorefrontAuthService {
       throw new BadRequestException('Invalid or expired verification token');
     }
 
-    await this.prisma.$transaction([
+    const [, customer] = await this.prisma.$transaction([
       this.prisma.customerEmailVerification.update({
         where: { id: verification.id },
         data: { usedAt: new Date() },
@@ -154,6 +155,21 @@ export class StorefrontAuthService {
         data: { emailVerifiedAt: new Date() },
       }),
     ]);
+
+    // Welcome email is a "nice to have" — never fail verification on send error.
+    try {
+      await this.mailerService.sendWelcomeEmail(
+        customer.email,
+        customer.name,
+        locale,
+      );
+    } catch (err) {
+      this.logger.warn(
+        `Welcome email failed for ${customer.email}: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
 
     return { verified: true };
   }

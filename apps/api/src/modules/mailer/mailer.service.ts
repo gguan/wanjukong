@@ -4,6 +4,7 @@ import { Resend } from 'resend';
 import type { SupportedLocale } from './locale.util';
 import { getVerificationEmail } from './templates/customer-email-verification';
 import { getPasswordResetEmail } from './templates/customer-password-reset';
+import { getWelcomeEmail } from './templates/customer-welcome';
 import { getOrderConfirmationEmailHtml } from './templates/order-confirmation';
 import { getOrderStatusUpdateEmailHtml } from './templates/order-status-update';
 import { getShipmentNotificationEmailHtml } from './templates/shipment-notification';
@@ -119,6 +120,24 @@ export class MailerService implements OnModuleInit {
       name,
       verifyUrl,
     });
+    await this.dispatch({ to: email, subject, html });
+  }
+
+  async sendWelcomeEmail(
+    email: string,
+    name: string | null,
+    locale: SupportedLocale = 'en',
+  ): Promise<void> {
+    const siteUrl = process.env.APP_BASE_URL || 'http://localhost:3000';
+
+    if (!this.resend && !this.transporter) {
+      this.logger.log(
+        `[DEV] Welcome email for ${email} (${locale}) — → ${siteUrl}`,
+      );
+      return;
+    }
+
+    const { subject, html } = getWelcomeEmail(locale, { name, siteUrl });
     await this.dispatch({ to: email, subject, html });
   }
 
