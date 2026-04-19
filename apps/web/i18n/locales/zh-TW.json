@@ -1,0 +1,42 @@
+{
+  "contact": {
+    "meta": {
+      "title": "聯絡我們 — Over Realm",
+      "description": "與 Over Realm 客服團隊取得聯繫。"
+    },
+    "info": {
+      "title": "聯絡 OR",
+      "lede1": "請填寫客服表單。我們的人員將在營業時間內回覆您。",
+      "lede2": "（週一至週五 10:00 – 18:00，中國時區）"
+    },
+    "panel": {
+      "office": {
+        "label": "辦公室僅接受預約訪問",
+        "name": "Over Realm Limited",
+        "address": "中國 深圳"
+      },
+      "customerService": { "label": "客戶服務" },
+      "wholesale": {
+        "label": "批發業務洽詢",
+        "text": "如需批發或成為經銷商，請寄信至 {email}。"
+      },
+      "orderHelp": {
+        "label": "訂單協助",
+        "text": "請於信件中附上訂單編號（{code}），以便我們更快為您處理。"
+      }
+    },
+    "form": {
+      "name": "姓名",
+      "email": "電子郵件",
+      "subject": "主旨",
+      "orderNumber": "訂單編號",
+      "message": "留言內容",
+      "errorRequired": "請填寫所有必填欄位。",
+      "errorGeneric": "傳送失敗。請重試或直接寄信給我們。",
+      "submit": "送出",
+      "submitting": "傳送中…",
+      "successTitle": "感謝您的來信！",
+      "successBody": "我們已收到您的訊息，將於營業時間內回覆至 {email}。"
+    }
+  }
+}

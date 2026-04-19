@@ -1,0 +1,42 @@
+{
+  "contact": {
+    "meta": {
+      "title": "お問い合わせ — Over Realm",
+      "description": "Over Realm カスタマーサービスチームへのお問い合わせはこちらから。"
+    },
+    "info": {
+      "title": "Contact OR",
+      "lede1": "お問い合わせフォームにご記入ください。営業時間内に担当者よりご返信いたします。",
+      "lede2": "（月〜金 10:00 – 18:00、中国時間）"
+    },
+    "panel": {
+      "office": {
+        "label": "オフィス訪問は事前予約制",
+        "name": "Over Realm Limited",
+        "address": "中国 深圳"
+      },
+      "customerService": { "label": "カスタマーサービス" },
+      "wholesale": {
+        "label": "卸売に関するお問い合わせ",
+        "text": "卸売・取扱店舗をご希望の方は {email} までご連絡ください。"
+      },
+      "orderHelp": {
+        "label": "ご注文に関するサポート",
+        "text": "迅速に対応できるよう、ご注文番号（{code}）をご記入ください。"
+      }
+    },
+    "form": {
+      "name": "お名前",
+      "email": "メールアドレス",
+      "subject": "件名",
+      "orderNumber": "注文番号",
+      "message": "メッセージ",
+      "errorRequired": "必須項目をすべてご入力ください。",
+      "errorGeneric": "送信に失敗しました。再度お試しいただくか、直接メールでご連絡ください。",
+      "submit": "送信",
+      "submitting": "送信中…",
+      "successTitle": "ありがとうございます",
+      "successBody": "メッセージを受け付けました。営業時間内に {email} 宛にご返信いたします。"
+    }
+  }
+}

@@ -3,6 +3,7 @@ import type { Lang } from '~/composables/useLang';
 
 const APP_NAME = 'Over Realm';
 const router = useRouter();
+const localePath = useLocalePath();
 const { count } = useCart();
 const { isLoggedIn, customer } = useStorefrontAuth();
 const { lang, setLang, supported, labels } = useLang();
@@ -41,7 +42,7 @@ function toggleSearch() {
 function submitSearch() {
   const q = searchInput.value.trim();
   if (q) {
-    router.push({ path: '/products', query: { search: q } });
+    router.push({ path: localePath('/products'), query: { search: q } });
     searchOpen.value = false;
     searchInput.value = '';
   }
@@ -51,11 +52,11 @@ function submitSearch() {
 <template>
   <header class="app-header">
     <div class="header-inner">
-      <NuxtLink to="/" class="logo">{{ APP_NAME }}</NuxtLink>
+      <NuxtLinkLocale to="/" class="logo">{{ APP_NAME }}</NuxtLinkLocale>
       <nav class="nav">
-        <NuxtLink to="/" class="nav-link">Home</NuxtLink>
-        <NuxtLink to="/brands" class="nav-link">Brands</NuxtLink>
-        <NuxtLink to="/products" class="nav-link">Products</NuxtLink>
+        <NuxtLinkLocale to="/" class="nav-link">Home</NuxtLinkLocale>
+        <NuxtLinkLocale to="/brands" class="nav-link">Brands</NuxtLinkLocale>
+        <NuxtLinkLocale to="/products" class="nav-link">Products</NuxtLinkLocale>
         <button class="search-toggle" aria-label="Search" @click="toggleSearch">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20">
             <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -86,7 +87,7 @@ function submitSearch() {
           </div>
         </ClientOnly>
 
-        <NuxtLink to="/cart" class="cart-link" aria-label="Cart">
+        <NuxtLinkLocale to="/cart" class="cart-link" aria-label="Cart">
           <svg class="cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
             <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
             <line x1="3" y1="6" x2="21" y2="6" />
@@ -95,15 +96,15 @@ function submitSearch() {
           <ClientOnly>
             <span v-if="count > 0" class="cart-badge">{{ count }}</span>
           </ClientOnly>
-        </NuxtLink>
+        </NuxtLinkLocale>
         <ClientOnly>
-          <NuxtLink v-if="isLoggedIn" to="/account" class="account-link" aria-label="Account">
+          <NuxtLinkLocale v-if="isLoggedIn" to="/account" class="account-link" aria-label="Account">
             <svg class="account-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
               <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
               <circle cx="12" cy="7" r="4" />
             </svg>
-          </NuxtLink>
-          <NuxtLink v-else to="/login" class="login-link">Sign In</NuxtLink>
+          </NuxtLinkLocale>
+          <NuxtLinkLocale v-else to="/login" class="login-link">Sign In</NuxtLinkLocale>
         </ClientOnly>
       </nav>
       <button class="hamburger" aria-label="Menu" @click="mobileMenuOpen = !mobileMenuOpen">
@@ -113,9 +114,9 @@ function submitSearch() {
   </header>
   <!-- Mobile menu -->
   <div v-if="mobileMenuOpen" class="mobile-menu">
-    <NuxtLink to="/" @click="mobileMenuOpen = false">Home</NuxtLink>
-    <NuxtLink to="/brands" @click="mobileMenuOpen = false">Brands</NuxtLink>
-    <NuxtLink to="/products" @click="mobileMenuOpen = false">Products</NuxtLink>
+    <NuxtLinkLocale to="/" @click="mobileMenuOpen = false">Home</NuxtLinkLocale>
+    <NuxtLinkLocale to="/brands" @click="mobileMenuOpen = false">Brands</NuxtLinkLocale>
+    <NuxtLinkLocale to="/products" @click="mobileMenuOpen = false">Products</NuxtLinkLocale>
   </div>
   <!-- Search bar -->
   <div v-if="searchOpen" class="header-search-bar">

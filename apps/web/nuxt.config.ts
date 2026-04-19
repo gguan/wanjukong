@@ -1,6 +1,32 @@
 export default defineNuxtConfig({
   devtools: { enabled: false },
 
+  modules: ['@nuxtjs/i18n'],
+
+  i18n: {
+    strategy: 'prefix_except_default',
+    defaultLocale: 'en',
+    baseUrl: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+    locales: [
+      { code: 'en', language: 'en-US', name: 'English', file: 'en.json' },
+      { code: 'ja', language: 'ja-JP', name: '日本語', file: 'ja.json' },
+      { code: 'zh-CN', language: 'zh-Hans-CN', name: '简体中文', file: 'zh-CN.json' },
+      { code: 'zh-TW', language: 'zh-Hant-TW', name: '繁體中文', file: 'zh-TW.json' },
+    ],
+    defaultDirection: 'ltr',
+    bundle: {
+      optimizeTranslationDirective: false,
+    },
+    detectBrowserLanguage: {
+      useCookie: true,
+      cookieKey: 'i18n_redirected',
+      redirectOn: 'root',
+      alwaysRedirect: false,
+      fallbackLocale: 'en',
+    },
+    vueI18n: './i18n.config.ts',
+  },
+
   app: {
     head: {
       link: [
@@ -25,6 +51,7 @@ export default defineNuxtConfig({
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:3001',
       paypalClientId: process.env.NUXT_PUBLIC_PAYPAL_CLIENT_ID || '',
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',
     },
   },
 

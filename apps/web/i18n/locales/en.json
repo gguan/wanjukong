@@ -1,0 +1,42 @@
+{
+  "contact": {
+    "meta": {
+      "title": "Contact — Over Realm",
+      "description": "Get in touch with the Over Realm customer service team."
+    },
+    "info": {
+      "title": "Contact OR",
+      "lede1": "Please complete the customer service form. Our staff will respond during business hours.",
+      "lede2": "(M–F 10:00 – 18:00, China Timezone)"
+    },
+    "panel": {
+      "office": {
+        "label": "Office visits by appointment only",
+        "name": "Over Realm Limited",
+        "address": "Shenzhen, China"
+      },
+      "customerService": { "label": "Customer service" },
+      "wholesale": {
+        "label": "Wholesale inquiries",
+        "text": "For wholesale and stockist requests, email {email}."
+      },
+      "orderHelp": {
+        "label": "Order help",
+        "text": "Please include your order number ({code}) so we can help you faster."
+      }
+    },
+    "form": {
+      "name": "Name",
+      "email": "Email",
+      "subject": "Subject",
+      "orderNumber": "Order Number",
+      "message": "Message",
+      "errorRequired": "Please fill in all required fields.",
+      "errorGeneric": "Failed to send. Please try again or email us directly.",
+      "submit": "Submit",
+      "submitting": "Sending…",
+      "successTitle": "Thank you!",
+      "successBody": "Your message has been received. We'll reply to {email} during business hours."
+    }
+  }
+}
