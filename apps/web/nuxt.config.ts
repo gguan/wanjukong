@@ -14,9 +14,6 @@ export default defineNuxtConfig({
       { code: 'zh-TW', language: 'zh-Hant-TW', name: '繁體中文', file: 'zh-TW.json' },
     ],
     defaultDirection: 'ltr',
-    bundle: {
-      optimizeTranslationDirective: false,
-    },
     detectBrowserLanguage: {
       useCookie: true,
       cookieKey: 'i18n_redirected',
