@@ -1,6 +1,6 @@
 <script setup lang="ts">
 useSeoMeta({
-  title: 'Products — Over Realm',
+  title: 'Products — OVER REALM',
   description: 'Browse our collection of premium collectible action figures. Filter by brand, category, scale and availability.',
 })
 

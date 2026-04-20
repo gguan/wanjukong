@@ -1,8 +1,8 @@
 <script setup lang="ts">
 useSeoMeta({
-  title: 'Over Realm — Premium Collectible Figures',
+  title: 'OVER REALM — Premium Collectible Figures',
   description: 'Curated collectible figures from Hot Toys, DAM, Threezero and the world\'s leading manufacturers. 1/6, 1/4, 1/12 scale. Worldwide shipping.',
-  ogTitle: 'Over Realm — Premium Collectible Figures',
+  ogTitle: 'OVER REALM — Premium Collectible Figures',
   ogDescription: 'Curated collectible figures from the world\'s leading manufacturers.',
   ogType: 'website',
 })
@@ -42,7 +42,7 @@ const displayBrands = computed(() => (brands.value ?? []).slice(0, 8));
         </div>
       </NuxtLink>
       <div v-else class="hero-inner hero-inner--fallback">
-        <p class="hero-eyebrow">Over Realm</p>
+        <p class="hero-eyebrow">OVER REALM</p>
         <h1 class="hero-title">Premium Collectible Figures</h1>
         <p class="hero-meta">Curated from the world's leading manufacturers</p>
         <NuxtLink to="/products" class="hero-cta">Browse Collection →</NuxtLink>

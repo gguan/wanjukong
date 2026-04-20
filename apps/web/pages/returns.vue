@@ -1,6 +1,6 @@
 <script setup lang="ts">
 useSeoMeta({
-  title: 'Returns, Warranty & Safety - Over Realm',
+  title: 'Returns, Warranty & Safety - OVER REALM',
   description: 'Return eligibility, damaged-item support, limited warranty terms, and product safety guidance.',
 })
 </script>

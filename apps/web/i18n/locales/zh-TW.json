@@ -1,8 +1,8 @@
 {
   "contact": {
     "meta": {
-      "title": "聯絡我們 — Over Realm",
-      "description": "與 Over Realm 客服團隊取得聯繫。"
+      "title": "聯絡我們 — OVER REALM",
+      "description": "與 OVER REALM 客服團隊取得聯繫。"
     },
     "info": {
       "title": "聯絡 OR",
@@ -12,7 +12,7 @@
     "panel": {
       "office": {
         "label": "辦公室僅接受預約訪問",
-        "name": "Over Realm Limited",
+        "name": "OVER REALM Limited",
         "address": "中國 深圳"
       },
       "customerService": { "label": "客戶服務" },

@@ -169,7 +169,7 @@ function handleAddToCart() {
 watchEffect(() => {
   if (!product.value) return;
   useSeoMeta({
-    title: `${product.value.name} — Over Realm`,
+    title: `${product.value.name} — OVER REALM`,
     description: `${product.value.name} by ${product.value.brand?.name}. ${product.value.scale || ''} scale collectible figure.`,
     ogTitle: product.value.name,
     ogDescription: `${product.value.name} by ${product.value.brand?.name}`,

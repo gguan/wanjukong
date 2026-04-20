@@ -1,7 +1,7 @@
 <script setup lang="ts">
 useSeoMeta({
-  title: 'Privacy Policy - Over Realm',
-  description: 'How Over Realm collects, uses, shares, and protects customer data for international sales.',
+  title: 'Privacy Policy - OVER REALM',
+  description: 'How OVER REALM collects, uses, shares, and protects customer data for international sales.',
 })
 </script>
 
@@ -18,7 +18,7 @@ useSeoMeta({
         <p class="info-intro">
           This Privacy Policy explains how we collect, use, store, and share personal
           information when you browse, contact us, create an account, or place an order with
-          Over Realm. Because we serve international customers, your information may be
+          OVER REALM. Because we serve international customers, your information may be
           processed across borders as described below.
         </p>
       </section>

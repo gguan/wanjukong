@@ -1,7 +1,7 @@
 <script setup lang="ts">
 useSeoMeta({
-  title: 'Cookie Policy — Over Realm',
-  description: 'How Over Realm uses cookies.',
+  title: 'Cookie Policy — OVER REALM',
+  description: 'How OVER REALM uses cookies.',
 })
 </script>
 

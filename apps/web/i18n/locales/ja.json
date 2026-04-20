@@ -1,8 +1,8 @@
 {
   "contact": {
     "meta": {
-      "title": "お問い合わせ — Over Realm",
-      "description": "Over Realm カスタマーサービスチームへのお問い合わせはこちらから。"
+      "title": "お問い合わせ — OVER REALM",
+      "description": "OVER REALM カスタマーサービスチームへのお問い合わせはこちらから。"
     },
     "info": {
       "title": "Contact OR",
@@ -12,7 +12,7 @@
     "panel": {
       "office": {
         "label": "オフィス訪問は事前予約制",
-        "name": "Over Realm Limited",
+        "name": "OVER REALM Limited",
         "address": "中国 深圳"
       },
       "customerService": { "label": "カスタマーサービス" },

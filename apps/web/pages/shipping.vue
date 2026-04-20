@@ -1,6 +1,6 @@
 <script setup lang="ts">
 useSeoMeta({
-  title: 'Shipping, Pre-Orders, Cancellations & Delivery - Over Realm',
+  title: 'Shipping, Pre-Orders, Cancellations & Delivery - OVER REALM',
   description: 'Shipping times, pre-order handling, cancellation rules, and delivery support for international orders.',
 })
 </script>

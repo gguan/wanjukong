@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { Lang } from '~/composables/useLang';
 
-const APP_NAME = 'Over Realm';
+const APP_NAME = 'OVER REALM';
+const LOGO_SRC = '/logo.png';
 const router = useRouter();
 const localePath = useLocalePath();
 const { count } = useCart();
@@ -52,7 +53,9 @@ function submitSearch() {
 <template>
   <header class="app-header">
     <div class="header-inner">
-      <NuxtLinkLocale to="/" class="logo">{{ APP_NAME }}</NuxtLinkLocale>
+      <NuxtLinkLocale to="/" class="logo" :aria-label="APP_NAME">
+        <img :src="LOGO_SRC" :alt="APP_NAME" class="logo-img" />
+      </NuxtLinkLocale>
       <nav class="nav">
         <NuxtLinkLocale to="/" class="nav-link">Home</NuxtLinkLocale>
         <NuxtLinkLocale to="/brands" class="nav-link">Brands</NuxtLinkLocale>
@@ -154,11 +157,15 @@ function submitSearch() {
 }
 
 .logo {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #111;
+  display: inline-flex;
+  align-items: center;
   text-decoration: none;
-  letter-spacing: -0.02em;
+}
+
+.logo-img {
+  display: block;
+  height: 28px;
+  width: auto;
 }
 
 .nav {

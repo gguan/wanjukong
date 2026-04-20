@@ -1,8 +1,8 @@
 {
   "contact": {
     "meta": {
-      "title": "Contact — Over Realm",
-      "description": "Get in touch with the Over Realm customer service team."
+      "title": "Contact — OVER REALM",
+      "description": "Get in touch with the OVER REALM customer service team."
     },
     "info": {
       "title": "Contact OR",
@@ -12,7 +12,7 @@
     "panel": {
       "office": {
         "label": "Office visits by appointment only",
-        "name": "Over Realm Limited",
+        "name": "OVER REALM Limited",
         "address": "Shenzhen, China"
       },
       "customerService": { "label": "Customer service" },

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 useSeoMeta({
-  title: 'FAQ — Over Realm',
-  description: 'Frequently asked questions about ordering, shipping and products at Over Realm.',
+  title: 'FAQ — OVER REALM',
+  description: 'Frequently asked questions about ordering, shipping and products at OVER REALM.',
 })
 
 interface FaqItem {

@@ -254,7 +254,7 @@ const refundedCents = computed(() =>
 
 // ─── SEO ────────────────────────────────────────────────
 useSeoMeta({
-  title: computed(() => (order.value ? `Order ${order.value.orderNo} — Over Realm` : 'Order — Over Realm')),
+  title: computed(() => (order.value ? `Order ${order.value.orderNo} — OVER REALM` : 'Order — OVER REALM')),
   robots: 'noindex',
 });
 </script>
