@@ -365,7 +365,37 @@ export class OrdersService {
   ) {
     const order = await this.prisma.order.findUnique({
       where: { orderNo },
-      include: { items: true },
+      include: {
+        items: true,
+        // Storefront order page needs tracking + refunds to render the
+        // shipment card and refund history. No payment-intent / customer
+        // internals — keep the shape narrow so we don't leak extras.
+        shipments: {
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            carrier: true,
+            carrierName: true,
+            trackingNumber: true,
+            status: true,
+            isInternational: true,
+            shippedAt: true,
+            estimatedDeliveryAt: true,
+            deliveredAt: true,
+          },
+        },
+        refunds: {
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            amountCents: true,
+            reason: true,
+            status: true,
+            processedAt: true,
+            createdAt: true,
+          },
+        },
+      },
     });
 
     if (!order) {

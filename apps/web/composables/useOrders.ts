@@ -11,6 +11,29 @@ export interface OrderItem {
   unitPriceCents: number;
   quantity: number;
   totalPriceCents: number;
+  isPreorder: boolean;
+  depositCents: number;
+}
+
+export interface Shipment {
+  id: string;
+  carrier: string;
+  carrierName: string | null;
+  trackingNumber: string;
+  status: string;
+  isInternational: boolean;
+  shippedAt: string | null;
+  estimatedDeliveryAt: string | null;
+  deliveredAt: string | null;
+}
+
+export interface Refund {
+  id: string;
+  amountCents: number;
+  reason: string | null;
+  status: string;
+  processedAt: string | null;
+  createdAt: string;
 }
 
 export interface Order {
@@ -18,6 +41,7 @@ export interface Order {
   orderNo: string;
   status: string;
   paymentStatus: string;
+  channel: 'WEB' | 'MINIPROGRAM';
   fullName: string;
   email: string;
   phone: string | null;
@@ -28,10 +52,21 @@ export interface Order {
   addressLine2: string | null;
   postalCode: string | null;
   currency: string;
+  couponCode: string | null;
+  discountCents: number;
   subtotalPriceCents: number;
   totalPriceCents: number;
+  isPreorder: boolean;
+  depositCents: number;
+  balanceCents: number;
+  depositPaidAt: string | null;
+  balancePaidAt: string | null;
+  balanceDueBy: string | null;
+  gracePeriodEndsAt: string | null;
   createdAt: string;
   items: OrderItem[];
+  shipments: Shipment[];
+  refunds: Refund[];
 }
 
 export function useOrders() {
