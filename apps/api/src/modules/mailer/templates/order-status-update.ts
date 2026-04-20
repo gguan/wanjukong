@@ -1,5 +1,10 @@
 import type { SupportedLocale } from '../locale.util';
-import { escapeHtml, renderButton, renderLayout } from './shared/layout';
+import {
+  escapeHtml,
+  renderButton,
+  renderHeading,
+  renderLayout,
+} from './shared/layout';
 
 interface Params {
   name: string | null;
@@ -115,13 +120,13 @@ export function getOrderStatusUpdateEmail(
   const color = STATUS_COLORS[status] ?? '#18181b';
 
   const body = `
-    <h1 style="margin:0 0 24px;font-size:22px;font-weight:600;line-height:1.3;color:#0a0a0a;">${escapeHtml(t.heading)}</h1>
-    <p style="margin:0 0 8px;font-size:16px;color:#18181b;">${greeting}</p>
-    <p style="margin:0 0 24px;font-size:16px;color:#18181b;">${escapeHtml(t.intro)}</p>
+    ${renderHeading(t.heading)}
+    <p style="margin:0 0 20px;font-size:16px;line-height:1.618;color:#313131;">${greeting}</p>
+    <p style="margin:0 0 20px;font-size:16px;line-height:1.618;color:#313131;">${escapeHtml(t.intro)}</p>
     <p style="margin:0 0 4px;font-size:12px;color:#71717a;text-transform:uppercase;letter-spacing:0.05em;">${escapeHtml(t.orderLabel)}</p>
-    <p style="margin:0 0 16px;font-size:18px;font-weight:700;color:#18181b;">${escapeHtml(orderNo)}</p>
+    <p style="margin:0 0 16px;font-size:18px;font-weight:700;color:#313131;">${escapeHtml(orderNo)}</p>
     <p style="margin:0 0 4px;font-size:12px;color:#71717a;text-transform:uppercase;letter-spacing:0.05em;">${escapeHtml(t.statusLabel)}</p>
-    <p style="margin:0 0 24px;font-size:18px;font-weight:700;color:${color};">${escapeHtml(statusLabel)}</p>
+    <p style="margin:0 0 20px;font-size:18px;font-weight:700;color:${color};">${escapeHtml(statusLabel)}</p>
     ${renderButton(orderUrl, t.cta)}
   `;
 

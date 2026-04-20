@@ -1,5 +1,10 @@
 import type { SupportedLocale } from '../locale.util';
-import { escapeHtml, renderButton, renderLayout } from './shared/layout';
+import {
+  escapeHtml,
+  renderButton,
+  renderHeading,
+  renderLayout,
+} from './shared/layout';
 
 interface OrderItem {
   productNameSnapshot: string;
@@ -112,14 +117,14 @@ export function getOrderConfirmationEmail(
         : '';
       return `
         <tr>
-          <td style="padding:8px 0;border-bottom:1px solid #f4f4f5;">
-            <span style="font-size:14px;color:#18181b;">${label}</span>
+          <td style="padding:8px 0;border-bottom:1px solid #ebebeb;">
+            <span style="font-size:14px;color:#313131;">${label}</span>
             ${skuLine}
           </td>
-          <td style="padding:8px 0 8px 16px;border-bottom:1px solid #f4f4f5;text-align:right;white-space:nowrap;font-size:14px;color:#18181b;">
+          <td style="padding:8px 0 8px 16px;border-bottom:1px solid #ebebeb;text-align:right;white-space:nowrap;font-size:14px;color:#313131;">
             ${item.quantity} × ${formatMoney(item.unitPriceCents, currency)}
           </td>
-          <td style="padding:8px 0 8px 16px;border-bottom:1px solid #f4f4f5;text-align:right;white-space:nowrap;font-size:14px;font-weight:600;color:#18181b;">
+          <td style="padding:8px 0 8px 16px;border-bottom:1px solid #ebebeb;text-align:right;white-space:nowrap;font-size:14px;font-weight:600;color:#313131;">
             ${formatMoney(item.totalPriceCents, currency)}
           </td>
         </tr>`;
@@ -127,20 +132,20 @@ export function getOrderConfirmationEmail(
     .join('');
 
   const body = `
-    <h1 style="margin:0 0 24px;font-size:22px;font-weight:600;line-height:1.3;color:#0a0a0a;">${escapeHtml(t.heading)}</h1>
-    <p style="margin:0 0 8px;font-size:16px;color:#18181b;">${greeting}</p>
-    <p style="margin:0 0 24px;font-size:16px;color:#18181b;">${escapeHtml(t.intro)}</p>
+    ${renderHeading(t.heading)}
+    <p style="margin:0 0 20px;font-size:16px;line-height:1.618;color:#313131;">${greeting}</p>
+    <p style="margin:0 0 20px;font-size:16px;line-height:1.618;color:#313131;">${escapeHtml(t.intro)}</p>
     <p style="margin:0 0 4px;font-size:12px;color:#71717a;text-transform:uppercase;letter-spacing:0.05em;">${escapeHtml(t.orderNumberLabel)}</p>
-    <p style="margin:0 0 24px;font-size:20px;font-weight:700;color:#18181b;letter-spacing:0.02em;">${escapeHtml(orderNo)}</p>
+    <p style="margin:0 0 20px;font-size:20px;font-weight:700;color:#313131;letter-spacing:0.02em;">${escapeHtml(orderNo)}</p>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;">
       ${itemRows}
       <tr>
         <td colspan="2" style="padding:12px 0 0;text-align:right;font-size:14px;color:#71717a;">${escapeHtml(t.totalLabel)}</td>
-        <td style="padding:12px 0 0 16px;text-align:right;font-size:16px;font-weight:700;color:#18181b;">${formatMoney(totalPriceCents, currency)}</td>
+        <td style="padding:12px 0 0 16px;text-align:right;font-size:16px;font-weight:700;color:#313131;">${formatMoney(totalPriceCents, currency)}</td>
       </tr>
     </table>
     ${renderButton(orderUrl, t.cta)}
-    <p style="margin:0;font-size:14px;color:#71717a;">${escapeHtml(t.footer)}</p>
+    <p style="margin:0;font-size:14px;line-height:1.5;color:#71717a;">${escapeHtml(t.footer)}</p>
   `;
 
   const subject = t.subject(orderNo);

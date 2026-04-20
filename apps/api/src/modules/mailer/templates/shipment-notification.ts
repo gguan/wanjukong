@@ -1,5 +1,10 @@
 import type { SupportedLocale } from '../locale.util';
-import { escapeHtml, renderButton, renderLayout } from './shared/layout';
+import {
+  escapeHtml,
+  renderButton,
+  renderHeading,
+  renderLayout,
+} from './shared/layout';
 
 interface Params {
   name: string | null;
@@ -82,25 +87,25 @@ export function getShipmentNotificationEmail(
   const greeting = name?.trim() ? t.greetingWithName(name.trim()) : t.greetingAnon;
 
   const trackingDisplay = trackingUrl
-    ? `<a href="${trackingUrl}" style="color:#18181b;text-decoration:underline;font-weight:600;">${escapeHtml(trackingNumber)}</a>`
+    ? `<a href="${trackingUrl}" style="color:#313131;text-decoration:underline;font-weight:600;">${escapeHtml(trackingNumber)}</a>`
     : `<strong>${escapeHtml(trackingNumber)}</strong>`;
 
   const body = `
-    <h1 style="margin:0 0 24px;font-size:22px;font-weight:600;line-height:1.3;color:#0a0a0a;">${escapeHtml(t.heading)}</h1>
-    <p style="margin:0 0 8px;font-size:16px;color:#18181b;">${greeting}</p>
-    <p style="margin:0 0 24px;font-size:16px;color:#18181b;">${t.intro(orderNo)}</p>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;border-radius:8px;margin:0 0 24px;">
+    ${renderHeading(t.heading)}
+    <p style="margin:0 0 20px;font-size:16px;line-height:1.618;color:#313131;">${greeting}</p>
+    <p style="margin:0 0 20px;font-size:16px;line-height:1.618;color:#313131;">${t.intro(orderNo)}</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f6f6;border-radius:4px;margin:0 0 20px;">
       <tr>
         <td style="padding:20px 24px;">
           <p style="margin:0 0 4px;font-size:12px;color:#71717a;text-transform:uppercase;letter-spacing:0.05em;">${escapeHtml(t.carrierLabel)}</p>
-          <p style="margin:0 0 16px;font-size:15px;font-weight:600;color:#18181b;">${escapeHtml(carrierLabel)}</p>
+          <p style="margin:0 0 16px;font-size:15px;font-weight:600;color:#313131;">${escapeHtml(carrierLabel)}</p>
           <p style="margin:0 0 4px;font-size:12px;color:#71717a;text-transform:uppercase;letter-spacing:0.05em;">${escapeHtml(t.trackingLabel)}</p>
-          <p style="margin:0;font-size:15px;font-weight:600;color:#18181b;">${trackingDisplay}</p>
+          <p style="margin:0;font-size:15px;font-weight:600;color:#313131;">${trackingDisplay}</p>
         </td>
       </tr>
     </table>
     ${trackingUrl ? renderButton(trackingUrl, t.cta) : ''}
-    <p style="margin:0;font-size:14px;color:#71717a;">${escapeHtml(t.footer)}</p>
+    <p style="margin:0;font-size:14px;line-height:1.5;color:#71717a;">${escapeHtml(t.footer)}</p>
   `;
 
   const subject = t.subject(orderNo);
