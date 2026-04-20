@@ -11,10 +11,22 @@ let _fetched = false;
 
 export function useStorefrontAuth() {
   const { get, post } = usePublicApi();
-  const { lang } = useLang();
 
   const customer = readonly(_customer);
   const isLoggedIn = computed(() => !!_customer.value);
+
+  // Resolve the active locale lazily — reading via useNuxtApp keeps this
+  // callable from route middleware (which has no active Vue setup and so
+  // cannot call useI18n / useLang directly).
+  function getLocale(): string {
+    try {
+      const nuxtApp = useNuxtApp();
+      const i18n = (nuxtApp as unknown as { $i18n?: { locale?: { value?: string } } }).$i18n;
+      return i18n?.locale?.value || 'en';
+    } catch {
+      return 'en';
+    }
+  }
 
   async function fetchMe() {
     try {
@@ -35,15 +47,19 @@ export function useStorefrontAuth() {
   async function register(email: string, password: string, name?: string) {
     const res = await post<{ customer: CustomerProfile; verificationRequired: boolean }>(
       '/public/auth/register',
-      { email, password, name, locale: lang.value },
+      { email, password, name, locale: getLocale() },
     );
     return res;
   }
 
   async function login(email: string, password: string) {
-    const res = await post<CustomerProfile>('/public/auth/login', { email, password });
-    _customer.value = res;
-    return res;
+    const res = await post<{ customer: CustomerProfile }>(
+      '/public/auth/login',
+      { email, password },
+    );
+    _customer.value = res.customer;
+    _fetched = true;
+    return res.customer;
   }
 
   async function logout() {
@@ -54,16 +70,16 @@ export function useStorefrontAuth() {
   async function verifyEmail(token: string) {
     return post<{ verified: boolean }>('/public/auth/verify-email', {
       token,
-      locale: lang.value,
+      locale: getLocale(),
     });
   }
 
   async function resendVerification(email: string) {
-    return post('/public/auth/resend-verification', { email, locale: lang.value });
+    return post('/public/auth/resend-verification', { email, locale: getLocale() });
   }
 
   async function forgotPassword(email: string) {
-    return post('/public/auth/forgot-password', { email, locale: lang.value });
+    return post('/public/auth/forgot-password', { email, locale: getLocale() });
   }
 
   async function resetPassword(token: string, newPassword: string) {
