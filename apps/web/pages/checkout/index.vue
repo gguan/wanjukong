@@ -166,17 +166,29 @@ async function initPayPal() {
       height: 48,
     },
     async createOrder() {
-      // Pre-check stock for all items before creating PayPal order
+      // Pre-check stock for all items before creating PayPal order. Treat
+      // 404 explicitly — a variant that no longer exists (e.g. cart is from
+      // a previous DB state) would otherwise slip past the OK branch and
+      // surface as a generic PayPal "create order failed" instead of the
+      // real "this item is gone, remove it" UX.
       for (const item of items.value) {
         const stockRes = await fetch(
           `${apiBase}/api/public/products/variants/${item.variantId}/stock`,
           { credentials: 'include' },
         );
-        if (stockRes.ok) {
-          const stockData = await stockRes.json();
-          if (!stockData.available || stockData.stock < item.quantity) {
-            throw new Error(`"${item.productName}" is no longer available in the requested quantity.`);
-          }
+        if (stockRes.status === 404) {
+          throw new Error(
+            `"${item.productName}" is no longer available. Please remove it from your cart and try again.`,
+          );
+        }
+        if (!stockRes.ok) {
+          throw new Error(
+            `Couldn't verify stock for "${item.productName}". Please try again in a moment.`,
+          );
+        }
+        const stockData = await stockRes.json();
+        if (!stockData.available || stockData.stock < item.quantity) {
+          throw new Error(`"${item.productName}" is no longer available in the requested quantity.`);
         }
       }
 
