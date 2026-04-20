@@ -119,6 +119,20 @@ export class PaymentsService {
     const depositAfterDiscount = Math.max(0, totalDepositCents - unspentDiscount);
     const amountToCharge = depositAfterDiscount;
 
+    // Build per-line breakdown for PayPal's order review page. For
+    // preorders we charge the deposit today, so the line's unit_amount is
+    // the per-unit deposit; in-stock items use the unit price. Either way
+    // sum(unit × qty) = totalDepositCents, and totalDepositCents −
+    // unspentDiscount = amountToCharge, so PayPal's reconciliation check
+    // passes.
+    const itemBreakdown = items.map((i) => ({
+      name: i.isPreorder ? `${i.name} (Preorder deposit)` : i.name,
+      quantity: i.quantity,
+      unitAmountCents: i.isPreorder
+        ? Math.round(i.depositCents / i.quantity)
+        : i.unitPriceCents,
+    }));
+
     try {
       const result = await this.paypalProvider.createOrder({
         items: cartItems,
@@ -126,6 +140,8 @@ export class PaymentsService {
         currency,
         outTradeNo: `PP-${Date.now()}`,
         description: items.map((i) => i.name).join(', '),
+        itemBreakdown,
+        discountCents: unspentDiscount || undefined,
       });
 
       await this.prisma.paymentIntent.create({

@@ -45,16 +45,69 @@ export class PaypalProvider implements IPaymentProvider {
   }
 
   async createOrder(params: CreateOrderParams): Promise<CreateOrderResult> {
-    const { items, amountCents, currency, outTradeNo } = params;
+    const {
+      amountCents,
+      currency,
+      outTradeNo,
+      itemBreakdown,
+      discountCents,
+    } = params;
     const totalAmount = (amountCents / 100).toFixed(2);
     const accessToken = await this.getAccessToken();
 
-    // Build per-item breakdown for PayPal (requires variant prices pre-resolved by caller)
-    const paypalItems = items.map((item) => ({
-      name: item.variantId, // caller should pass name; kept simple here
-      unit_amount: { currency_code: currency, value: '0.00' },
-      quantity: String(item.quantity),
-    }));
+    // Build the purchase unit. We start with just the total and layer the
+    // itemized breakdown on top only when the numbers reconcile — PayPal
+    // rejects the whole order with UNIT_AMOUNT_MISMATCH if they don't, and
+    // we'd rather drop itemization than fail the payment.
+    const purchaseUnit: Record<string, unknown> = {
+      custom_id: outTradeNo,
+      amount: {
+        currency_code: currency,
+        value: totalAmount,
+      },
+    };
+
+    if (itemBreakdown?.length) {
+      // PayPal truncates item names at 127 chars; guard here so one long
+      // product name doesn't poison the whole order.
+      const items = itemBreakdown.map((i) => ({
+        name: i.name.slice(0, 127),
+        unit_amount: {
+          currency_code: currency,
+          value: (i.unitAmountCents / 100).toFixed(2),
+        },
+        quantity: String(i.quantity),
+        ...(i.sku ? { sku: i.sku.slice(0, 127) } : {}),
+      }));
+
+      const itemTotalCents = itemBreakdown.reduce(
+        (sum, i) => sum + i.unitAmountCents * i.quantity,
+        0,
+      );
+      const discount = Math.max(0, discountCents ?? 0);
+      const reconciled = itemTotalCents - discount;
+
+      if (reconciled === amountCents) {
+        const breakdown: Record<string, unknown> = {
+          item_total: {
+            currency_code: currency,
+            value: (itemTotalCents / 100).toFixed(2),
+          },
+        };
+        if (discount > 0) {
+          breakdown.discount = {
+            currency_code: currency,
+            value: (discount / 100).toFixed(2),
+          };
+        }
+        purchaseUnit.items = items;
+        (purchaseUnit.amount as Record<string, unknown>).breakdown = breakdown;
+      } else {
+        this.logger.warn(
+          `PayPal itemization skipped for ${outTradeNo}: items ${itemTotalCents}¢ − discount ${discount}¢ ≠ total ${amountCents}¢`,
+        );
+      }
+    }
 
     const res = await fetch(`${this.baseUrl}/v2/checkout/orders`, {
       method: 'POST',
@@ -64,15 +117,7 @@ export class PaypalProvider implements IPaymentProvider {
       },
       body: JSON.stringify({
         intent: 'CAPTURE',
-        purchase_units: [
-          {
-            custom_id: outTradeNo,
-            amount: {
-              currency_code: currency,
-              value: totalAmount,
-            },
-          },
-        ],
+        purchase_units: [purchaseUnit],
       }),
     });
 
