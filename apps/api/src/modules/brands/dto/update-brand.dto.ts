@@ -21,6 +21,11 @@ export class UpdateBrandDto {
   @IsOptional()
   logo?: string;
 
+  /** See CreateBrandDto.logoUploadFileId. */
+  @IsString()
+  @IsOptional()
+  logoUploadFileId?: string;
+
   @IsString()
   @IsOptional()
   notes?: string;

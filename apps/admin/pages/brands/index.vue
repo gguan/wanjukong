@@ -19,6 +19,9 @@ const loading = ref(true);
 const dialogVisible = ref(false);
 const editing = ref<Brand | null>(null);
 const form = ref({ name: '', slug: '', code: '', logo: '', notes: '' });
+// Captured at upload time, sent on save so the API can mark the upload
+// as USED — otherwise the temp-upload cron deletes the COS object 24h later.
+const pendingLogoUploadFileId = ref<string | null>(null);
 
 // Upload state
 const logoFileInputRef = ref<HTMLInputElement | null>(null);
@@ -32,6 +35,7 @@ async function load() {
 function openCreate() {
   editing.value = null;
   form.value = { name: '', slug: '', code: '', logo: '', notes: '' };
+  pendingLogoUploadFileId.value = null;
   dialogVisible.value = true;
 }
 
@@ -44,6 +48,7 @@ function openEdit(b: Brand) {
     logo: b.logo || '',
     notes: b.notes || '',
   };
+  pendingLogoUploadFileId.value = null;
   dialogVisible.value = true;
 }
 
@@ -71,6 +76,7 @@ async function handleLogoUpload(event: Event) {
     const results = await uploadFiles(files, { filenamePrefix: form.value.slug });
     if (results.length > 0) {
       form.value.logo = results[0].imageUrl;
+      pendingLogoUploadFileId.value = results[0].uploadFileId;
       ElMessage.success('LOGO 上传成功');
     }
   } catch (err: any) {
@@ -82,6 +88,7 @@ async function handleLogoUpload(event: Event) {
 
 function clearLogo() {
   form.value.logo = '';
+  pendingLogoUploadFileId.value = null;
 }
 
 const logoDragging = ref(false);
@@ -100,6 +107,7 @@ async function onLogoDrop(e: DragEvent) {
     const results = await uploadFiles(files, { filenamePrefix: form.value.slug });
     if (results.length > 0) {
       form.value.logo = results[0].imageUrl;
+      pendingLogoUploadFileId.value = results[0].uploadFileId;
       ElMessage.success('LOGO 上传成功');
     }
   } catch (err: any) {
@@ -112,12 +120,19 @@ async function save() {
     ElMessage.error('品牌名称和 URL 标识为必填项');
     return;
   }
+  const payload = {
+    ...form.value,
+    ...(pendingLogoUploadFileId.value
+      ? { logoUploadFileId: pendingLogoUploadFileId.value }
+      : {}),
+  };
   try {
     if (editing.value) {
-      await api.put(`/api/admin/brands/${editing.value.id}`, form.value);
+      await api.put(`/api/admin/brands/${editing.value.id}`, payload);
     } else {
-      await api.post('/api/admin/brands', form.value);
+      await api.post('/api/admin/brands', payload);
     }
+    pendingLogoUploadFileId.value = null;
     dialogVisible.value = false;
     await load();
     ElMessage.success(editing.value ? '品牌已更新' : '品牌已创建');

@@ -1,12 +1,18 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ProductStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { UploadsService } from '../uploads/uploads.service';
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { UpdateBrandDto } from './dto/update-brand.dto';
 
 @Injectable()
 export class BrandsService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(BrandsService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly uploadsService: UploadsService,
+  ) {}
 
   findAll() {
     return this.prisma.brand.findMany({ orderBy: { name: 'asc' } });
@@ -28,12 +34,41 @@ export class BrandsService {
     });
   }
 
-  create(dto: CreateBrandDto) {
-    return this.prisma.brand.create({ data: dto });
+  async create(dto: CreateBrandDto) {
+    const { logoUploadFileId, ...data } = dto;
+    const brand = await this.prisma.brand.create({ data });
+    if (logoUploadFileId) {
+      await this.markLogoAsUsed(brand.id, logoUploadFileId);
+    }
+    return brand;
   }
 
-  update(id: string, dto: UpdateBrandDto) {
-    return this.prisma.brand.update({ where: { id }, data: dto });
+  async update(id: string, dto: UpdateBrandDto) {
+    const { logoUploadFileId, ...data } = dto;
+    const brand = await this.prisma.brand.update({ where: { id }, data });
+    if (logoUploadFileId) {
+      await this.markLogoAsUsed(brand.id, logoUploadFileId);
+    }
+    return brand;
+  }
+
+  /**
+   * Mark the upload backing this brand's logo as USED so the temp-upload
+   * cleanup cron doesn't reap the underlying COS object after 24h.
+   * Failure is logged but not thrown — the brand row is the source of
+   * truth and we'd rather have a brand with a slightly leaky upload row
+   * than a failed brand save.
+   */
+  private async markLogoAsUsed(brandId: string, uploadFileId: string) {
+    try {
+      await this.uploadsService.markAsUsed(uploadFileId, 'brand', brandId);
+    } catch (err) {
+      this.logger.warn(
+        `Failed to mark upload ${uploadFileId} as USED for brand ${brandId}: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
   }
 
   async remove(id: string) {
