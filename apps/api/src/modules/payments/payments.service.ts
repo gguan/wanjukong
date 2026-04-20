@@ -27,6 +27,7 @@ interface CreatePayPalOrderInput {
   currency?: string;
   customerId?: string;
   email?: string;
+  couponCode?: string;
 }
 
 interface CapturePayPalOrderInput {
@@ -74,40 +75,66 @@ export class PaymentsService {
 
   async createPayPalOrderFromCart(
     input: CreatePayPalOrderInput,
-  ): Promise<{ paypalOrderId: string; totalCents: number }> {
-    const { items: cartItems, currency = 'USD', customerId, email } = input;
+  ): Promise<{ paypalOrderId: string; totalCents: number; discountCents?: number }> {
+    const { items: cartItems, currency = 'USD', customerId, email, couponCode } = input;
 
     if (!cartItems?.length) throw new BadRequestException('Cart is empty');
 
-    const { items, totalDepositCents } = await this.resolveCartItems(cartItems, currency as 'CNY' | 'USD');
+    const { items, totalCents, totalDepositCents, totalBalanceCents } =
+      await this.resolveCartItems(cartItems, currency as 'CNY' | 'USD');
 
-    // PayPal charges deposit only (Sideshow-style); balance charged later.
-    // Coupon discount is applied to balance first at order creation; for PayPal
-    // we don't yet support coupon-at-deposit, so charge full deposit here.
-    const amountToCharge = totalDepositCents;
+    // Reserve coupon (atomic CAS against usage limit) before calling PayPal.
+    // Applied to balance first, then deposit — so a preorder user still pays
+    // some deposit today even with a large coupon. Mirrors the WeChat path.
+    let reservedCouponCode: string | null = null;
+    let discountCents = 0;
+    if (couponCode) {
+      const couponResult = await this.ordersService.reserveCoupon(couponCode, totalCents);
+      discountCents = couponResult.discountCents;
+      reservedCouponCode = couponResult.code;
+    }
 
-    const result = await this.paypalProvider.createOrder({
-      items: cartItems,
-      amountCents: amountToCharge,
-      currency,
-      outTradeNo: `PP-${Date.now()}`,
-      description: items.map((i) => i.name).join(', '),
-    });
+    const unspentDiscount = Math.max(0, discountCents - totalBalanceCents);
+    const depositAfterDiscount = Math.max(0, totalDepositCents - unspentDiscount);
+    const amountToCharge = depositAfterDiscount;
 
-    await this.prisma.paymentIntent.create({
-      data: {
-        provider: 'PAYPAL',
-        paypalOrderId: result.providerOrderId,
-        customerId: customerId || null,
-        email: email || null,
-        currency,
+    try {
+      const result = await this.paypalProvider.createOrder({
+        items: cartItems,
         amountCents: amountToCharge,
-        cartSnapshotJson: JSON.stringify(cartItems),
-        status: 'CREATED',
-      },
-    });
+        currency,
+        outTradeNo: `PP-${Date.now()}`,
+        description: items.map((i) => i.name).join(', '),
+      });
 
-    return { paypalOrderId: result.providerOrderId, totalCents: amountToCharge };
+      await this.prisma.paymentIntent.create({
+        data: {
+          provider: 'PAYPAL',
+          paypalOrderId: result.providerOrderId,
+          customerId: customerId || null,
+          email: email || null,
+          currency,
+          amountCents: amountToCharge,
+          cartSnapshotJson: JSON.stringify(cartItems),
+          couponCode: reservedCouponCode,
+          discountCents: discountCents || null,
+          status: 'CREATED',
+        },
+      });
+
+      return {
+        paypalOrderId: result.providerOrderId,
+        totalCents: amountToCharge,
+        ...(discountCents ? { discountCents } : {}),
+      };
+    } catch (err) {
+      // PayPal call or PI write failed — release the reserved coupon so the
+      // limited-use counter doesn't leak.
+      if (reservedCouponCode) {
+        await this.ordersService.releaseCoupon(reservedCouponCode).catch(() => {});
+      }
+      throw err;
+    }
   }
 
   async captureAndCreateOrder(
@@ -143,6 +170,10 @@ export class PaymentsService {
           where: { id: pi.id },
           data: { status: 'FAILED' },
         });
+        // Release the coupon reservation made at create-order time.
+        if (pi.couponCode) {
+          await this.ordersService.releaseCoupon(pi.couponCode).catch(() => {});
+        }
         throw new BadRequestException('Payment amount mismatch');
       }
     }
@@ -181,6 +212,10 @@ export class PaymentsService {
       paypalOrderId,
       customerId: customerId || undefined,
       guestAccessTokenHash,
+      // Coupon was reserved at create-order time; propagate to the Order so
+      // the customer sees the discount and an admin can reconcile.
+      couponCode: pi.couponCode || undefined,
+      discountCents: pi.discountCents || undefined,
     });
 
     await this.prisma.paymentIntent.update({

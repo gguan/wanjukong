@@ -29,6 +29,7 @@ class CreatePayPalOrderDto {
   items!: CartItemDto[];
 
   @IsString() @IsOptional() currency?: string;
+  @IsString() @IsOptional() couponCode?: string;
 }
 
 class CapturePayPalOrderDto {
@@ -72,6 +73,7 @@ export class PaypalController {
       items: dto.items,
       currency: dto.currency,
       customerId,
+      couponCode: dto.couponCode,
     });
   }
 
