@@ -135,7 +135,6 @@ export class PaymentsService {
 
     try {
       const result = await this.paypalProvider.createOrder({
-        items: cartItems,
         amountCents: amountToCharge,
         currency,
         outTradeNo: `PP-${Date.now()}`,
@@ -395,7 +394,6 @@ export class PaymentsService {
     const outTradeNo = `WX-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
     try {
       const result = await this.wechatPayProvider.createOrder({
-        items: cartItems,
         amountCents,
         currency: 'CNY',
         outTradeNo,
@@ -479,7 +477,6 @@ export class PaymentsService {
 
     const outTradeNo = `WXB-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
     const result = await this.wechatPayProvider.createOrder({
-      items: [],
       amountCents: order.balanceCents,
       currency: 'CNY',
       outTradeNo,
@@ -562,7 +559,6 @@ export class PaymentsService {
     }
 
     const result = await this.paypalProvider.createOrder({
-      items: [],
       amountCents: order.balanceCents,
       currency: 'USD',
       outTradeNo: `PPB-${Date.now()}`,
@@ -691,7 +687,6 @@ export class PaymentsService {
 
     const outTradeNo = `WX-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
     const result = await this.wechatPayProvider.createOrder({
-      items: [],
       amountCents,
       currency: 'CNY',
       outTradeNo,

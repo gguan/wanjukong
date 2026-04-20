@@ -19,7 +19,6 @@ export interface PaymentItemBreakdown {
 }
 
 export interface CreateOrderParams {
-  items: CartItemInput[];
   amountCents: number;
   currency: string;
   outTradeNo: string; // our internal order reference
