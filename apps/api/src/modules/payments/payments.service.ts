@@ -203,10 +203,11 @@ export class PaymentsService {
 
     const captureResult = await this.paypalProvider.captureOrder(paypalOrderId);
 
-    // Verify captured amount
+    // Verify captured amount. SDK returns camelCase (purchaseUnits, not
+    // purchase_units); value is a decimal string from PayPal.
     const capturedAmount =
-      captureResult?.purchase_units?.[0]?.payments?.captures?.[0]?.amount;
-    if (capturedAmount) {
+      captureResult?.purchaseUnits?.[0]?.payments?.captures?.[0]?.amount;
+    if (capturedAmount?.value) {
       const capturedCents = Math.round(parseFloat(capturedAmount.value) * 100);
       if (capturedCents !== pi.amountCents) {
         this.logger.error(
@@ -614,8 +615,8 @@ export class PaymentsService {
     }
 
     const captureResult = await this.paypalProvider.captureOrder(paypalOrderId);
-    const capturedAmount = captureResult?.purchase_units?.[0]?.payments?.captures?.[0]?.amount;
-    if (capturedAmount) {
+    const capturedAmount = captureResult?.purchaseUnits?.[0]?.payments?.captures?.[0]?.amount;
+    if (capturedAmount?.value) {
       const capturedCents = Math.round(parseFloat(capturedAmount.value) * 100);
       if (capturedCents !== pi.amountCents) {
         await this.prisma.paymentIntent.update({

@@ -1,47 +1,62 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import {
+  Client,
+  Environment,
+  OrdersController,
+  CheckoutPaymentIntent,
+  type Order,
+  type OrderRequest,
+} from '@paypal/paypal-server-sdk';
+import {
   IPaymentProvider,
   CreateOrderParams,
   CreateOrderResult,
 } from '../interfaces/payment-provider.interface';
 
+/**
+ * Thin wrapper around @paypal/paypal-server-sdk. The SDK manages OAuth
+ * token caching, retries, and response typing, so the provider only
+ * concerns itself with translating our CreateOrderParams into the SDK's
+ * OrderRequest shape and surfacing meaningful errors.
+ *
+ * Environment selection: if PAYPAL_BASE_URL is unset or points at
+ * api-m.sandbox.paypal.com we use Environment.Sandbox; any other value
+ * (typically api-m.paypal.com in production) selects Environment.Production.
+ */
 @Injectable()
 export class PaypalProvider implements IPaymentProvider {
   readonly providerName = 'PAYPAL';
   private readonly logger = new Logger(PaypalProvider.name);
+  private _client: Client | null = null;
+  private _orders: OrdersController | null = null;
 
-  private get baseUrl() {
-    return process.env.PAYPAL_BASE_URL || 'https://api-m.sandbox.paypal.com';
-  }
-
-  private get clientId() {
-    return process.env.PAYPAL_CLIENT_ID || '';
-  }
-
-  private get clientSecret() {
-    return process.env.PAYPAL_CLIENT_SECRET || '';
-  }
-
-  async getAccessToken(): Promise<string> {
-    const credentials = Buffer.from(
-      `${this.clientId}:${this.clientSecret}`,
-    ).toString('base64');
-
-    const res = await fetch(`${this.baseUrl}/v1/oauth2/token`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Basic ${credentials}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: 'grant_type=client_credentials',
-    });
-
-    if (!res.ok) {
-      throw new BadRequestException('Failed to authenticate with PayPal');
+  private get client(): Client {
+    if (this._client) return this._client;
+    const clientId = process.env.PAYPAL_CLIENT_ID || '';
+    const clientSecret = process.env.PAYPAL_CLIENT_SECRET || '';
+    if (!clientId || !clientSecret) {
+      throw new BadRequestException('PayPal credentials are not configured');
     }
+    this._client = new Client({
+      clientCredentialsAuthCredentials: {
+        oAuthClientId: clientId,
+        oAuthClientSecret: clientSecret,
+      },
+      timeout: 30_000,
+      environment: this.resolveEnvironment(),
+    });
+    return this._client;
+  }
 
-    const data = (await res.json()) as { access_token: string };
-    return data.access_token;
+  private get orders(): OrdersController {
+    if (!this._orders) this._orders = new OrdersController(this.client);
+    return this._orders;
+  }
+
+  private resolveEnvironment(): Environment {
+    const base = (process.env.PAYPAL_BASE_URL || '').toLowerCase();
+    if (!base || base.includes('sandbox')) return Environment.Sandbox;
+    return Environment.Production;
   }
 
   async createOrder(params: CreateOrderParams): Promise<CreateOrderResult> {
@@ -53,27 +68,23 @@ export class PaypalProvider implements IPaymentProvider {
       discountCents,
     } = params;
     const totalAmount = (amountCents / 100).toFixed(2);
-    const accessToken = await this.getAccessToken();
 
-    // Build the purchase unit. We start with just the total and layer the
-    // itemized breakdown on top only when the numbers reconcile — PayPal
-    // rejects the whole order with UNIT_AMOUNT_MISMATCH if they don't, and
-    // we'd rather drop itemization than fail the payment.
-    const purchaseUnit: Record<string, unknown> = {
-      custom_id: outTradeNo,
+    // Base purchase unit: total only. Itemization is layered on below
+    // when it reconciles, otherwise we drop it rather than risk PayPal's
+    // UNIT_AMOUNT_MISMATCH blocking the whole order.
+    const purchaseUnit: NonNullable<OrderRequest['purchaseUnits']>[number] = {
+      customId: outTradeNo,
       amount: {
-        currency_code: currency,
+        currencyCode: currency,
         value: totalAmount,
       },
     };
 
     if (itemBreakdown?.length) {
-      // PayPal truncates item names at 127 chars; guard here so one long
-      // product name doesn't poison the whole order.
       const items = itemBreakdown.map((i) => ({
         name: i.name.slice(0, 127),
-        unit_amount: {
-          currency_code: currency,
+        unitAmount: {
+          currencyCode: currency,
           value: (i.unitAmountCents / 100).toFixed(2),
         },
         quantity: String(i.quantity),
@@ -88,20 +99,22 @@ export class PaypalProvider implements IPaymentProvider {
       const reconciled = itemTotalCents - discount;
 
       if (reconciled === amountCents) {
-        const breakdown: Record<string, unknown> = {
-          item_total: {
-            currency_code: currency,
+        const breakdown: NonNullable<
+          NonNullable<typeof purchaseUnit.amount>['breakdown']
+        > = {
+          itemTotal: {
+            currencyCode: currency,
             value: (itemTotalCents / 100).toFixed(2),
           },
         };
         if (discount > 0) {
           breakdown.discount = {
-            currency_code: currency,
+            currencyCode: currency,
             value: (discount / 100).toFixed(2),
           };
         }
         purchaseUnit.items = items;
-        (purchaseUnit.amount as Record<string, unknown>).breakdown = breakdown;
+        purchaseUnit.amount!.breakdown = breakdown;
       } else {
         this.logger.warn(
           `PayPal itemization skipped for ${outTradeNo}: items ${itemTotalCents}¢ − discount ${discount}¢ ≠ total ${amountCents}¢`,
@@ -109,53 +122,40 @@ export class PaypalProvider implements IPaymentProvider {
       }
     }
 
-    const res = await fetch(`${this.baseUrl}/v2/checkout/orders`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        intent: 'CAPTURE',
-        purchase_units: [purchaseUnit],
-      }),
-    });
+    try {
+      const { result } = await this.orders.createOrder({
+        body: {
+          intent: CheckoutPaymentIntent.Capture,
+          purchaseUnits: [purchaseUnit],
+        },
+      });
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new BadRequestException(
-        `PayPal create order failed: ${JSON.stringify(err)}`,
+      if (!result?.id) {
+        throw new BadRequestException('PayPal returned no order id');
+      }
+
+      return {
+        providerOrderId: result.id,
+        clientPayload: { paypalOrderId: result.id },
+      };
+    } catch (err) {
+      this.logger.error(
+        `PayPal create order failed: ${err instanceof Error ? err.message : String(err)}`,
       );
+      if (err instanceof BadRequestException) throw err;
+      throw new BadRequestException('PayPal create order failed');
     }
-
-    const data = (await res.json()) as { id: string };
-    return {
-      providerOrderId: data.id,
-      clientPayload: { paypalOrderId: data.id },
-    };
   }
 
-  async captureOrder(paypalOrderId: string): Promise<any> {
-    const accessToken = await this.getAccessToken();
-
-    const res = await fetch(
-      `${this.baseUrl}/v2/checkout/orders/${paypalOrderId}/capture`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-      },
-    );
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new BadRequestException(
-        `PayPal capture failed: ${JSON.stringify(err)}`,
+  async captureOrder(paypalOrderId: string): Promise<Order> {
+    try {
+      const { result } = await this.orders.captureOrder({ id: paypalOrderId });
+      return result;
+    } catch (err) {
+      this.logger.error(
+        `PayPal capture failed for ${paypalOrderId}: ${err instanceof Error ? err.message : String(err)}`,
       );
+      throw new BadRequestException('PayPal capture failed');
     }
-
-    return res.json();
   }
 }
