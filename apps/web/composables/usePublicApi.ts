@@ -1,6 +1,11 @@
 export function usePublicApi() {
   const config = useRuntimeConfig();
-  const baseUrl = config.public.apiBase as string;
+  // On the server, prefer the internal API URL (e.g. http://api:3001 inside
+  // the docker network) so SSR doesn't hairpin out through the public
+  // hostname and Nginx. Browsers always use the public URL.
+  const internal = (config as { apiBaseInternal?: string }).apiBaseInternal;
+  const baseUrl =
+    import.meta.server && internal ? internal : (config.public.apiBase as string);
 
   async function get<T>(path: string): Promise<T> {
     return $fetch<T>(`${baseUrl}/api${path}`, {

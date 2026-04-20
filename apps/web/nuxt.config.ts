@@ -48,6 +48,10 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
+    // Server-only: lets SSR talk to the API on the internal docker network
+    // (e.g. http://api:3001) instead of bouncing back through Nginx via the
+    // public hostname. Falls back to the public base if unset.
+    apiBaseInternal: process.env.NUXT_API_BASE_INTERNAL || '',
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:3001',
       paypalClientId: process.env.NUXT_PUBLIC_PAYPAL_CLIENT_ID || '',
