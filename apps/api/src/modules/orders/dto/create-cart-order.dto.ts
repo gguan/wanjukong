@@ -28,4 +28,10 @@ export class CreateCartOrderDto {
   customerId?: string;
   guestAccessTokenHash?: string;
   locale?: string;
+  /**
+   * Sales channel — "WEB" for storefront/PayPal, "MINIPROGRAM" for the
+   * WeChat mini program. Caller is responsible for setting this; the
+   * service does not infer it from currency or payment provider.
+   */
+  channel?: 'WEB' | 'MINIPROGRAM';
 }

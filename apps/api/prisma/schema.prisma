@@ -198,6 +198,10 @@ model Customer {
   phone           String?
   wechatOpenId    String?   @unique
   authProvider    String    @default("email") // "email" | "wechat"
+  /// Captured at register / wechatLogin from the i18n cookie or
+  /// Accept-Language header. Normalized to en | ja | zh-CN | zh-TW.
+  /// Used for transactional emails and as a default for the storefront UI.
+  locale          String    @default("en")
   emailVerifiedAt DateTime?
   isActive        Boolean   @default(true)
   failedAttempts  Int       @default(0)
@@ -213,6 +217,7 @@ model Customer {
   paymentIntents       PaymentIntent[]
 
   @@index([email])
+  @@index([authProvider])
 }
 
 model CustomerAddress {
@@ -352,6 +357,15 @@ enum PaymentStatus {
   REFUNDED
 }
 
+/// Sales channel an order originated from. Drives "国内/国际" filters in
+/// admin and segments revenue analytics. Decoupled from currency and
+/// payment provider so we can later open new channels (e.g. PayPal CNY,
+/// Stripe, AliPay) without retroactive interpretation.
+enum OrderChannel {
+  WEB         // 海外站 (overrealm.shop) — typically PayPal / USD
+  MINIPROGRAM // 微信小程序 — typically WeChat Pay / CNY
+}
+
 // ─── Order Models ─────────────────────────────────────────
 
 model Order {
@@ -402,6 +416,9 @@ model Order {
   // Locale (for transactional emails and receipts)
   locale                String        @default("en")
 
+  // Sales channel — set explicitly at order creation. See OrderChannel.
+  channel               OrderChannel  @default(WEB)
+
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
 
@@ -414,6 +431,7 @@ model Order {
   @@index([customerId])
   @@index([email])
   @@index([status])
+  @@index([channel])
 }
 
 // ─── Refund Model ─────────────────────────────────────────

@@ -242,6 +242,7 @@ export class PaymentsService {
       paypalOrderId,
       customerId: customerId || undefined,
       guestAccessTokenHash,
+      channel: 'WEB',
       // Coupon was reserved at create-order time; propagate to the Order so
       // the customer sees the discount and an admin can reconcile.
       couponCode: pi.couponCode || undefined,
@@ -353,6 +354,7 @@ export class PaymentsService {
         phone: shippingAddr?.phone || customer.phone || undefined,
         currency: 'CNY',
         locale: input.locale ?? 'zh-CN',
+        channel: 'MINIPROGRAM',
         couponCode: reservedCouponCode || undefined,
         discountCents: discountCents || undefined,
         customerId,

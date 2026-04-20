@@ -285,6 +285,7 @@ export class OrdersService {
           postalCode: dto.postalCode,
           currency,
           locale: normalizeLocale(dto.locale),
+          channel: dto.channel ?? 'WEB',
           couponCode: dto.couponCode || null,
           discountCents,
           subtotalPriceCents: subtotalCents,

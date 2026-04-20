@@ -46,6 +46,7 @@ export class StorefrontAuthService {
         email,
         passwordHash,
         name: dto.name ?? null,
+        locale,
       },
     });
 
@@ -330,7 +331,9 @@ export class StorefrontAuthService {
     });
 
     if (!customer) {
-      // Auto-register: placeholder email + random unusable password
+      // Auto-register: placeholder email + random unusable password.
+      // Mini program is mainland-only, so default the analytics locale to
+      // simplified Chinese until / unless they switch in settings.
       const placeholderEmail = `wechat_${openid}@wechat.internal`;
       const placeholderHash = crypto.randomBytes(32).toString('hex');
 
@@ -341,6 +344,7 @@ export class StorefrontAuthService {
           email: placeholderEmail,
           passwordHash: placeholderHash,
           isActive: true,
+          locale: 'zh-CN',
         },
       });
     }
