@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { loadScript, type PayPalNamespace } from '@paypal/paypal-js';
 import type { ProductVariant } from '~/composables/useProducts';
 
 const route = useRoute();
@@ -187,19 +188,16 @@ async function initPayPal() {
     return;
   }
 
-  // Load PayPal JS SDK
+  let paypal: PayPalNamespace | null;
   try {
-    await new Promise<void>((resolve, reject) => {
-      if (document.querySelector(`script[data-paypal-sdk]`)) { resolve(); return; }
-      const script = document.createElement('script');
-      script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD`;
-      script.dataset.paypalSdk = 'true';
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error('Failed to load PayPal SDK'));
-      document.head.appendChild(script);
-    });
+    paypal = await loadScript({ clientId, currency: 'USD' });
   } catch {
-    formError.value = 'Failed to load PayPal. Please try again.';
+    formError.value = 'Couldn\'t load PayPal. Please check your connection and try again.';
+    isSubmitting.value = false;
+    return;
+  }
+  if (!paypal?.Buttons) {
+    formError.value = 'PayPal is temporarily unavailable. Please try again later.';
     isSubmitting.value = false;
     return;
   }
@@ -211,8 +209,7 @@ async function initPayPal() {
 
   const apiBase = config.public.apiBase;
 
-  // @ts-ignore
-  window.paypal.Buttons({
+  paypal.Buttons({
     style: {
       layout: 'vertical',
       color: 'gold',
@@ -291,11 +288,11 @@ async function initPayPal() {
         isSubmitting.value = false;
       }
     },
-    onError(err: any) {
+    onError(err: unknown) {
       formError.value = 'PayPal encountered an error. Please try again.';
       console.error('PayPal error', err);
     },
-  }).render(paypalContainerRef.value);
+  }).render(paypalContainerRef.value!);
 }
 </script>
 

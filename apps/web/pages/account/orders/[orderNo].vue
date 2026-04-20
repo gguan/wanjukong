@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { loadScript, type PayPalNamespace } from '@paypal/paypal-js';
+
 definePageMeta({ middleware: 'account-auth' });
 
 const route = useRoute();
@@ -42,22 +44,25 @@ async function initBalancePayPal() {
     return;
   }
 
-  await new Promise<void>((resolve, reject) => {
-    if (document.querySelector(`script[data-paypal-sdk]`)) { resolve(); return; }
-    const script = document.createElement('script');
-    script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD`;
-    script.dataset.paypalSdk = 'true';
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error('Failed to load PayPal SDK'));
-    document.head.appendChild(script);
-  });
+  let paypal: PayPalNamespace | null;
+  try {
+    paypal = await loadScript({ clientId, currency: 'USD' });
+  } catch {
+    balanceError.value = 'Couldn\'t load PayPal. Please check your connection and try again.';
+    balanceLoading.value = false;
+    return;
+  }
+  if (!paypal?.Buttons) {
+    balanceError.value = 'PayPal is temporarily unavailable. Please try again later.';
+    balanceLoading.value = false;
+    return;
+  }
 
   balanceLoading.value = false;
   balanceReady.value = true;
   await nextTick();
 
-  // @ts-ignore
-  window.paypal.Buttons({
+  paypal.Buttons({
     style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'paypal', height: 48 },
     async createOrder() {
       const res = await fetch(`${apiBase}/api/public/payments/paypal/create-balance`, {
@@ -90,11 +95,11 @@ async function initBalancePayPal() {
         balanceError.value = e.message || 'Payment failed. Please try again.';
       }
     },
-    onError(err: any) {
+    onError(err: unknown) {
       balanceError.value = 'PayPal encountered an error. Please try again.';
       console.error('PayPal balance error', err);
     },
-  }).render(paypalBalanceContainer.value);
+  }).render(paypalBalanceContainer.value!);
 }
 
 function formatCents(cents: number) {
