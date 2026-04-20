@@ -44,6 +44,7 @@ export class AdminOrdersController {
     @Query('search') search?: string,
     @Query('status') status?: string,
     @Query('paymentStatus') paymentStatus?: string,
+    @Query('channel') channel?: string,
   ) {
     return this.ordersService.findAll({
       page: page ? parseInt(page, 10) : undefined,
@@ -51,6 +52,7 @@ export class AdminOrdersController {
       search: search || undefined,
       status: status || undefined,
       paymentStatus: paymentStatus || undefined,
+      channel: channel || undefined,
       brandIds: this.getBrandIds(req),
     });
   }

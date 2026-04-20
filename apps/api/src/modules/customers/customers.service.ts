@@ -10,21 +10,34 @@ const RECENT_ORDERS = 10;
 export class CustomersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(opts: { page?: number; limit?: number; search?: string }) {
+  async findAll(opts: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    authProvider?: string;
+  }) {
     const page = Math.max(1, opts.page ?? 1);
     const limit = Math.min(MAX_LIMIT, Math.max(1, opts.limit ?? DEFAULT_LIMIT));
     const skip = (page - 1) * limit;
     const search = opts.search?.trim();
+    // Only honor known values — pass through anything else risks an
+    // open-ended filter on a free-text column.
+    const authProvider =
+      opts.authProvider === 'email' || opts.authProvider === 'wechat'
+        ? opts.authProvider
+        : undefined;
 
-    const where: Prisma.CustomerWhereInput = search
-      ? {
-          OR: [
-            { email: { contains: search, mode: 'insensitive' } },
-            { name: { contains: search, mode: 'insensitive' } },
-            { phone: { contains: search } },
-          ],
-        }
-      : {};
+    const where: Prisma.CustomerWhereInput = {};
+    if (search) {
+      where.OR = [
+        { email: { contains: search, mode: 'insensitive' } },
+        { name: { contains: search, mode: 'insensitive' } },
+        { phone: { contains: search } },
+      ];
+    }
+    if (authProvider) {
+      where.authProvider = authProvider;
+    }
 
     const [rows, total] = await this.prisma.$transaction([
       this.prisma.customer.findMany({
@@ -38,6 +51,7 @@ export class CustomersService {
           name: true,
           phone: true,
           authProvider: true,
+          locale: true,
           emailVerifiedAt: true,
           isActive: true,
           lastLoginAt: true,
@@ -55,6 +69,7 @@ export class CustomersService {
         name: r.name,
         phone: r.phone,
         authProvider: r.authProvider,
+        locale: r.locale,
         emailVerifiedAt: r.emailVerifiedAt,
         isActive: r.isActive,
         lastLoginAt: r.lastLoginAt,

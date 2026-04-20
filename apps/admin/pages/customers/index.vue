@@ -9,6 +9,7 @@ interface Customer {
   name: string | null;
   phone: string | null;
   authProvider: string;
+  locale: string;
   emailVerifiedAt: string | null;
   isActive: boolean;
   lastLoginAt: string | null;
@@ -29,6 +30,7 @@ const total = ref(0);
 const page = ref(1);
 const limit = ref(20);
 const search = ref('');
+const authProviderFilter = ref('');
 
 async function load() {
   loading.value = true;
@@ -37,6 +39,7 @@ async function load() {
     params.set('page', String(page.value));
     params.set('limit', String(limit.value));
     if (search.value) params.set('search', search.value);
+    if (authProviderFilter.value) params.set('authProvider', authProviderFilter.value);
 
     const res = await api.get<CustomersResponse>(`/api/admin/customers?${params.toString()}`);
     customers.value = res.data;
@@ -61,7 +64,23 @@ function authProviderLabel(provider: string) {
   return provider === 'wechat' ? '微信' : '邮箱';
 }
 
+const LOCALE_LABELS: Record<string, string> = {
+  en: 'English',
+  ja: '日本語',
+  'zh-CN': '简体中文',
+  'zh-TW': '繁體中文',
+};
+
+function localeLabel(code: string) {
+  return LOCALE_LABELS[code] || code;
+}
+
 function handleSearch() {
+  page.value = 1;
+  load();
+}
+
+function handleFilterChange() {
   page.value = 1;
   load();
 }
@@ -91,6 +110,16 @@ onMounted(load);
         @keyup.enter="handleSearch"
         @clear="handleSearch"
       />
+      <ElSelect
+        v-model="authProviderFilter"
+        placeholder="注册方式"
+        clearable
+        style="width: 140px"
+        @change="handleFilterChange"
+      >
+        <ElOption label="邮箱注册" value="email" />
+        <ElOption label="微信小程序" value="wechat" />
+      </ElSelect>
       <ElButton @click="handleSearch">搜索</ElButton>
     </div>
 
@@ -120,6 +149,12 @@ onMounted(load);
           <ElTag size="small" :type="row.authProvider === 'wechat' ? 'success' : 'info'" disable-transitions>
             {{ authProviderLabel(row.authProvider) }}
           </ElTag>
+        </template>
+      </ElTableColumn>
+
+      <ElTableColumn label="语言" width="100" align="center">
+        <template #default="{ row }">
+          {{ localeLabel(row.locale) }}
         </template>
       </ElTableColumn>
 

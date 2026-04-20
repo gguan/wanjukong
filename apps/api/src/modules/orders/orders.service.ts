@@ -27,6 +27,8 @@ export interface FindAllOrdersQuery {
   search?: string;
   status?: string;
   paymentStatus?: string;
+  /** Sales channel — "WEB" (海外站) or "MINIPROGRAM" (微信小程序). */
+  channel?: string;
   /** Filter orders to only those containing items from these brands */
   brandIds?: string[];
 }
@@ -428,6 +430,10 @@ export class OrdersService {
 
     if (query.paymentStatus) {
       where.paymentStatus = query.paymentStatus as any;
+    }
+
+    if (query.channel === 'WEB' || query.channel === 'MINIPROGRAM') {
+      where.channel = query.channel;
     }
 
     if (query.brandIds?.length) {

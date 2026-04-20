@@ -16,6 +16,7 @@ interface Order {
   orderNo: string;
   status: string;
   paymentStatus: string;
+  channel: 'WEB' | 'MINIPROGRAM';
   fullName: string;
   email: string;
   currency: string;
@@ -45,6 +46,7 @@ const limit = ref(20);
 const search = ref('');
 const statusFilter = ref('');
 const paymentStatusFilter = ref('');
+const channelFilter = ref('');
 const stats = ref<OrderStats | null>(null);
 
 async function load() {
@@ -56,6 +58,7 @@ async function load() {
     if (search.value) params.set('search', search.value);
     if (statusFilter.value) params.set('status', statusFilter.value);
     if (paymentStatusFilter.value) params.set('paymentStatus', paymentStatusFilter.value);
+    if (channelFilter.value) params.set('channel', channelFilter.value);
 
     const res = await api.get<OrdersResponse>(`/api/admin/orders?${params.toString()}`);
     orders.value = res.data;
@@ -73,8 +76,14 @@ async function loadStats() {
   }
 }
 
-function formatPrice(cents: number) {
-  return `$${(cents / 100).toFixed(2)}`;
+function formatPrice(cents: number, currency: string) {
+  // Display in the order's actual settlement currency rather than always USD.
+  const symbol = currency === 'CNY' ? '¥' : '$';
+  return `${symbol}${(cents / 100).toFixed(2)}`;
+}
+
+function channelLabel(channel: string) {
+  return channel === 'MINIPROGRAM' ? '小程序' : 'Web';
 }
 
 function formatDate(iso: string) {
@@ -178,6 +187,17 @@ onMounted(() => {
         <ElOption label="已退款" value="REFUNDED" />
       </ElSelect>
 
+      <ElSelect
+        v-model="channelFilter"
+        placeholder="渠道"
+        clearable
+        style="width: 140px"
+        @change="handleFilterChange"
+      >
+        <ElOption label="Web 站 (国际)" value="WEB" />
+        <ElOption label="微信小程序 (国内)" value="MINIPROGRAM" />
+      </ElSelect>
+
       <ElButton @click="handleSearch">搜索</ElButton>
     </div>
 
@@ -207,6 +227,18 @@ onMounted(() => {
         </template>
       </ElTableColumn>
 
+      <ElTableColumn label="渠道" width="100" align="center">
+        <template #default="{ row }">
+          <ElTag
+            size="small"
+            :type="row.channel === 'MINIPROGRAM' ? 'success' : 'info'"
+            disable-transitions
+          >
+            {{ channelLabel(row.channel) }}
+          </ElTag>
+        </template>
+      </ElTableColumn>
+
       <ElTableColumn label="商品数" width="80" align="center">
         <template #default="{ row }">
           {{ row.items.length }}
@@ -215,7 +247,7 @@ onMounted(() => {
 
       <ElTableColumn label="金额" width="110" align="right">
         <template #default="{ row }">
-          {{ formatPrice(row.totalPriceCents) }}
+          {{ formatPrice(row.totalPriceCents, row.currency) }}
         </template>
       </ElTableColumn>
 

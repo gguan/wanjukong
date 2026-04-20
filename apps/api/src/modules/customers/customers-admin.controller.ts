@@ -13,11 +13,13 @@ export class CustomersAdminController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('search') search?: string,
+    @Query('authProvider') authProvider?: string,
   ) {
     return this.customersService.findAll({
       page: page ? Number(page) : undefined,
       limit: limit ? Number(limit) : undefined,
       search,
+      authProvider,
     });
   }
 
