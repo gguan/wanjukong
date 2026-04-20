@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const { items, count, subtotalCents, depositCents, balanceCents, hasPreorder, clearCart } = useCart();
-const { isLoggedIn, customer } = useStorefrontAuth();
+const { isLoggedIn, customer, fetchMe } = useStorefrontAuth();
 const router = useRouter();
 const config = useRuntimeConfig();
 const { lang } = useLang();
@@ -98,10 +98,15 @@ async function prefillFromAccount() {
   }
 }
 
-onMounted(() => {
-  if (import.meta.client) {
-    prefillFromAccount();
-  }
+onMounted(async () => {
+  if (!import.meta.client) return;
+  // The shared composable auto-fetches /me on first use, but the request
+  // may still be in flight when we mount. Awaiting it here means a logged
+  // -in customer who lands directly on /checkout still gets their email,
+  // name, and default address prefilled (and a guest cleanly skips the
+  // /public/account/addresses call that would otherwise 401).
+  await fetchMe();
+  await prefillFromAccount();
 });
 
 // Validate form before PayPal renders
