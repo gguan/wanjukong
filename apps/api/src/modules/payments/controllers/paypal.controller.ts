@@ -59,7 +59,9 @@ class CaptureBalanceDto {
   @IsString() @IsOptional() guestToken?: string;
 }
 
-type SessionRequest = Request & { session?: { customerId?: string } };
+type SessionRequest = Request & {
+  session?: { customerId?: string; orderIds?: string[] } & Record<string, unknown>;
+};
 
 @Public()
 @Controller('public/payments/paypal')
@@ -86,6 +88,7 @@ export class PaypalController {
     return this.paymentsService.captureAndCreateOrder({
       ...dto,
       customerId,
+      session: req.session,
     });
   }
 

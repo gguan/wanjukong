@@ -30,12 +30,18 @@ export class PublicOrdersController {
     @Query('token') token: string | undefined,
     @Req() req: Request,
   ) {
-    const customerId: string | null = (req as unknown as { session?: { customerId?: string } })
-      .session?.customerId ?? null;
+    const session = (
+      req as unknown as {
+        session?: { customerId?: string; orderIds?: string[] };
+      }
+    ).session;
+    const customerId: string | null = session?.customerId ?? null;
+    const orderIds = Array.isArray(session?.orderIds) ? session.orderIds : null;
     return this.ordersService.findByOrderNoAuthorized(
       orderNo,
       customerId,
       token ?? null,
+      orderIds,
     );
   }
 }

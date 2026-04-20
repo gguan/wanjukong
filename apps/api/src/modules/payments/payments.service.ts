@@ -44,6 +44,12 @@ interface CapturePayPalOrderInput {
   currency?: string;
   customerId?: string;
   locale?: string;
+  /**
+   * Caller's express-session. When present and the caller is a guest, we
+   * stash the created order's id so a browser that loses the raw token
+   * (e.g. idempotent retry, cleared URL) can still load its own order page.
+   */
+  session?: { orderIds?: string[] } & Record<string, unknown>;
 }
 
 // ─── WeChat Pay types ─────────────────────────────────────
@@ -68,6 +74,21 @@ export class PaymentsService {
     private readonly paypalProvider: PaypalProvider,
     private readonly wechatPayProvider: WechatPayProvider,
   ) {}
+
+  /**
+   * Append a guest order's id to the caller's session so they can reopen
+   * the order page on this browser without needing the raw access token in
+   * the URL. Capped so a single browser can't accumulate unbounded state.
+   */
+  private rememberOrderInSession(
+    session: { orderIds?: string[] } & Record<string, unknown>,
+    orderId: string,
+  ): void {
+    const existing = Array.isArray(session.orderIds) ? session.orderIds : [];
+    if (existing.includes(orderId)) return;
+    const next = [...existing, orderId];
+    session.orderIds = next.length > 20 ? next.slice(-20) : next;
+  }
 
   // ═══════════════════════════════════════════════════════
   // PayPal — Web storefront
@@ -152,7 +173,16 @@ export class PaymentsService {
       const existing = await this.prisma.order.findUnique({
         where: { id: pi.orderId },
       });
-      if (existing) return { orderNo: existing.orderNo };
+      if (existing) {
+        // Re-stash the orderId so a guest retrying capture in the same
+        // browser can still auth into its own order page without a token.
+        // (We can't re-derive the raw guestAccessToken after the original
+        // capture — only its hash is persisted.)
+        if (!existing.customerId && input.session) {
+          this.rememberOrderInSession(input.session, existing.id);
+        }
+        return { orderNo: existing.orderNo };
+      }
     }
 
     const captureResult = await this.paypalProvider.captureOrder(paypalOrderId);
@@ -222,6 +252,12 @@ export class PaymentsService {
       where: { id: pi.id },
       data: { status: 'ORDER_CREATED', orderId: order.id },
     });
+
+    // Stash the guest order on the browser's session so the order page
+    // still loads if the client loses the raw token (e.g. capture retry).
+    if (!customerId && input.session) {
+      this.rememberOrderInSession(input.session, order.id);
+    }
 
     this.mailerService
       .sendOrderConfirmationEmail({

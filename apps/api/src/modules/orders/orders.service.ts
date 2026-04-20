@@ -358,6 +358,7 @@ export class OrdersService {
     orderNo: string,
     customerId: string | null,
     token: string | null,
+    sessionOrderIds: string[] | null = null,
   ) {
     const order = await this.prisma.order.findUnique({
       where: { orderNo },
@@ -370,6 +371,13 @@ export class OrdersService {
 
     // Logged-in customer: must match the order's customerId.
     if (customerId && order.customerId === customerId) {
+      return this.serializeOrder(order);
+    }
+
+    // Guest browser: capture flow stashes the created order's id on the
+    // session. Lets the same browser reload the thank-you page even if it
+    // loses the raw access token (idempotent retry, cleared query param).
+    if (sessionOrderIds?.includes(order.id)) {
       return this.serializeOrder(order);
     }
 
