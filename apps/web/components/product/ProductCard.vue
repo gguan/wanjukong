@@ -11,10 +11,10 @@ const defaultVariant = computed(() => {
   return variants.find((v) => v.isDefault) || variants[0];
 });
 
-const displayPrice = computed(() => {
+const displayPrice = computed<string>(() => {
   const v = defaultVariant.value;
-  if (!v) return '$0.00';
-  return `$${((v.usdPriceCents ?? 0) / 100).toFixed(2)}`;
+  if (!v || !v.usdPriceCents) return 'Price unavailable';
+  return `$${(v.usdPriceCents / 100).toFixed(2)}`;
 });
 
 const hasMultipleVariants = computed(() => (props.product.variants?.length ?? 0) > 1);

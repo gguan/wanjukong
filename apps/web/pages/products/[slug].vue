@@ -97,16 +97,24 @@ watch(lightboxOpen, (open) => {
 });
 
 // ─── Price / Availability ────────────────────────────────
-const displayPrice = computed(() => {
+const displayPrice = computed<string>(() => {
   const v = selectedVariant.value;
-  if (!v) return '$0.00';
-  return `$${((v.usdPriceCents ?? 0) / 100).toFixed(2)}`;
+  if (!v || !v.usdPriceCents) return 'Price unavailable';
+  return `$${(v.usdPriceCents / 100).toFixed(2)}`;
 });
+
+const hasUsdPrice = computed(() => (selectedVariant.value?.usdPriceCents ?? 0) > 0);
 
 const displayAvailability = computed(() => product.value?.displayAvailability);
 
 const isPurchasable = computed(() => {
-  return Boolean(product.value?.isPurchasable && selectedVariant.value?.isPurchasable);
+  // USD price is required to transact on this storefront — if the admin
+  // forgot to set it, don't let customers add a $0 item to the cart.
+  return Boolean(
+    product.value?.isPurchasable &&
+      selectedVariant.value?.isPurchasable &&
+      hasUsdPrice.value,
+  );
 });
 
 const isPreorder = computed(() => product.value?.saleType === 'PREORDER');
@@ -348,7 +356,7 @@ function formatDate(iso: string | null | undefined) {
                   {{ addedToCart ? 'Added!' : isPreorder ? 'Pre-order' : 'Add to Cart' }}
                 </button>
                 <button v-else class="btn-primary btn-disabled" disabled>
-                  {{ availabilityLabel(displayAvailability) }}
+                  {{ !hasUsdPrice ? 'Price unavailable' : availabilityLabel(displayAvailability) }}
                 </button>
               </div>
 

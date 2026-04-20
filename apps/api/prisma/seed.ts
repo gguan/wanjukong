@@ -285,16 +285,22 @@ async function main() {
     },
   ];
 
+  // USD rate used only to seed a sane default so the international
+  // storefront shows real prices out-of-the-box. Admins override per variant.
+  const CNY_TO_USD_CENTS = (cny: number) => Math.round(cny / 7);
+
   for (const v of variants) {
+    const usdPriceCents = CNY_TO_USD_CENTS(v.priceCents);
     await prisma.productVariant.upsert({
       where: { sku: v.sku },
       update: {
         priceCents: v.priceCents,
+        usdPriceCents,
         stock: v.stock,
         specifications: 'specifications' in v ? (v as any).specifications : undefined,
         manufacturerSku: 'manufacturerSku' in v ? (v as any).manufacturerSku : undefined,
       },
-      create: v,
+      create: { ...v, usdPriceCents },
     });
   }
 
