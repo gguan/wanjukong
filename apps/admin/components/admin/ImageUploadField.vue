@@ -12,6 +12,14 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void;
+  /**
+   * Fired alongside update:modelValue with the UploadFile id from
+   * /admin/uploads/register-temp. Send this back to the API on save so
+   * the upload is marked USED and survives the temp-upload cleanup cron.
+   * Optional — callers that don't bind it just lose the survival
+   * guarantee for that field, which is what the existing behaviour was.
+   */
+  (e: 'update:uploadFileId', value: string): void;
 }>();
 
 const { uploading, progress, uploadFiles } = useImageUpload({
@@ -47,6 +55,7 @@ async function doUpload(files: FileList | File[]) {
     });
     if (results.length > 0) {
       emit('update:modelValue', results[0].imageUrl);
+      emit('update:uploadFileId', results[0].uploadFileId);
       ElMessage.success('图片上传成功');
     }
   } catch (err: any) {

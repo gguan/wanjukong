@@ -1,9 +1,11 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { UploadsService } from '../uploads/uploads.service';
 import { CreateProductVariantDto } from './dto/create-product-variant.dto';
 import { UpdateProductVariantDto } from './dto/update-product-variant.dto';
 import {
@@ -14,7 +16,12 @@ import {
 
 @Injectable()
 export class ProductVariantsService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(ProductVariantsService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly uploadsService: UploadsService,
+  ) {}
 
   findByProductId(productId: string) {
     return this.prisma.productVariant.findMany({
@@ -52,9 +59,10 @@ export class ProductVariantsService {
     // Generate or normalize SKU
     const sku = await this.resolveSkuForCreate(dto, product);
 
-    return this.prisma.productVariant.create({
+    const { coverImageUploadFileId, ...variantData } = dto;
+    const variant = await this.prisma.productVariant.create({
       data: {
-        ...dto,
+        ...variantData,
         sku,
         productId,
         isDefault: dto.isDefault ?? count === 0,
@@ -62,6 +70,11 @@ export class ProductVariantsService {
         manufacturerSku: dto.manufacturerSku || undefined,
       },
     });
+
+    if (coverImageUploadFileId) {
+      await this.markCoverAsUsed(variant.id, coverImageUploadFileId);
+    }
+    return variant;
   }
 
   async update(
@@ -79,15 +92,17 @@ export class ProductVariantsService {
       await this.clearDefaults(productId);
     }
 
+    const { coverImageUploadFileId, ...rest } = dto;
+
     // Only update SKU if explicitly provided
     const data: any = {
-      ...dto,
-      specifications: dto.specifications ?? undefined,
-      manufacturerSku: dto.manufacturerSku !== undefined ? (dto.manufacturerSku || null) : undefined,
+      ...rest,
+      specifications: rest.specifications ?? undefined,
+      manufacturerSku: rest.manufacturerSku !== undefined ? (rest.manufacturerSku || null) : undefined,
     };
 
-    if (dto.sku !== undefined && dto.sku !== '') {
-      const normalized = normalizeSku(dto.sku);
+    if (rest.sku !== undefined && rest.sku !== '') {
+      const normalized = normalizeSku(rest.sku);
       // Check uniqueness (exclude current variant)
       const existing = await this.prisma.productVariant.findFirst({
         where: { sku: normalized, id: { not: variantId } },
@@ -101,10 +116,15 @@ export class ProductVariantsService {
       delete data.sku;
     }
 
-    return this.prisma.productVariant.update({
+    const updated = await this.prisma.productVariant.update({
       where: { id: variantId },
       data,
     });
+
+    if (coverImageUploadFileId) {
+      await this.markCoverAsUsed(variantId, coverImageUploadFileId);
+    }
+    return updated;
   }
 
   async remove(productId: string, variantId: string) {
@@ -126,6 +146,27 @@ export class ProductVariantsService {
   }
 
   // ── Helpers ──────────────────────────────────────────────
+
+  /**
+   * Mark the upload backing this variant's cover image as USED so the
+   * temp-upload cleanup cron doesn't reap the underlying COS object after
+   * 24h. Logged-only on failure — the variant row is the source of truth.
+   */
+  private async markCoverAsUsed(variantId: string, uploadFileId: string) {
+    try {
+      await this.uploadsService.markAsUsed(
+        uploadFileId,
+        'product-variant',
+        variantId,
+      );
+    } catch (err) {
+      this.logger.warn(
+        `Failed to mark upload ${uploadFileId} as USED for variant ${variantId}: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
+  }
 
   private async clearDefaults(productId: string) {
     await this.prisma.productVariant.updateMany({

@@ -84,4 +84,9 @@ export class UpdateProductVariantDto {
   @IsString()
   @IsOptional()
   coverImageUrl?: string;
+
+  /** See CreateProductVariantDto.coverImageUploadFileId. */
+  @IsString()
+  @IsOptional()
+  coverImageUploadFileId?: string;
 }

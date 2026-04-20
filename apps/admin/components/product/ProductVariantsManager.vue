@@ -47,6 +47,10 @@ const newForm = reactive({
   sortOrder: 0,
   coverImageUrl: '',
 });
+// UploadFile id captured when newForm.coverImageUrl is set via upload —
+// sent on create so the API can mark the upload USED and the cleanup
+// cron doesn't reap the COS object after 24h.
+const newCoverUploadFileId = ref<string | null>(null);
 const creatingNew = ref(false);
 
 const newSuggestedUsd = computed(() => {
@@ -72,6 +76,7 @@ function resetNewForm() {
   newForm.specificationsI18n = {};
   newForm.sortOrder = variants.value.length;
   newForm.coverImageUrl = '';
+  newCoverUploadFileId.value = null;
 }
 
 async function loadVariants() {
@@ -132,6 +137,9 @@ async function createVariant() {
       specifications: newForm.specifications || undefined,
       specificationsI18n: newForm.specificationsI18n,
       coverImageUrl: newForm.coverImageUrl || undefined,
+      ...(newCoverUploadFileId.value
+        ? { coverImageUploadFileId: newCoverUploadFileId.value }
+        : {}),
     };
     const created = await api.post<Variant>(
       `/api/admin/products/${props.productId}/variants`,
@@ -321,6 +329,7 @@ onMounted(loadVariants);
                 :product-slug="productSlug"
                 label="点击或拖拽上传版本封面图"
                 hint="支持 JPG/PNG/WebP，最大 5MB，自动转为 JPG"
+                @update:upload-file-id="(id) => (newCoverUploadFileId = id)"
               />
             </ElFormItem>
             <ElFormItem label="说明信息">

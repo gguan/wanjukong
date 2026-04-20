@@ -48,6 +48,11 @@ const editing = reactive({
   coverImageUrl: '',
 });
 
+// Captured when the cover image is uploaded — sent on save so the API
+// marks the upload USED and the cleanup cron doesn't reap it after 24h.
+// Cleared on save (server-side mark is one-shot) and on variant prop refresh.
+const coverUploadFileId = ref<string | null>(null);
+
 const dirty = ref(false);
 const saving = ref(false);
 
@@ -67,6 +72,7 @@ watch(
     editing.specificationsI18n = (v as any).specificationsI18n || {};
     editing.sortOrder = v.sortOrder;
     editing.coverImageUrl = v.coverImageUrl || '';
+    coverUploadFileId.value = null;
     dirty.value = false;
   },
   { immediate: true },
@@ -121,7 +127,11 @@ async function handleSave() {
     specificationsI18n: editing.specificationsI18n,
     sortOrder: Number(editing.sortOrder),
     coverImageUrl: editing.coverImageUrl || null,
+    ...(coverUploadFileId.value
+      ? { coverImageUploadFileId: coverUploadFileId.value }
+      : {}),
   } as any);
+  coverUploadFileId.value = null;
   await nextTick();
   saving.value = false;
 }
@@ -241,6 +251,7 @@ async function handleSave() {
             :product-slug="productSlug"
             label="点击或拖拽上传版本封面图"
             hint="支持 JPG/PNG/WebP，最大 5MB，自动转为 JPG"
+            @update:upload-file-id="(id) => (coverUploadFileId = id)"
           />
         </ElFormItem>
 

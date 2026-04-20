@@ -82,4 +82,13 @@ export class CreateProductVariantDto {
   @IsString()
   @IsOptional()
   coverImageUrl?: string;
+
+  /**
+   * UploadFile id returned by /admin/uploads/register-temp. Sending this
+   * tells the variant service to mark the upload as USED so the
+   * temp-upload cleanup cron doesn't reap the COS object after 24h.
+   */
+  @IsString()
+  @IsOptional()
+  coverImageUploadFileId?: string;
 }
