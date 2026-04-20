@@ -42,11 +42,11 @@ const groups: FaqGroup[] = [
     items: [
       {
         q: 'Do you ship internationally?',
-        a: 'Yes — free worldwide shipping on all orders. Delivery times vary by region; see our Shipping page for the breakdown.',
+        a: 'Yes. We ship internationally, and available shipping options, rates, and delivery estimates vary by destination and product type. See our Shipping page for details.',
       },
       {
         q: 'How long does delivery take?',
-        a: 'Typically 7–14 business days to the US, 10–18 days to Europe, 5–12 days to Asia Pacific, and up to 25 days for remote regions.',
+        a: 'Typical transit times range from 5 to 16 business days for most major regions, with longer timelines for remote destinations or customs delays. The product page and shipping policy show the current estimate.',
       },
       {
         q: 'What about customs duties?',
@@ -63,7 +63,7 @@ const groups: FaqGroup[] = [
       },
       {
         q: 'Can I cancel a pre-order?',
-        a: 'You can cancel within 24 hours of placing the pre-order for a full refund. After that the deposit is non-refundable, but you can still cancel and forfeit only the deposit.',
+        a: 'You can usually cancel a pre-order within 24 hours for a full refund. After that, a reasonable non-refundable reservation fee may apply once allocation or production has been committed. See our Shipping page for full details.',
       },
       {
         q: 'When do I pay the balance?',
@@ -90,6 +90,10 @@ const groups: FaqGroup[] = [
         q: 'Do you sell used or opened figures?',
         a: 'No. All figures sold are brand new and unopened.',
       },
+      {
+        q: 'Are your products toys for children?',
+        a: 'Most products are collectible display items intended for older teens or adults unless the product page clearly states otherwise. Always check the item listing and our Returns page for age guidance and safety warnings.',
+      },
     ],
   },
   {
@@ -97,11 +101,11 @@ const groups: FaqGroup[] = [
     items: [
       {
         q: 'What is your return policy?',
-        a: 'Unopened items can be returned within 14 days of delivery. Damaged or defective items are eligible for exchange or refund. See our Returns page for the full policy.',
+        a: 'Most unused items may be returned within 14 days of delivery. Damaged, incorrect, or incomplete orders can be reported within 30 days, and manufacturing defects are covered by our limited warranty. See our Returns page for the full policy.',
       },
       {
         q: 'What if my figure arrives damaged?',
-        a: 'Email us at support@overrealm.shop within 48 hours of delivery with photos. We\'ll arrange a replacement or refund.',
+        a: 'Email us at support@overrealm.shop within 30 days of delivery with photos of the parcel, packaging, and issue. We will review the claim and offer an appropriate remedy if it is approved.',
       },
     ],
   },

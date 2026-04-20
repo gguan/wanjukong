@@ -1,7 +1,7 @@
 <script setup lang="ts">
 useSeoMeta({
-  title: 'Privacy Policy — Over Realm',
-  description: 'Privacy policy and data practices for Over Realm.',
+  title: 'Privacy Policy - Over Realm',
+  description: 'How Over Realm collects, uses, shares, and protects customer data for international sales.',
 })
 </script>
 
@@ -10,184 +10,134 @@ useSeoMeta({
     <header class="info-hero">
       <p class="info-eyebrow">Legal</p>
       <h1 class="info-title">Privacy Policy</h1>
-      <p class="info-updated">
-        <!-- TODO: Update this date when the policy changes. -->
-        Last updated: 2026-04-18
-      </p>
+      <p class="info-updated">Last updated: 2026-04-20</p>
     </header>
 
     <div class="info-body">
-      <!-- TODO: Have legal review before publishing. Placeholder copy below. -->
-
       <section class="info-section">
         <p class="info-intro">
-          This Privacy Policy explains what information we collect when you visit or order from
-          Over Realm, how we use it, and the rights you have over it. By using the site you
-          agree to the practices described here.
+          This Privacy Policy explains how we collect, use, store, and share personal
+          information when you browse, contact us, create an account, or place an order with
+          Over Realm. Because we serve international customers, your information may be
+          processed across borders as described below.
         </p>
       </section>
 
       <section class="info-section">
         <h2 class="info-h2">Information We Collect</h2>
-        <p>
-          When you place an order or register an account we collect:
-        </p>
         <ul>
-          <li>Name, email address, phone number</li>
-          <li>Shipping and billing addresses</li>
-          <li>Order history and customer service correspondence</li>
-          <li>
-            Payment metadata (transaction ID, amount, status) — the full card number is
-            handled exclusively by PayPal and never reaches our servers
-          </li>
-          <li>
-            Technical data: IP address, browser user-agent, referring page, approximate
-            geolocation derived from IP
-          </li>
+          <li>Contact details such as name, email address, phone number, and delivery address</li>
+          <li>Order details, payment status, refund history, and customer support messages</li>
+          <li>Technical information such as IP address, browser type, device information, and site activity</li>
+          <li>Preference data such as saved cart contents, language choice, and cookie settings</li>
         </ul>
         <p>
-          Gift-recipient details you enter at checkout are used only to deliver the order and
-          are never added to marketing lists.
+          Payment card details are handled by our payment providers. We receive only the
+          limited payment metadata needed to confirm and support your transaction.
         </p>
       </section>
 
       <section class="info-section">
         <h2 class="info-h2">How We Use Your Information</h2>
         <ul>
-          <li>To process, fulfil and deliver your orders</li>
-          <li>To send transactional email (order confirmations, shipping updates, balance-due reminders for pre-orders)</li>
-          <li>To respond to customer service enquiries</li>
-          <li>To detect and prevent fraud or abuse</li>
-          <li>To improve site performance and the overall shopping experience</li>
-          <li>To comply with accounting, tax and other legal obligations</li>
+          <li>To operate the store and fulfill orders</li>
+          <li>To provide customer service, shipping updates, and after-sales support</li>
+          <li>To prevent fraud, abuse, and unauthorized transactions</li>
+          <li>To keep records for tax, accounting, and legal compliance</li>
+          <li>To improve site performance and understand how customers use the store</li>
+          <li>To send marketing emails only where you have opted in or where permitted by law</li>
         </ul>
-        <p>
-          We only send marketing email if you explicitly opt in. You can opt out at any time
-          via the unsubscribe link in the email footer or from your account settings.
-        </p>
-      </section>
-
-      <section class="info-section">
-        <h2 class="info-h2">Legal Basis (GDPR)</h2>
-        <p>
-          For visitors in the EU / UK, we process personal data under the following lawful
-          bases: (a) performance of a contract — to fulfil your order, (b) legitimate
-          interests — fraud prevention and site security, (c) legal obligation — tax and
-          accounting, (d) consent — marketing email.
-        </p>
-      </section>
-
-      <section class="info-section">
-        <h2 class="info-h2">Cookies</h2>
-        <p>
-          We use first-party cookies strictly necessary to operate the store:
-        </p>
-        <ul>
-          <li><strong>Session cookie</strong> — keeps you signed in and remembers your cart</li>
-          <li><strong>Preference cookie</strong> — remembers your language setting</li>
-          <li><strong>Cookie-consent cookie</strong> — remembers that you've seen the banner</li>
-        </ul>
-        <p>
-          We do <strong>not</strong> use advertising, retargeting, or cross-site tracking
-          cookies. You can block cookies in your browser settings; note that doing so will
-          stop cart and login from working. See our <NuxtLink to="/cookies" class="inline-link">Cookie Policy</NuxtLink>
-          for the full list.
-        </p>
       </section>
 
       <section class="info-section">
         <h2 class="info-h2">Data Sharing</h2>
         <p>
-          We do not sell, rent or trade your personal data. We share data with third parties
-          only in the following cases:
+          We do not sell your personal information. We also do not rent or trade personal data
+          to third parties for their own marketing.
         </p>
+        <p>We share personal information only when needed to run the business, including with:</p>
         <ul>
-          <li><strong>Payment processing</strong> — PayPal, for card and account-balance payments</li>
-          <li><strong>Shipping carriers</strong> — DHL, FedEx, EMS, etc. for delivery</li>
-          <li><strong>Infrastructure</strong> — cloud hosting and email providers that process data on our behalf under strict confidentiality</li>
-          <li><strong>Legal obligation</strong> — law-enforcement requests with proper legal basis</li>
-          <li><strong>Business transfer</strong> — if the company is acquired, data transfers under the same privacy terms</li>
+          <li>Payment providers</li>
+          <li>Shipping carriers, customs brokers, and logistics partners</li>
+          <li>Hosting, email, analytics, fraud-prevention, and customer support providers</li>
+          <li>Professional advisers or authorities where disclosure is required by law</li>
         </ul>
       </section>
 
       <section class="info-section">
-        <h2 class="info-h2">Data Retention</h2>
+        <h2 class="info-h2">Cookies</h2>
         <p>
-          Order records are retained for 7 years to comply with tax and accounting
-          regulations. Account data is retained while your account is active and for 90 days
-          after deletion, after which it is anonymised or erased. Customer-service email
-          threads are retained for 3 years.
+          We use essential cookies to keep the site functioning, remember your cart, maintain
+          sign-in sessions, and store your privacy preferences. We may also use limited
+          analytics tools to understand site performance.
         </p>
-      </section>
-
-      <section class="info-section">
-        <h2 class="info-h2">Security</h2>
         <p>
-          All traffic to the site is encrypted in transit via TLS. Passwords are salted and
-          hashed (bcrypt) — they are never stored in plain text, and we ourselves cannot
-          recover them. Access to production data is restricted to a small operations team
-          under audit logging.
-        </p>
-      </section>
-
-      <section class="info-section">
-        <h2 class="info-h2">Your Rights</h2>
-        <p>
-          You can modify your account details and marketing preferences from
-          <NuxtLink to="/account" class="inline-link">your account page</NuxtLink>.
-          To exercise any of the following rights, email us at
-          <!-- TODO: Replace with your support email. -->
-          <a href="mailto:support@overrealm.shop">support@overrealm.shop</a>:
-        </p>
-        <ul>
-          <li>Access — receive a copy of the personal data we hold about you</li>
-          <li>Correction — fix inaccurate or incomplete data</li>
-          <li>Deletion — have your account and associated data erased (subject to legal retention)</li>
-          <li>Portability — receive your data in a machine-readable format</li>
-          <li>Objection — object to processing based on legitimate interests</li>
-          <li>Withdraw consent — for marketing email, at any time</li>
-        </ul>
-        <p>
-          We respond within 30 days. EU / UK residents may also lodge a complaint with their
-          local data-protection authority if they feel their rights have not been respected.
-        </p>
-      </section>
-
-      <section class="info-section">
-        <h2 class="info-h2">Children's Data</h2>
-        <p>
-          Our products are intended for adult collectors. We do not knowingly collect data
-          from anyone under 16. If you believe a child has provided data to us, please contact
-          us and we will delete it.
+          You can learn more in our <NuxtLink to="/cookies" class="inline-link">Cookie Policy</NuxtLink>.
+          Blocking essential cookies may prevent checkout or account features from working.
         </p>
       </section>
 
       <section class="info-section">
         <h2 class="info-h2">International Transfers</h2>
         <p>
-          <!-- TODO: Adjust to where your servers and processors are actually located. -->
-          Data is processed on servers located in mainland China and, for international
-          customers, may be transferred to other regions for delivery, payment, or email
-          delivery. Where required, we rely on Standard Contractual Clauses or equivalent
-          safeguards for cross-border transfers.
+          Our business operates internationally. Personal information may be processed in
+          mainland China and in other countries where our service providers, logistics partners,
+          or infrastructure providers operate. For international customers, this may mean your
+          information is transferred across borders in order to fulfill your order and support
+          your account.
+        </p>
+        <p>
+          Where required by applicable law, we use contractual or organizational safeguards for
+          cross-border transfers.
         </p>
       </section>
 
       <section class="info-section">
-        <h2 class="info-h2">Changes to This Policy</h2>
+        <h2 class="info-h2">Retention &amp; Security</h2>
         <p>
-          We may update this policy as the site and legal landscape change. Material changes
-          will be announced on this page with an updated "Last updated" date. If changes
-          materially expand our use of your personal data, we will notify registered users by
-          email before the change takes effect.
+          We keep information only for as long as reasonably necessary for the purposes
+          described above, including legal, tax, accounting, fraud-prevention, and dispute
+          handling requirements.
+        </p>
+        <p>
+          We use reasonable administrative, technical, and physical safeguards to protect
+          personal information. No online system can be guaranteed completely secure, but we
+          work to limit access and reduce risk.
         </p>
       </section>
 
       <section class="info-section">
-        <h2 class="info-h2">Contact</h2>
+        <h2 class="info-h2">Your Rights</h2>
         <p>
-          For privacy questions, data-subject requests, or any other concerns about how we
-          handle your information, email us at
+          Depending on where you live, you may have the right to access, correct, delete, or
+          export your personal information, and to object to or restrict certain processing.
+          You may also withdraw consent where processing relies on consent.
+        </p>
+        <p>
+          To make a request, email
+          <a href="mailto:support@overrealm.shop">support@overrealm.shop</a>. We may need to
+          verify your identity before completing the request.
+        </p>
+      </section>
+
+      <section class="info-section">
+        <h2 class="info-h2">Children</h2>
+        <p>
+          Our site and products are generally intended for collectors and adult purchasers. We
+          do not knowingly collect personal information directly from children where prohibited
+          by law. If you believe a child has provided personal data to us, contact us so we can
+          review and delete it where appropriate.
+        </p>
+      </section>
+
+      <section class="info-section">
+        <h2 class="info-h2">Changes &amp; Contact</h2>
+        <p>
+          We may update this policy from time to time. When we do, we will post the revised
+          version here and update the "Last updated" date above.
+        </p>
+        <p>
+          For privacy questions, complaints, or data requests, contact
           <a href="mailto:support@overrealm.shop">support@overrealm.shop</a>.
         </p>
       </section>
@@ -275,7 +225,8 @@ useSeoMeta({
   margin-bottom: 6px;
 }
 
-.info-section a {
+.info-section a,
+.inline-link {
   color: #0a0a0a;
   text-decoration: none;
   border-bottom: 1px solid #0a0a0a;
