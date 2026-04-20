@@ -45,6 +45,16 @@ function assertProductionSecrets(): void {
     { name: 'WECHAT_PAY_PUBLIC_KEY', why: 'verifies WeChat Pay notification signatures; absence means anyone can forge a PAID callback' },
   ];
 
+  // PayPal provider defaults to Sandbox when PAYPAL_BASE_URL is unset. That is
+  // the right default for development, but in production it means customers
+  // can "pay" in sandbox for free. Only enforce when PayPal is configured.
+  if (process.env.PAYPAL_CLIENT_ID || process.env.PAYPAL_CLIENT_SECRET) {
+    required.push({
+      name: 'PAYPAL_BASE_URL',
+      why: 'selects PayPal environment; absence silently routes live orders to Sandbox',
+    });
+  }
+
   const missing = required.filter(({ name }) => !process.env[name]);
   if (missing.length > 0) {
     // eslint-disable-next-line no-console
