@@ -223,11 +223,15 @@ async function initPayPal() {
         `${apiBase}/api/public/products/variants/${selectedVariant.value!.id}/stock`,
         { credentials: 'include' },
       );
-      if (stockRes.ok) {
-        const stockData = await stockRes.json();
-        if (!stockData.available || stockData.stock < quantity.value) {
-          throw new Error('Sorry, this item is no longer available in the requested quantity.');
-        }
+      if (stockRes.status === 404) {
+        throw new Error(`"${product.value!.name}" is no longer available. Please pick another item.`);
+      }
+      if (!stockRes.ok) {
+        throw new Error(`Couldn't verify stock for "${product.value!.name}". Please try again in a moment.`);
+      }
+      const stockData = await stockRes.json();
+      if (!stockData.available || stockData.stock < quantity.value) {
+        throw new Error('Sorry, this item is no longer available in the requested quantity.');
       }
 
       const res = await fetch(`${apiBase}/api/public/payments/paypal/create-order`, {
