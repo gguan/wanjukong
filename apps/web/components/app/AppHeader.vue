@@ -57,9 +57,7 @@ function submitSearch() {
         <img :src="LOGO_SRC" :alt="APP_NAME" class="logo-img" />
       </NuxtLinkLocale>
       <nav class="nav">
-        <NuxtLinkLocale to="/" class="nav-link">Home</NuxtLinkLocale>
         <NuxtLinkLocale to="/brands" class="nav-link">Brands</NuxtLinkLocale>
-        <NuxtLinkLocale to="/products" class="nav-link">Products</NuxtLinkLocale>
         <button class="search-toggle" aria-label="Search" @click="toggleSearch">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20">
             <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -117,9 +115,7 @@ function submitSearch() {
   </header>
   <!-- Mobile menu -->
   <div v-if="mobileMenuOpen" class="mobile-menu">
-    <NuxtLinkLocale to="/" @click="mobileMenuOpen = false">Home</NuxtLinkLocale>
     <NuxtLinkLocale to="/brands" @click="mobileMenuOpen = false">Brands</NuxtLinkLocale>
-    <NuxtLinkLocale to="/products" @click="mobileMenuOpen = false">Products</NuxtLinkLocale>
   </div>
   <!-- Search bar -->
   <div v-if="searchOpen" class="header-search-bar">
@@ -147,10 +143,10 @@ function submitSearch() {
 }
 
 .header-inner {
-  max-width: 1100px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 0 20px;
-  height: 56px;
+  padding: 20px var(--site-gutter);
+  min-height: 88px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -160,24 +156,25 @@ function submitSearch() {
   display: inline-flex;
   align-items: center;
   text-decoration: none;
+  padding: 4px 0;
 }
 
 .logo-img {
   display: block;
-  height: 28px;
+  height: 24px;
   width: auto;
 }
 
 .nav {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 28px;
 }
 
 .nav a {
   color: #555;
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: 500;
   transition: color 0.15s;
 }
@@ -336,12 +333,12 @@ function submitSearch() {
 .mobile-menu {
   border-bottom: 1px solid #e5e7eb;
   background: #fff;
-  padding: 12px 20px;
+  padding: 12px var(--site-gutter);
   display: flex;
   flex-direction: column;
   gap: 0;
   position: sticky;
-  top: 56px;
+  top: 88px;
   z-index: 99;
 }
 
@@ -359,11 +356,11 @@ function submitSearch() {
 .header-search-bar {
   border-bottom: 1px solid #e5e7eb;
   background: #fff;
-  padding: 0 20px;
+  padding: 0 var(--site-gutter);
 }
 
 .header-search-inner {
-  max-width: 1100px;
+  max-width: 1400px;
   margin: 0 auto;
   display: flex;
   align-items: center;

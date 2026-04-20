@@ -161,7 +161,7 @@ useSeoMeta({
 .info {
   max-width: 900px;
   margin: 0 auto;
-  padding: 80px 8vw;
+  padding: 80px var(--site-gutter);
 }
 
 .info-hero {

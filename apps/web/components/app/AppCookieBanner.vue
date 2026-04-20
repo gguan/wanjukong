@@ -50,7 +50,7 @@ function accept() {
   z-index: 100;
   background: #0a0a0a;
   color: #fff;
-  padding: 14px 8vw;
+  padding: 14px var(--site-gutter);
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
 }
 

@@ -23,6 +23,22 @@ useHead(head)
   box-sizing: border-box;
 }
 
+/*
+ * --site-gutter is the single source of truth for horizontal page padding.
+ * Every top-level page wrapper, header, footer, and section uses it via
+ * `padding-left: var(--site-gutter); padding-right: var(--site-gutter);`
+ * so content edges line up across the storefront. Matches the PDP gutter.
+ */
+:root {
+  --site-gutter: 24px;
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --site-gutter: 160px;
+  }
+}
+
 body {
   margin: 0;
   font-family: 'Jost', sans-serif;
@@ -47,15 +63,15 @@ a {
 }
 
 .page-container {
-  max-width: 1100px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 32px 20px;
+  padding: 32px var(--site-gutter);
 }
 
 .page-container-wide {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 40px 24px;
+  padding: 40px var(--site-gutter);
 }
 
 .page-title {

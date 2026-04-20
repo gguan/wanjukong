@@ -167,7 +167,7 @@ async function submit() {
 .info {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 80px 8vw;
+  padding: 80px var(--site-gutter);
 }
 
 .info-hero {

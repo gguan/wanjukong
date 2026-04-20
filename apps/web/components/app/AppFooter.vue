@@ -19,10 +19,11 @@
 .app-footer {
   border-top: 1px solid #e5e7eb;
   background: #fff;
-  padding: 32px 20px;
+  padding: 32px var(--site-gutter);
 }
+
 .footer-inner {
-  max-width: 1100px;
+  max-width: 1400px;
   margin: 0 auto;
   text-align: center;
 }

@@ -166,7 +166,7 @@ const displayBrands = computed(() => (brands.value ?? []).slice(0, 8));
   inset: 0;
   display: flex;
   align-items: flex-end;
-  padding: 80px 8vw;
+  padding: 80px var(--site-gutter);
   background: linear-gradient(
     to top,
     rgba(0, 0, 0, 0.75) 0%,
@@ -230,7 +230,7 @@ const displayBrands = computed(() => (brands.value ?? []).slice(0, 8));
 .collection,
 .arrivals,
 .brands {
-  padding: 96px 8vw;
+  padding: 96px var(--site-gutter);
   max-width: 1600px;
   margin: 0 auto;
 }
@@ -361,8 +361,8 @@ const displayBrands = computed(() => (brands.value ?? []).slice(0, 8));
   background: #fafafa;
   max-width: none;
   margin: 0;
-  padding-left: 8vw;
-  padding-right: 8vw;
+  padding-left: var(--site-gutter);
+  padding-right: var(--site-gutter);
 }
 
 .brand-strip {
@@ -420,7 +420,7 @@ const displayBrands = computed(() => (brands.value ?? []).slice(0, 8));
 .editorial {
   background: #0a0a0a;
   color: #fff;
-  padding: 120px 8vw;
+  padding: 120px var(--site-gutter);
   text-align: center;
 }
 
