@@ -147,6 +147,10 @@ enum UploadFileStatus {
   TEMP
   USED
   DELETED
+  /// Cleanup gave up after FAILURE_THRESHOLD consecutive delete failures.
+  /// Operator action required: investigate the COS object then either
+  /// flip back to TEMP to re-attempt, or DELETED to forget about it.
+  FAILED
 }
 
 model UploadFile {
@@ -163,6 +167,10 @@ model UploadFile {
   linkedEntityType String?
   linkedEntityId   String?
   expiresAt        DateTime?
+  /// Number of consecutive cleanup-deletion failures for this row.
+  /// After CLEANUP_FAILURE_THRESHOLD attempts the row is marked FAILED so
+  /// the cron stops retrying (and stops generating log spam).
+  failureCount     Int              @default(0)
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
