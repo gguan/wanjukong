@@ -97,6 +97,23 @@ function toLocalDatetime(iso: string): string {
 const isPreorder = computed(() => form.value.saleType === 'PREORDER');
 const statusUpdating = ref(false);
 
+// Mirror of API @IsNotEmpty / @IsUUID / @IsDateString rules so users get
+// immediate feedback instead of a round-trip 400.
+function getValidationError(): string | null {
+  const f = form.value;
+  if (!f.name?.trim()) return '请填写商品名称';
+  if (!f.slug?.trim()) return '请填写 URL 标识';
+  if (!f.brandId) return '请选择品牌';
+  if (!f.categoryId) return '请选择分类';
+  if (isPreorder.value) {
+    if (!f.preorderStartAt) return '预售模式下请填写预售开始时间';
+    if (!f.preorderEndAt) return '预售模式下请填写预售结束时间';
+  }
+  return null;
+}
+
+const canSubmit = computed(() => !loadingData.value && getValidationError() === null);
+
 const statusHint = computed(() => {
   const map: Record<string, string> = {
     DRAFT: '草稿，尚未提交',
@@ -131,6 +148,11 @@ function deactivate() { doStatusAction('deactivate'); }
 function reactivate() { doStatusAction('reactivate'); }
 
 async function save() {
+  const validationErr = getValidationError();
+  if (validationErr) {
+    ElMessage.warning(validationErr);
+    return;
+  }
   saving.value = true;
   error.value = null;
   try {
@@ -199,7 +221,7 @@ async function deleteProduct() {
         <NuxtLink to="/products">
           <ElButton>取消</ElButton>
         </NuxtLink>
-        <ElButton type="primary" :loading="saving" @click="save">保存</ElButton>
+        <ElButton type="primary" :loading="saving" :disabled="!canSubmit" @click="save">保存</ElButton>
       </div>
     </div>
 
@@ -370,10 +392,10 @@ async function deleteProduct() {
             </ElFormItem>
 
             <template v-if="isPreorder">
-              <ElFormItem label="预售开始时间">
+              <ElFormItem label="预售开始时间" required>
                 <ElInput v-model="form.preorderStartAt" type="datetime-local" />
               </ElFormItem>
-              <ElFormItem label="预售结束时间">
+              <ElFormItem label="预售结束时间" required>
                 <ElInput v-model="form.preorderEndAt" type="datetime-local" />
               </ElFormItem>
               <ElFormItem label="预计发货时间">
@@ -394,7 +416,7 @@ async function deleteProduct() {
         <!-- Organization -->
         <AdminSidebarCard title="品牌分类">
           <ElForm label-position="top">
-            <ElFormItem label="品牌">
+            <ElFormItem label="品牌" required>
               <ElSelect v-model="form.brandId" placeholder="请选择品牌" style="width: 100%">
                 <ElOption
                   v-for="b in brands"
@@ -404,7 +426,7 @@ async function deleteProduct() {
                 />
               </ElSelect>
             </ElFormItem>
-            <ElFormItem label="分类" style="margin-bottom: 0">
+            <ElFormItem label="分类" required style="margin-bottom: 0">
               <ElSelect v-model="form.categoryId" placeholder="请选择分类" style="width: 100%">
                 <ElOption
                   v-for="c in categories"

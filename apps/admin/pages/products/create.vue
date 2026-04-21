@@ -75,6 +75,26 @@ function onUsdDepositChange() {
   form.value.usdDepositTouched = true;
 }
 
+// Frontend required-field gate. Mirrors the API's @IsNotEmpty / @IsUUID / @IsDateString
+// rules so users get immediate feedback instead of a round-trip 400.
+function getValidationError(): string | null {
+  const f = form.value;
+  const v = defaultVariant.value;
+  if (!f.name?.trim()) return '请填写商品名称';
+  if (!f.slug?.trim()) return '请填写 URL 标识';
+  if (!f.brandId) return '请选择品牌';
+  if (!f.categoryId) return '请选择分类';
+  if (!v.name?.trim()) return '请填写默认版本名称';
+  if (!v.priceYuan || v.priceYuan <= 0) return '请填写默认版本价格';
+  if (isPreorder.value) {
+    if (!f.preorderStartAt) return '预售模式下请填写预售开始时间';
+    if (!f.preorderEndAt) return '预售模式下请填写预售结束时间';
+  }
+  return null;
+}
+
+const canSubmit = computed(() => getValidationError() === null);
+
 onMounted(async () => {
   const store = useAdminAuthStore();
   if (store.isBrandManager) {
@@ -95,6 +115,11 @@ function generateSlug() {
 }
 
 async function save() {
+  const validationErr = getValidationError();
+  if (validationErr) {
+    ElMessage.warning(validationErr);
+    return;
+  }
   saving.value = true;
   error.value = null;
   try {
@@ -159,7 +184,7 @@ async function save() {
         <NuxtLink to="/products">
           <ElButton>取消</ElButton>
         </NuxtLink>
-        <ElButton type="primary" :loading="saving" @click="save">创建商品</ElButton>
+        <ElButton type="primary" :loading="saving" :disabled="!canSubmit" @click="save">创建商品</ElButton>
       </div>
     </div>
 
@@ -296,10 +321,10 @@ async function save() {
             </ElFormItem>
 
             <template v-if="isPreorder">
-              <ElFormItem label="预售开始时间">
+              <ElFormItem label="预售开始时间" required>
                 <ElInput v-model="form.preorderStartAt" type="datetime-local" />
               </ElFormItem>
-              <ElFormItem label="预售结束时间">
+              <ElFormItem label="预售结束时间" required>
                 <ElInput v-model="form.preorderEndAt" type="datetime-local" />
               </ElFormItem>
               <ElFormItem label="预计发货时间">
@@ -327,7 +352,7 @@ async function save() {
         <!-- Organization -->
         <AdminSidebarCard title="品牌分类">
           <ElForm label-position="top">
-            <ElFormItem label="品牌">
+            <ElFormItem label="品牌" required>
               <ElSelect v-model="form.brandId" placeholder="请选择品牌" style="width: 100%">
                 <ElOption
                   v-for="b in brands"
@@ -337,7 +362,7 @@ async function save() {
                 />
               </ElSelect>
             </ElFormItem>
-            <ElFormItem label="分类" style="margin-bottom: 0">
+            <ElFormItem label="分类" required style="margin-bottom: 0">
               <ElSelect v-model="form.categoryId" placeholder="请选择分类" style="width: 100%">
                 <ElOption
                   v-for="c in categories"

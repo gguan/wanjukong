@@ -58,6 +58,14 @@ const newSuggestedUsd = computed(() => {
   return Math.round(newForm.priceYuan / usdCnyRate.value);
 });
 
+function getNewValidationError(): string | null {
+  if (!newForm.name?.trim()) return '请填写版本名称';
+  if (!newForm.priceYuan || newForm.priceYuan <= 0) return '请填写版本价格';
+  return null;
+}
+
+const canCreateNew = computed(() => getNewValidationError() === null);
+
 function applyNewSuggestedUsd() {
   if (newSuggestedUsd.value > 0) newForm.usdPriceDollar = newSuggestedUsd.value;
 }
@@ -120,6 +128,11 @@ async function saveVariant(id: string, data: Partial<Variant>) {
 }
 
 async function createVariant() {
+  const validationErr = getNewValidationError();
+  if (validationErr) {
+    ElMessage.warning(validationErr);
+    return;
+  }
   error.value = '';
   creatingNew.value = true;
   try {
@@ -344,7 +357,7 @@ onMounted(loadVariants);
             </ElFormItem>
             <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px">
               <ElButton @click="showNewForm = false">取消</ElButton>
-              <ElButton type="primary" :loading="creatingNew" @click="createVariant">创建版本</ElButton>
+              <ElButton type="primary" :loading="creatingNew" :disabled="!canCreateNew" @click="createVariant">创建版本</ElButton>
             </div>
           </ElForm>
         </div>

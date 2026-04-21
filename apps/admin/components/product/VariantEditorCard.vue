@@ -107,11 +107,24 @@ const suggestedUsd = computed(() => {
   return Math.round(editing.priceYuan / usdCnyRate.value);
 });
 
+function getValidationError(): string | null {
+  if (!editing.name?.trim()) return '请填写版本名称';
+  if (!editing.priceYuan || editing.priceYuan <= 0) return '请填写版本价格';
+  return null;
+}
+
+const canSave = computed(() => getValidationError() === null);
+
 function applySuggestedUsd() {
   if (suggestedUsd.value > 0) editing.usdPriceDollar = suggestedUsd.value;
 }
 
 async function handleSave() {
+  const validationErr = getValidationError();
+  if (validationErr) {
+    ElMessage.warning(validationErr);
+    return;
+  }
   saving.value = true;
   emit('save', {
     name: editing.name,
@@ -267,7 +280,7 @@ async function handleSave() {
         </ElFormItem>
 
         <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px">
-          <ElButton type="primary" :loading="saving" :disabled="!dirty" @click="handleSave">
+          <ElButton type="primary" :loading="saving" :disabled="!dirty || !canSave" @click="handleSave">
             保存更改
           </ElButton>
         </div>
