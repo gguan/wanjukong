@@ -121,7 +121,15 @@ async function save() {
       payload.estimatedShipAt = form.value.estimatedShipAt ? new Date(form.value.estimatedShipAt).toISOString() : undefined;
       payload.depositCents = form.value.depositYuan > 0 ? Math.round(form.value.depositYuan * 100) : null;
       payload.usdDepositCents = form.value.usdDepositDollar > 0 ? Math.round(form.value.usdDepositDollar * 100) : null;
+    } else {
+      // IN_STOCK: empty strings fail @IsDateString on the API even with @IsOptional,
+      // so drop the preorder fields entirely instead of sending ''.
+      delete payload.preorderStartAt;
+      delete payload.preorderEndAt;
+      delete payload.estimatedShipAt;
     }
+    // Same trap for imageUrl — empty string passes @IsString but is semantically null.
+    if (!payload.imageUrl) delete payload.imageUrl;
     delete payload.depositYuan;
     delete payload.usdDepositDollar;
     delete payload.usdDepositTouched;
