@@ -13,6 +13,12 @@ try {
 export default defineNuxtConfig({
   devtools: { enabled: true },
 
+  // Admin is an internal tool — no SEO need, and session cookies are only
+  // readable on the client. Disabling SSR avoids the hydration-mismatch
+  // cycle where SSR renders role-gated UI as "logged out" and the client
+  // then re-renders with the real role after bootstrap.
+  ssr: false,
+
   modules: ['@pinia/nuxt', '@element-plus/nuxt'],
 
   css: [
