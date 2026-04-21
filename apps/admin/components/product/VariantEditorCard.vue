@@ -113,7 +113,6 @@ function getValidationError(): string | null {
   return null;
 }
 
-const canSave = computed(() => getValidationError() === null);
 
 function applySuggestedUsd() {
   if (suggestedUsd.value > 0) editing.usdPriceDollar = suggestedUsd.value;
@@ -280,7 +279,7 @@ async function handleSave() {
         </ElFormItem>
 
         <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px">
-          <ElButton type="primary" :loading="saving" :disabled="!dirty || !canSave" @click="handleSave">
+          <ElButton type="primary" :loading="saving" :disabled="!dirty" @click="handleSave">
             保存更改
           </ElButton>
         </div>

@@ -112,7 +112,6 @@ function getValidationError(): string | null {
   return null;
 }
 
-const canSubmit = computed(() => !loadingData.value && getValidationError() === null);
 
 const statusHint = computed(() => {
   const map: Record<string, string> = {
@@ -221,7 +220,7 @@ async function deleteProduct() {
         <NuxtLink to="/products">
           <ElButton>取消</ElButton>
         </NuxtLink>
-        <ElButton type="primary" :loading="saving" :disabled="!canSubmit" @click="save">保存</ElButton>
+        <ElButton type="primary" :loading="saving" @click="save">保存</ElButton>
       </div>
     </div>
 

@@ -93,7 +93,6 @@ function getValidationError(): string | null {
   return null;
 }
 
-const canSubmit = computed(() => getValidationError() === null);
 
 onMounted(async () => {
   const store = useAdminAuthStore();
@@ -184,7 +183,7 @@ async function save() {
         <NuxtLink to="/products">
           <ElButton>取消</ElButton>
         </NuxtLink>
-        <ElButton type="primary" :loading="saving" :disabled="!canSubmit" @click="save">创建商品</ElButton>
+        <ElButton type="primary" :loading="saving" @click="save">创建商品</ElButton>
       </div>
     </div>
 

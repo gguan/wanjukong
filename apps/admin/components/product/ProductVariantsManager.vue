@@ -64,7 +64,6 @@ function getNewValidationError(): string | null {
   return null;
 }
 
-const canCreateNew = computed(() => getNewValidationError() === null);
 
 function applyNewSuggestedUsd() {
   if (newSuggestedUsd.value > 0) newForm.usdPriceDollar = newSuggestedUsd.value;
@@ -357,7 +356,7 @@ onMounted(loadVariants);
             </ElFormItem>
             <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px">
               <ElButton @click="showNewForm = false">取消</ElButton>
-              <ElButton type="primary" :loading="creatingNew" :disabled="!canCreateNew" @click="createVariant">创建版本</ElButton>
+              <ElButton type="primary" :loading="creatingNew" @click="createVariant">创建版本</ElButton>
             </div>
           </ElForm>
         </div>
