@@ -140,12 +140,13 @@ function submitSearch() {
   position: sticky;
   top: 0;
   z-index: 100;
+  padding: 0 var(--site-gutter);
 }
 
 .header-inner {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 20px var(--site-gutter);
+  padding: 20px 0;
   min-height: 88px;
   display: flex;
   align-items: center;
@@ -341,6 +342,7 @@ function submitSearch() {
   top: 88px;
   z-index: 99;
 }
+
 
 .mobile-menu a {
   padding: 12px 0;

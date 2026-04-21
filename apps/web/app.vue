@@ -27,7 +27,12 @@ useHead(head)
  * --site-gutter is the single source of truth for horizontal page padding.
  * Every top-level page wrapper, header, footer, and section uses it via
  * `padding-left: var(--site-gutter); padding-right: var(--site-gutter);`
- * so content edges line up across the storefront. Matches the PDP gutter.
+ * so content edges line up across the storefront.
+ *
+ * On ≥1024px viewports the gutter is max(160px, (100vw - 1400px)/2), so the
+ * inner content column is capped at 1400px no matter how wide the viewport
+ * gets — full-width wrappers with this padding line up with nested
+ * max-width:1400 containers used by the PDP.
  */
 :root {
   --site-gutter: 24px;
@@ -35,7 +40,7 @@ useHead(head)
 
 @media (min-width: 1024px) {
   :root {
-    --site-gutter: 160px;
+    --site-gutter: max(160px, calc((100vw - 1400px) / 2));
   }
 }
 
@@ -63,14 +68,10 @@ a {
 }
 
 .page-container {
-  max-width: 1400px;
-  margin: 0 auto;
   padding: 32px var(--site-gutter);
 }
 
 .page-container-wide {
-  max-width: 1400px;
-  margin: 0 auto;
   padding: 40px var(--site-gutter);
 }
 

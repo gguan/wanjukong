@@ -426,16 +426,7 @@ function formatDate(iso: string | null | undefined) {
   background: #fff;
 }
 .pdp-breadcrumb {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 16px 24px 0;
-}
-
-@media (min-width: 1024px) {
-  .pdp-breadcrumb {
-    padding-left: 160px;
-    padding-right: 160px;
-  }
+  padding: 16px var(--site-gutter) 0;
 }
 
 .error-link {
@@ -451,23 +442,10 @@ function formatDate(iso: string | null | undefined) {
    HERO
    ═══════════════════════════════════════════════════════════ */
 .pdp-hero {
-  padding: 0 24px;
+  padding: 0 var(--site-gutter);
 }
 .hero-inner {
-  max-width: 1400px;
-  margin: 0 auto;
   padding-top: 32px;
-}
-
-@media (min-width: 1024px) {
-  .pdp-hero {
-    padding-left: 160px;
-    padding-right: 160px;
-  }
-  .pdp-section {
-    padding-left: 160px;
-    padding-right: 160px;
-  }
 }
 .hero-grid {
   display: grid;
@@ -879,7 +857,7 @@ function formatDate(iso: string | null | undefined) {
    BOTTOM SECTIONS
    ═══════════════════════════════════════════════════════════ */
 .pdp-section {
-  padding: 48px 24px;
+  padding: 48px var(--site-gutter);
   border-top: 1px solid #eee;
 }
 .pdp-section--alt {
