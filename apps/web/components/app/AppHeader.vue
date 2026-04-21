@@ -164,6 +164,11 @@ function submitSearch() {
   display: block;
   height: 24px;
   width: auto;
+  transition: opacity 0.3s ease;
+}
+
+.logo:hover .logo-img {
+  opacity: 0.6;
 }
 
 .nav {
