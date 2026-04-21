@@ -211,7 +211,13 @@ async function save() {
             <div class="form-grid form-grid--3">
               <ElFormItem label="价格（元）" required>
                 <ElInputNumber v-model="defaultVariant.priceYuan" :min="0" :precision="0" :step="1" style="width: 100%" />
-                <div class="field-hint">人民币，含国际运费</div>
+                <div class="field-hint">
+                  <template v-if="usdCnyRate > 0">
+                    今日汇率 1 USD ≈ ¥{{ usdCnyRate.toFixed(4) }}<span v-if="rateDate">（{{ rateDate }}）</span>
+                    <template v-if="suggestedUsdPrice > 0"> · 约 ${{ suggestedUsdPrice }}</template>
+                  </template>
+                  <template v-else>人民币，含国际运费</template>
+                </div>
               </ElFormItem>
               <ElFormItem label="美元价格">
                 <ElInputNumber v-model="defaultVariant.usdPriceYuan" :min="0" :precision="0" :step="1" style="width: 100%" />

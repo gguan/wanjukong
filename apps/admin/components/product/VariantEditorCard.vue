@@ -200,7 +200,13 @@ async function handleSave() {
               :step="1"
               style="width: 100%"
             />
-            <div class="field-hint">人民币，含国际运费</div>
+            <div class="field-hint">
+              <template v-if="usdCnyRate > 0">
+                今日汇率 1 USD ≈ ¥{{ usdCnyRate.toFixed(4) }}<span v-if="rateDate">（{{ rateDate }}）</span>
+                <template v-if="suggestedUsd > 0"> · 约 ${{ suggestedUsd }}</template>
+              </template>
+              <template v-else>人民币，含国际运费</template>
+            </div>
           </ElFormItem>
           <ElFormItem label="美元价格">
             <ElInputNumber
