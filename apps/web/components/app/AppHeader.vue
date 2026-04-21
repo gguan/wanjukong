@@ -173,14 +173,17 @@ function submitSearch() {
 }
 
 .nav a {
-  color: #555;
+  color: #111;
   text-decoration: none;
   font-size: 1rem;
   font-weight: 500;
-  transition: color 0.15s;
+  transition: color 0.3s ease;
 }
 
-.nav a:hover,
+.nav a:hover {
+  color: #999;
+}
+
 .nav a.router-link-active {
   color: #111;
 }
@@ -189,6 +192,12 @@ function submitSearch() {
   position: relative;
   display: flex;
   align-items: center;
+  color: #111;
+  transition: color 0.3s ease;
+}
+
+.cart-link:hover {
+  color: #999;
 }
 
 .cart-icon {
@@ -217,6 +226,12 @@ function submitSearch() {
 .account-link {
   display: flex;
   align-items: center;
+  color: #111;
+  transition: color 0.3s ease;
+}
+
+.account-link:hover {
+  color: #999;
 }
 
 .account-icon {
@@ -231,27 +246,27 @@ function submitSearch() {
   border: 1px solid #111;
   padding: 5px 14px;
   border-radius: 4px;
-  transition: background 0.15s, color 0.15s;
+  transition: color 0.3s ease, border-color 0.3s ease;
 }
 
 .login-link:hover {
-  background: #111;
-  color: #fff !important;
+  color: #999 !important;
+  border-color: #999;
 }
 
 .search-toggle {
   background: none;
   border: none;
   cursor: pointer;
-  color: #555;
+  color: #111;
   display: flex;
   align-items: center;
   padding: 0;
-  transition: color 0.15s;
+  transition: color 0.3s ease;
 }
 
 .search-toggle:hover {
-  color: #111;
+  color: #999;
 }
 
 /* Language switcher */
@@ -265,15 +280,15 @@ function submitSearch() {
   background: none;
   border: none;
   cursor: pointer;
-  color: #555;
+  color: #111;
   display: flex;
   align-items: center;
   padding: 0;
-  transition: color 0.15s;
+  transition: color 0.3s ease;
 }
 
 .lang-toggle:hover {
-  color: #111;
+  color: #999;
 }
 
 .lang-menu {
