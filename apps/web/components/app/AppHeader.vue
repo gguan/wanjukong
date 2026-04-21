@@ -115,7 +115,48 @@ function submitSearch() {
   </header>
   <!-- Mobile menu -->
   <div v-if="mobileMenuOpen" class="mobile-menu">
-    <NuxtLinkLocale to="/brands" @click="mobileMenuOpen = false">Brands</NuxtLinkLocale>
+    <NuxtLinkLocale to="/brands" class="mobile-menu__link" @click="mobileMenuOpen = false">Brands</NuxtLinkLocale>
+    <button
+      type="button"
+      class="mobile-menu__link mobile-menu__btn"
+      @click="mobileMenuOpen = false; toggleSearch()"
+    >
+      Search
+    </button>
+    <ClientOnly>
+      <NuxtLinkLocale
+        v-if="isLoggedIn"
+        to="/account"
+        class="mobile-menu__link"
+        @click="mobileMenuOpen = false"
+      >
+        Account
+      </NuxtLinkLocale>
+      <NuxtLinkLocale
+        v-else
+        to="/login"
+        class="mobile-menu__link"
+        @click="mobileMenuOpen = false"
+      >
+        Sign In
+      </NuxtLinkLocale>
+    </ClientOnly>
+    <ClientOnly>
+      <div class="mobile-menu__section">
+        <div class="mobile-menu__section-title">Language</div>
+        <div class="mobile-menu__lang">
+          <button
+            v-for="l in supported"
+            :key="l"
+            class="mobile-menu__lang-btn"
+            :class="{ 'is-active': l === lang }"
+            @click="onPickLang(l); mobileMenuOpen = false"
+          >
+            {{ labels[l] }}
+          </button>
+        </div>
+      </div>
+    </ClientOnly>
   </div>
   <!-- Search bar -->
   <div v-if="searchOpen" class="header-search-bar">
@@ -364,16 +405,15 @@ function submitSearch() {
 }
 
 
-.mobile-menu a {
+.mobile-menu__link {
   padding: 12px 0;
   border-bottom: 1px solid #f3f4f6;
   color: #333;
   text-decoration: none;
   font-size: 0.95rem;
   font-weight: 500;
+  display: block;
 }
-
-.mobile-menu a:last-child { border-bottom: none; }
 
 .header-search-bar {
   border-bottom: 1px solid #e5e7eb;
@@ -422,7 +462,83 @@ function submitSearch() {
 }
 
 @media (max-width: 640px) {
+  .header-inner {
+    padding: 16px 0;
+    min-height: 64px;
+  }
+
+  .logo-img {
+    height: 20px;
+  }
+
+  .nav {
+    gap: 18px;
+  }
+
   .hamburger { display: flex; }
-  .nav .nav-link { display: none; }
+
+  /* Keep only cart visible alongside the hamburger on mobile.
+     The other entries move into .mobile-menu. */
+  .nav .nav-link,
+  .search-toggle,
+  .lang-switcher,
+  .account-link,
+  .login-link {
+    display: none;
+  }
+
+  .mobile-menu {
+    top: 64px;
+  }
+
+  .mobile-menu__btn {
+    font: inherit;
+    background: none;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .mobile-menu__section {
+    padding: 16px 0 4px;
+    border-top: 1px solid #f3f4f6;
+    margin-top: 4px;
+  }
+
+  .mobile-menu__section-title {
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 8px;
+  }
+
+  .mobile-menu__lang {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .mobile-menu__lang-btn {
+    font: inherit;
+    background: #f6f6f6;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    color: #333;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .mobile-menu__lang-btn:hover {
+    background: #ececec;
+  }
+
+  .mobile-menu__lang-btn.is-active {
+    background: #111;
+    color: #fff;
+    border-color: #111;
+  }
 }
 </style>
