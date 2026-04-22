@@ -259,9 +259,11 @@ async function initPayPal() {
         isSubmitting.value = false;
       }
     },
-    onError(err: unknown) {
+    onError(_err: unknown) {
+      // PayPal surfaces its own toast in the embedded widget; we already
+      // show a banner via formError. Nothing to log here — the server
+      // captures the failure from its own side when capture() is called.
       formError.value = 'PayPal encountered an error. Please try again.';
-      console.error('PayPal error', err);
     },
   }).render(paypalContainerRef.value!);
 }
