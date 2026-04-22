@@ -1,0 +1,19 @@
+# Robots.txt for overrealm.shop
+# Updated: 2026-04-22
+
+User-agent: *
+Allow: /
+
+# Disallow private / transactional paths that don't need indexing
+Disallow: /account
+Disallow: /cart
+Disallow: /checkout
+Disallow: /orders
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /verify-email
+Disallow: /api/
+
+Sitemap: https://overrealm.shop/sitemap.xml
