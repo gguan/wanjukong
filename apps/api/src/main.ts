@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
+import type { NextFunction, Request, Response } from 'express';
 import * as session from 'express-session';
 import * as connectPgSimple from 'connect-pg-simple';
 import helmet from 'helmet';
@@ -158,7 +159,17 @@ async function bootstrap() {
     }),
   );
 
-  // Server-side session with PostgreSQL store
+  // Server-side session with PostgreSQL store.
+  //
+  // We issue TWO cookies backed by the same Postgres store:
+  //   • wk.sid        — storefront customers (sameSite=lax). Must survive
+  //                     redirects back from PayPal, email links, etc.
+  //   • wk.admin.sid  — admin panel (sameSite=strict). Admin console is
+  //                     never navigated to from a third-party site, so
+  //                     strict gives us an extra layer against CSRF on top
+  //                     of the already-POST-only write endpoints.
+  // A dispatcher middleware picks one based on the URL prefix so only one
+  // session is loaded per request — no cross-surface state leakage.
   const PgSession = connectPgSimple(session);
   const sessionSecret = process.env.SESSION_SECRET || 'dev-secret-change-in-production';
   if (!process.env.SESSION_SECRET && !IS_PROD) {
@@ -167,26 +178,35 @@ async function bootstrap() {
       'Bootstrap',
     );
   }
-  app.use(
+  const sessionStore = new PgSession({
+    conString: process.env.DATABASE_URL,
+    createTableIfMissing: true,
+    tableName: 'session',
+  });
+  const cookieSecure = resolveCookieSecure();
+  const makeSession = (name: string, sameSite: 'lax' | 'strict') =>
     session({
-      store: new PgSession({
-        conString: process.env.DATABASE_URL,
-        createTableIfMissing: true,
-        tableName: 'session',
-      }),
+      store: sessionStore,
       secret: sessionSecret,
       resave: false,
       saveUninitialized: false,
       rolling: true, // Extend cookie expiry on each request
-      name: 'wk.sid',
+      name,
       cookie: {
         httpOnly: true,
-        secure: resolveCookieSecure(),
-        sameSite: 'lax',
+        secure: cookieSecure,
+        sameSite,
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days (rolling keeps it fresh)
       },
-    }),
-  );
+    });
+  const webSession = makeSession('wk.sid', 'lax');
+  const adminSession = makeSession('wk.admin.sid', 'strict');
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    // req.path still carries the global prefix here — express middleware
+    // runs before Nest's route layer strips it.
+    if (req.path.startsWith('/api/admin')) return adminSession(req, res, next);
+    return webSession(req, res, next);
+  });
 
   app.enableCors({
     origin: process.env.CORS_ORIGIN
