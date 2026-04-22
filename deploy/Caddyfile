@@ -1,8 +1,10 @@
-# overrealm.store — wanjukong
+# overrealm.shop — wanjukong
 # Caddy 自动管理 HTTPS 证书
+#
+# 注：生产部署使用的是 deploy/nginx.conf，此文件为备选方案，保留以便快速切换。
 
 # 主站：Web 前台 + API
-overrealm.store {
+overrealm.shop {
 	# API 请求代理到后端
 	handle /api/* {
 		reverse_proxy 127.0.0.1:3001
@@ -15,6 +17,23 @@ overrealm.store {
 }
 
 # Admin 后台
-admin.overrealm.store {
-	reverse_proxy 127.0.0.1:3002
+admin.wanjukong.com {
+	handle /api/* {
+		reverse_proxy 127.0.0.1:3001
+	}
+	handle {
+		reverse_proxy 127.0.0.1:3002
+	}
+}
+
+# 小程序 + 公共 API（屏蔽 admin 路由）
+api.wanjukong.com {
+	@admin path /api/admin/*
+	respond @admin 403
+	reverse_proxy 127.0.0.1:3001
+}
+
+# wanjukong.com → 301 到 overrealm.shop
+wanjukong.com, www.wanjukong.com {
+	redir https://overrealm.shop{uri} 301
 }

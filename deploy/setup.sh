@@ -49,8 +49,8 @@ echo "  请运行: docker login ghcr.io"
 echo ""
 echo "▶ 5. 创建 .env..."
 if [ ! -f ".env" ]; then
-  cp .env.example .env
-  echo "  ✓ .env 已从模板创建"
+  cp deploy/.env.production.example .env
+  echo "  ✓ .env 已从 deploy/.env.production.example 创建"
   echo "  ⚠ 请编辑 /opt/wanjukong/.env 填入真实密钥"
 else
   echo "  ✓ .env 已存在"
