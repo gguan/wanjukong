@@ -80,22 +80,46 @@ Open `apps/miniprogram` in WeChat DevTools. The mini program auto-connects to `l
 
 See `apps/api/.env.example` (local dev) and `deploy/.env.production.example` (production) for all variables:
 
+**API (`apps/api/.env`)**
+
 | Variable | Description |
 |----------|-------------|
 | `DATABASE_URL` | PostgreSQL connection string |
-| `SESSION_SECRET` | Session cookie signing secret |
+| `SESSION_SECRET` | Session cookie signing secret (`openssl rand -hex 32`) |
 | `CORS_ORIGIN` | Allowed CORS origins (comma-separated) |
-| `APP_BASE_URL` | Storefront URL (for email links) |
-| `TENCENT_COS_*` | Tencent Cloud COS credentials |
-| `PAYPAL_CLIENT_ID/SECRET` | PayPal API credentials |
+| `APP_BASE_URL` | Storefront URL (for email / PayPal return links) |
+| `TRUST_PROXY` | Number of reverse-proxy hops (prod = 1 for Nginx) |
+| `COOKIE_SECURE` | Leave blank to auto-detect from `NODE_ENV` |
+| `TENCENT_COS_*` | Tencent Cloud COS credentials + bucket + region + public base URL |
+| `UPLOAD_TEMP_EXPIRE_HOURS` | TTL for temp uploads before cleanup job deletes them |
+| `PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET` / `PAYPAL_BASE_URL` | PayPal API credentials (sandbox vs live) |
 | `WECHAT_PAY_APP_ID` | WeChat mini program AppID |
 | `WECHAT_APP_SECRET` | WeChat mini program AppSecret |
 | `WECHAT_PAY_MCH_ID` | WeChat Pay merchant ID |
 | `WECHAT_PAY_API_V3_KEY` | WeChat Pay V3 API key |
 | `WECHAT_PAY_PRIVATE_KEY` | WeChat Pay merchant private key (PEM) |
-| `WECHAT_PAY_CERT_SERIAL` | WeChat Pay certificate serial number |
+| `WECHAT_PAY_CERT_SERIAL` | WeChat Pay merchant certificate serial number |
+| `WECHAT_PAY_PUBLIC_KEY` | WeChat Pay platform public key — **required in prod**; boot fails if missing |
 | `WECHAT_PAY_NOTIFY_URL` | WeChat Pay callback URL |
-| `SMTP_HOST/PORT/USER/PASS/FROM` | Email (optional, logs to console if not set) |
+| `RESEND_API_KEY` | Resend transactional email API key (preferred sender) |
+| `SMTP_HOST/PORT/USER/PASS/FROM` | SMTP fallback; logs to console if neither Resend nor SMTP set |
+| `CONTACT_INBOX_EMAIL` | Destination for `/api/public/contact` submissions (falls back to `SMTP_FROM`) |
+| `DEEPL_API_KEY` | DeepL API key; empty = MyMemory free fallback |
+
+**Web (`apps/web/.env`)**
+
+| Variable | Description |
+|----------|-------------|
+| `NUXT_PUBLIC_SITE_URL` | Canonical public storefront URL (required in prod, boot fails on localhost) |
+| `NUXT_PUBLIC_API_BASE` | Browser-facing API base (empty = same-origin via Nginx) |
+| `NUXT_API_BASE_INTERNAL` | SSR-only API URL on Docker internal network (e.g. `http://api:3001`) |
+| `NUXT_PUBLIC_PAYPAL_CLIENT_ID` | PayPal client ID exposed to browser JS SDK |
+
+**Admin (`apps/admin/.env`)**
+
+| Variable | Description |
+|----------|-------------|
+| `NUXT_PUBLIC_API_BASE_URL` | Admin API base URL (same-origin in prod) |
 
 ---
 

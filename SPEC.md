@@ -49,8 +49,6 @@ wanjukong/
 │   │       └── main.ts
 │   ├── web/          # 买家前台 Nuxt (Port 3000)
 │   └── admin/        # 管理后台 Nuxt (Port 3002)
-├── packages/
-│   └── shared/       # 共享常量 (APP_NAME, API_PREFIX)
 ├── deploy/           # 部署脚本 (Nginx, Certbot)
 └── infra/
     └── docker-compose.yml   # PostgreSQL
@@ -137,7 +135,7 @@ NUXT_PUBLIC_API_BASE_URL=http://localhost:3001
 | UploadFileStatus | `TEMP` · `USED` · `DELETED` |
 | OrderStatus | `PENDING` · `CONFIRMED` · `CANCELLED` |
 | PaymentStatus | `UNPAID` · `PAID` · `FAILED` · `REFUNDED` |
-| PaymentProvider | `PAYPAL` |
+| PaymentProvider | `PAYPAL` · `WECHAT_PAY` |
 | PaymentIntentStatus | `CREATED` · `APPROVED` · `CAPTURED` · `FAILED` · `ORDER_CREATED` |
 | AdminRole | `SUPER_ADMIN` · `ADMIN` · `EDITOR` · `BRAND_MANAGER` |
 
