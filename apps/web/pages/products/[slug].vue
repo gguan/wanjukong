@@ -33,6 +33,14 @@ const selectedVariant = computed<ProductVariant | null>(() => {
 
 const hasMultipleVariants = computed(() => (product.value?.variants?.length ?? 0) > 1);
 
+// Admin-authored HTML ("specifications") goes through DOMPurify before being
+// rendered with v-html. Even though the source is admin input rather than
+// user input, unrestricted HTML on a product page is exactly the XSS gadget
+// automated Safe Browsing classifiers flag on.
+const sanitizedSpecifications = computed(() =>
+  sanitizeHtml(selectedVariant.value?.specifications),
+);
+
 // ─── Image Logic ─────────────────────────────────────────
 const allImages = computed(() => {
   if (!product.value) return [];
@@ -428,9 +436,11 @@ function formatDate(iso: string | null | undefined) {
               <!-- ─── Divider ─── -->
               <hr class="panel-divider" />
 
-              <!-- ─── Specifications (rich text) ─── -->
+              <!-- ─── Specifications (rich text, sanitized) ─── -->
+              <!-- Admin-authored rich text; sanitized via DOMPurify to strip
+                   <script>, <iframe>, event handlers etc. See utils/sanitizeHtml.ts. -->
               <!-- eslint-disable-next-line vue/no-v-html -->
-              <div v-if="selectedVariant?.specifications" class="panel-description" v-html="selectedVariant.specifications" />
+              <div v-if="sanitizedSpecifications" class="panel-description" v-html="sanitizedSpecifications" />
             </div>
           </div>
         </div>

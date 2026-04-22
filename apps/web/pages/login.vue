@@ -17,8 +17,10 @@ async function handleSubmit() {
   loading.value = true;
   try {
     await login(email.value, password.value);
-    const redirect = (route.query.redirect as string) || '/account';
-    router.push(redirect);
+    // Never trust a raw ?redirect= value — an unvalidated redirect is a
+    // textbook Safe Browsing "Social Engineering" trigger. safeRedirect
+    // rejects anything that isn't a same-origin absolute path.
+    router.push(safeRedirect(route.query.redirect, '/account'));
   } catch (e: any) {
     error.value = e?.data?.message || e?.message || 'Invalid email or password.';
   } finally {
