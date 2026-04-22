@@ -1,3 +1,23 @@
+// Single source of truth for the public site URL. Production always
+// resolves to the real domain so SSR never leaks `localhost:3000` into
+// hreflang / canonical / og:url — that leak was flagging the site as
+// a suspicious / potentially-phishing domain to Google Safe Browsing.
+// Local dev keeps localhost so nuxi dev still works; preview / staging
+// deploys can override via NUXT_PUBLIC_SITE_URL.
+const SITE_URL =
+  process.env.NUXT_PUBLIC_SITE_URL ||
+  (process.env.NODE_ENV === 'production'
+    ? 'https://overrealm.shop'
+    : 'http://localhost:3000');
+
+// Fail the production build if somebody explicitly set localhost — it
+// would ship the same Safe Browsing-flagged SSR output.
+if (process.env.NODE_ENV === 'production' && /localhost|127\.0\.0\.1/.test(SITE_URL)) {
+  throw new Error(
+    `[nuxt.config] NUXT_PUBLIC_SITE_URL must be a public URL in production (got: ${SITE_URL})`,
+  );
+}
+
 export default defineNuxtConfig({
   devtools: { enabled: false },
 
@@ -6,7 +26,7 @@ export default defineNuxtConfig({
   i18n: {
     strategy: 'prefix_except_default',
     defaultLocale: 'en',
-    baseUrl: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+    baseUrl: SITE_URL,
     locales: [
       { code: 'en', language: 'en-US', name: 'English', file: 'en.json' },
       { code: 'ja', language: 'ja-JP', name: '日本語', file: 'ja.json' },
@@ -57,7 +77,7 @@ export default defineNuxtConfig({
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:3001',
       paypalClientId: process.env.NUXT_PUBLIC_PAYPAL_CLIENT_ID || '',
-      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+      siteUrl: SITE_URL,
     },
   },
 
