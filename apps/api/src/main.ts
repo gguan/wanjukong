@@ -124,8 +124,39 @@ async function bootstrap() {
     new ValidationPipe({ whitelist: true, transform: true }),
   );
 
-  // Security headers
-  app.use(helmet());
+  // Security headers.
+  //
+  // Defaults are sensible but don't enable HSTS preload timing or tighten the
+  // cross-origin policies. We're behind Nginx, which adds its own layer of
+  // headers for HTML responses — this Helmet layer covers API responses and
+  // any direct-to-app paths. Explicit config here also documents intent.
+  app.use(
+    helmet({
+      // 1-year HSTS with includeSubDomains and preload flag — matches the
+      // Nginx config so headers are consistent if a client ever reaches the
+      // Node process directly.
+      hsts: {
+        maxAge: 31_536_000,
+        includeSubDomains: true,
+        preload: true,
+      },
+      // API JSON responses never need to be framed — deny entirely.
+      frameguard: { action: 'deny' },
+      // Minimal CSP: the API returns JSON, not HTML, so a default-src 'none'
+      // posture is correct. Any fetch browsers do to us won't execute CSP
+      // anyway (it's an HTML response header), but a conservative policy
+      // short-circuits anything surprising like directory listings.
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'none'"],
+          frameAncestors: ["'none'"],
+          baseUri: ["'none'"],
+        },
+      },
+      referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+      crossOriginResourcePolicy: { policy: 'same-site' },
+    }),
+  );
 
   // Server-side session with PostgreSQL store
   const PgSession = connectPgSimple(session);
