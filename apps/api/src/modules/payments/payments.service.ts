@@ -270,6 +270,17 @@ export class PaymentsService {
       data: { status: 'ORDER_CREATED', orderId: order.id },
     });
 
+    // Structured audit trail for real-money captures. Disputes / chargebacks
+    // come in days later and the first question is always "which order, how
+    // much, whose payment?" — log the keys that answer that without any
+    // PII we don't already have.
+    this.logger.log(
+      `PayPal capture succeeded: paypalOrderId=${paypalOrderId} ` +
+        `orderNo=${order.orderNo} orderId=${order.id} ` +
+        `amountCents=${pi.amountCents} currency=${pi.currency} ` +
+        `customerId=${customerId ?? 'guest'}`,
+    );
+
     // Stash the guest order on the browser's session so the order page
     // still loads if the client loses the raw token (e.g. capture retry).
     if (!customerId && input.session) {
@@ -636,6 +647,15 @@ export class PaymentsService {
         balancePaypalOrderId: paypalOrderId,
       },
     });
+
+    // Balance captures deserve the same audit breadcrumb as the deposit —
+    // disputes on the balance charge need the same reconciliation info.
+    this.logger.log(
+      `PayPal balance capture succeeded: paypalOrderId=${paypalOrderId} ` +
+        `orderNo=${order.orderNo} orderId=${order.id} ` +
+        `amountCents=${pi.amountCents} currency=${pi.currency} ` +
+        `customerId=${customerId ?? 'guest'}`,
+    );
 
     return { orderNo: order.orderNo };
   }
