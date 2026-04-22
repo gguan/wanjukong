@@ -1,10 +1,17 @@
 <script setup lang="ts">
+// NOTE: Keep the default meta description free of specific brand names —
+// Google Safe Browsing flags new .shop domains that list major toy brand
+// names in meta tags as potential impersonators. Brand-specific SEO lives
+// on the individual /brands/[slug] pages.
 useSeoMeta({
   title: 'OVER REALM — Premium Collectible Figures',
-  description: 'Curated collectible figures from Hot Toys, DAM, Threezero and the world\'s leading manufacturers. 1/6, 1/4, 1/12 scale. Worldwide shipping.',
+  description:
+    'OVER REALM is an independent online store for premium 1/6, 1/4 and 1/12 scale collectible figures. Worldwide shipping, secure checkout.',
   ogTitle: 'OVER REALM — Premium Collectible Figures',
-  ogDescription: 'Curated collectible figures from the world\'s leading manufacturers.',
+  ogDescription:
+    'An independent online store for premium collectible figures. Worldwide shipping, secure checkout.',
   ogType: 'website',
+  ogSiteName: 'OVER REALM',
 })
 
 const { fetchBrands } = useBrands();

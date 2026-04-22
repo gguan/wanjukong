@@ -21,10 +21,15 @@ useSeoMeta({
       <section class="info-section">
         <h2 class="info-h2">Our Mission</h2>
         <p>
-          <!-- TODO: Replace with your mission statement. -->
-          We make it easy for collectors around the world to discover and purchase the finest
-          collectible figures — from iconic movie characters to beloved anime heroes — directly
-          from trusted brands like Hot Toys, DAM Toys, and Threezero.
+          We make it easy for collectors around the world to discover and purchase high-quality
+          1/6, 1/4 and 1/12 scale collectible figures — from iconic movie characters to beloved
+          anime heroes.
+        </p>
+        <p>
+          <strong>OVER REALM is an independent retailer.</strong> We are not affiliated with,
+          endorsed by, or officially connected to any figure brand or manufacturer. All
+          trademarks, brand names, and product designs are the property of their respective
+          owners and are used on this site solely to identify the items we sell.
         </p>
       </section>
 
@@ -35,8 +40,7 @@ useSeoMeta({
             <p class="value-num">01</p>
             <h3 class="value-title">Authentic</h3>
             <p class="value-body">
-              <!-- TODO: Explain sourcing and authenticity. -->
-              Every item is sourced directly from official manufacturers or authorized distributors.
+              Every item is sourced from reputable suppliers and authorized distributors.
               No bootlegs, no grey-market inventory.
             </p>
           </div>
@@ -64,10 +68,18 @@ useSeoMeta({
       <section class="info-section">
         <h2 class="info-h2">Story</h2>
         <p>
-          <!-- TODO: Replace with your founding story — when, why, who. -->
-          Founded in 2024 by a small team of lifelong collectors, OVER REALM started as a way to
-          solve the frustrations we ourselves faced: confusing listings, opaque pre-order terms,
+          Founded by a small team of lifelong collectors, OVER REALM started as a way to solve
+          the frustrations we ourselves faced: confusing listings, opaque pre-order terms,
           and unreliable international shipping. We built the store we wanted to shop at.
+        </p>
+      </section>
+
+      <section class="info-section">
+        <h2 class="info-h2">Contact</h2>
+        <p>
+          Questions about an order, a product, or our shipping policy? Reach us at
+          <a href="mailto:support@overrealm.shop">support@overrealm.shop</a>, or use the
+          <NuxtLink to="/contact">contact form</NuxtLink>. We aim to reply within one business day.
         </p>
       </section>
 
