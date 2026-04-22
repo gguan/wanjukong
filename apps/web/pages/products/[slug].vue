@@ -166,6 +166,8 @@ function handleAddToCart() {
 }
 
 // ─── SEO ──────────────────────────────────────────────────
+const siteUrl = (useRuntimeConfig().public.siteUrl as string) || 'https://overrealm.shop'
+
 watchEffect(() => {
   if (!product.value) return;
   useSeoMeta({
@@ -174,6 +176,63 @@ watchEffect(() => {
     ogTitle: product.value.name,
     ogDescription: `${product.value.name} by ${product.value.brand?.name}`,
     ogImage: product.value.imageUrl || undefined,
+    // Note: Nuxt's useSeoMeta typing restricts ogType to the OG spec enum;
+    // "product" is from the product-namespace OG extension. Use "website"
+    // for the typed call and add og:type=product via useHead below so
+    // rich-result crawlers still pick it up.
+    ogType: 'website',
+  })
+
+  // og:type=product via raw meta (not in useSeoMeta's typed enum).
+  useHead({
+    meta: [{ property: 'og:type', content: 'product' }],
+  })
+
+  // Product structured data — helps Google confirm this is a legitimate
+  // catalog page rather than a phishing lure, and enables rich results.
+  const p = product.value;
+  const primaryVariant =
+    p.variants?.find((v) => v.isDefault) || p.variants?.[0];
+  const priceCents = primaryVariant?.usdPriceCents ?? primaryVariant?.priceCents ?? 0;
+  const currency = primaryVariant?.usdPriceCents != null ? 'USD' : 'CNY';
+  const availability =
+    p.displayAvailability === 'IN_STOCK'
+      ? 'https://schema.org/InStock'
+      : p.displayAvailability === 'PREORDER'
+      ? 'https://schema.org/PreOrder'
+      : p.displayAvailability === 'SOLD_OUT'
+      ? 'https://schema.org/OutOfStock'
+      : 'https://schema.org/InStock';
+
+  const productJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: p.name,
+    description: `${p.name} by ${p.brand?.name}. ${p.scale || ''} scale collectible figure.`.trim(),
+    sku: primaryVariant?.sku,
+    image: p.imageUrl ? [p.imageUrl] : undefined,
+    brand: p.brand ? { '@type': 'Brand', name: p.brand.name } : undefined,
+    url: `${siteUrl}/products/${p.slug}`,
+    offers: priceCents > 0
+      ? {
+          '@type': 'Offer',
+          url: `${siteUrl}/products/${p.slug}`,
+          priceCurrency: currency,
+          price: (priceCents / 100).toFixed(2),
+          availability,
+          itemCondition: 'https://schema.org/NewCondition',
+          seller: { '@type': 'Organization', name: 'OVER REALM' },
+        }
+      : undefined,
+  };
+
+  useHead({
+    script: [
+      {
+        type: 'application/ld+json',
+        innerHTML: JSON.stringify(productJsonLd),
+      },
+    ],
   })
 })
 

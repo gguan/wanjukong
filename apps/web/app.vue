@@ -1,6 +1,39 @@
 <script setup lang="ts">
 const head = useLocaleHead({ seo: true })
 useHead(head)
+
+// Organization structured data for Google Knowledge Graph.
+// Helps Safe Browsing classify the site as a legitimate retailer
+// rather than an anonymous / impersonating .shop domain.
+const config = useRuntimeConfig()
+const siteUrl = (config.public.siteUrl as string) || 'https://overrealm.shop'
+
+useHead({
+  script: [
+    {
+      type: 'application/ld+json',
+      innerHTML: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'OnlineStore',
+        name: 'OVER REALM',
+        alternateName: 'OVER REALM Collectibles',
+        url: siteUrl,
+        logo: `${siteUrl}/logo.png`,
+        description:
+          'Independent online store for premium 1/6, 1/4 and 1/12 scale collectible figures. Worldwide shipping, secure checkout.',
+        contactPoint: [
+          {
+            '@type': 'ContactPoint',
+            contactType: 'customer support',
+            email: 'support@overrealm.shop',
+            availableLanguage: ['English', 'Japanese', 'Chinese'],
+          },
+        ],
+        sameAs: [] as string[],
+      }),
+    },
+  ],
+})
 </script>
 
 <template>
