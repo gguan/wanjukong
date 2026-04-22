@@ -14,7 +14,6 @@ interface FaqGroup {
   items: FaqItem[]
 }
 
-// TODO: Replace with your real copy — every `a` is a placeholder.
 const groups: FaqGroup[] = [
   {
     title: 'Orders & Payment',

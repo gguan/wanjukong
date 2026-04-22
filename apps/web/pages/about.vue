@@ -11,7 +11,6 @@ useSeoMeta({
       <p class="info-eyebrow">About</p>
       <h1 class="info-title">Curated collectibles,<br />handled with care.</h1>
       <p class="info-lede">
-        <!-- TODO: Replace with your brand story — 1–2 sentences. -->
         OVER REALM is a dedicated online store for collectible action figure enthusiasts.
         We specialize in premium 1/6, 1/4, and 1/12 scale figures from the world's leading manufacturers.
       </p>
@@ -48,7 +47,6 @@ useSeoMeta({
             <p class="value-num">02</p>
             <h3 class="value-title">Curated</h3>
             <p class="value-body">
-              <!-- TODO: Explain your curation philosophy. -->
               We hand-pick every figure in our catalogue. Quality over quantity — you won't see
               hundreds of generic listings here.
             </p>
@@ -57,7 +55,6 @@ useSeoMeta({
             <p class="value-num">03</p>
             <h3 class="value-title">Global</h3>
             <p class="value-body">
-              <!-- TODO: Explain shipping/global reach. -->
               Free worldwide shipping. Trusted PayPal checkout. Customer support that responds
               in hours, not days.
             </p>

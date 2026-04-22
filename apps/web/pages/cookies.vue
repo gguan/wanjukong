@@ -10,10 +10,7 @@ useSeoMeta({
     <header class="info-hero">
       <p class="info-eyebrow">Legal</p>
       <h1 class="info-title">Cookie Policy</h1>
-      <p class="info-updated">
-        <!-- TODO: Update this date when the policy changes. -->
-        Last updated: 2026-04-18
-      </p>
+      <p class="info-updated">Last updated: 2026-04-22</p>
     </header>
 
     <div class="info-body">

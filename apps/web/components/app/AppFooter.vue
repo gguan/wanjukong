@@ -7,6 +7,7 @@
         <NuxtLink to="/shipping">Shipping</NuxtLink>
         <NuxtLink to="/returns">Returns</NuxtLink>
         <NuxtLink to="/faq">FAQ</NuxtLink>
+        <NuxtLink to="/terms">Terms</NuxtLink>
         <NuxtLink to="/privacy">Privacy</NuxtLink>
         <NuxtLink to="/cookies">Cookies</NuxtLink>
       </div>

@@ -35,6 +35,7 @@ const STATIC_PATHS = [
   '/shipping',
   '/returns',
   '/faq',
+  '/terms',
   '/privacy',
   '/cookies',
 ];
