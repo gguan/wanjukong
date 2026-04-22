@@ -60,13 +60,20 @@ wanjukong/
 
 ## 3. 环境变量
 
+> 权威源是各 app 目录下的 `.env.example` 以及生产版 `deploy/.env.production.example`。
+> 下面仅列常用键与说明；新增变量请同步更新 `.env.example`。
+
 ### API (`apps/api/.env`)
 ```env
 PORT=3001
 CORS_ORIGIN=http://localhost:3000,http://localhost:3002
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/wanjukong
-SESSION_SECRET=dev-session-secret-change-in-production
+SESSION_SECRET=dev-session-secret-change-in-production  # 生产用 openssl rand -hex 32
 APP_BASE_URL=http://localhost:3000
+
+# Express / session 行为
+TRUST_PROXY=1          # 反代层数，生产 = 1 (Nginx)
+COOKIE_SECURE=         # 留空 = 按 NODE_ENV 自动判断
 
 # 腾讯云 COS
 TENCENT_COS_SECRET_ID=
@@ -74,26 +81,42 @@ TENCENT_COS_SECRET_KEY=
 TENCENT_COS_BUCKET=bucket-name-1250000000
 TENCENT_COS_REGION=ap-guangzhou
 TENCENT_COS_PUBLIC_BASE_URL=https://bucket-name.cos.ap-guangzhou.myqcloud.com
+UPLOAD_TEMP_EXPIRE_HOURS=24
 
-# PayPal
+# PayPal（国际支付）
 PAYPAL_CLIENT_ID=
 PAYPAL_CLIENT_SECRET=
-PAYPAL_BASE_URL=https://api-m.sandbox.paypal.com
+PAYPAL_BASE_URL=https://api-m.sandbox.paypal.com   # 生产改 https://api-m.paypal.com
 
-# 邮件（可选，未配置时日志输出）
-MAIL_HOST=
-MAIL_PORT=
-MAIL_USER=
-MAIL_PASS=
-MAIL_FROM=
+# WeChat 小程序 + 微信支付（国内）
+WECHAT_PAY_APP_ID=
+WECHAT_APP_SECRET=
+WECHAT_PAY_MCH_ID=
+WECHAT_PAY_API_V3_KEY=
+WECHAT_PAY_PRIVATE_KEY=
+WECHAT_PAY_CERT_SERIAL=
+WECHAT_PAY_PUBLIC_KEY=        # 生产必填；缺失时 main.ts 启动即报错
+WECHAT_PAY_NOTIFY_URL=
 
-UPLOAD_TEMP_EXPIRE_HOURS=24
+# 邮件（MailerService 优先级：Resend > SMTP > console 日志）
+RESEND_API_KEY=               # 海外主发件通道
+SMTP_HOST=                    # 例 gz-smtp.qcloudmail.com（腾讯云 SES 广州）
+SMTP_PORT=
+SMTP_USER=
+SMTP_PASS=
+SMTP_FROM=no-reply@overrealm.shop
+CONTACT_INBOX_EMAIL=          # /api/public/contact 转发目的地，缺省回落 SMTP_FROM
+
+# 翻译（DeepL → MyMemory 回退）
+DEEPL_API_KEY=                # 留空则走 MyMemory 免费 API（质量较低）
 ```
 
 ### Web (`apps/web/.env`)
 ```env
 NUXT_PUBLIC_API_BASE=http://localhost:3001
 NUXT_PUBLIC_PAYPAL_CLIENT_ID=
+NUXT_PUBLIC_SITE_URL=http://localhost:3000   # 生产必须是公开 URL，否则 nuxt.config.ts 启动报错
+NUXT_API_BASE_INTERNAL=                      # 生产填 http://api:3001 以走内网
 ```
 
 ### Admin (`apps/admin/.env`)
@@ -579,8 +602,20 @@ CORS：由 `CORS_ORIGIN` 环境变量控制
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/api/admin/uploads/cos-sts` | 获取 COS 临时凭证（30 分钟有效） |
-| POST | `/api/admin/uploads/register-temp` | 注册临时上传文件 |
+| GET | `/api/admin/uploads/cos-sts` | 获取 COS 临时凭证（30 分钟有效，限 SUPER_ADMIN/ADMIN/EDITOR） |
+| POST | `/api/admin/uploads/register-temp` | 注册临时上传文件（限 SUPER_ADMIN/ADMIN/EDITOR） |
+
+### 5.14 Contact (Public)
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/api/public/contact` | 联系表单提交（限流 5/min/IP，转发到 `CONTACT_INBOX_EMAIL`） |
+
+### 5.15 Translate (Public)
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/api/public/translate` | 文本翻译（限流 30/min/IP，优先 DeepL，回退 MyMemory） |
 
 ---
 
@@ -624,7 +659,7 @@ CORS：由 `CORS_ORIGIN` 环境变量控制
 - Docker Compose（API + Web + Admin + PostgreSQL）
 - Nginx 反向代理
 - SSL：Certbot (Let's Encrypt)
-- 域名：`overrealm.shop`（前台）+ `admin.overrealm.shop`（后台）
+- 域名：`overrealm.shop`（前台）+ `admin.wanjukong.com`（后台）+ `api.wanjukong.com`（公共/小程序 API）
 - 最低配置：2 核 4GB RAM
 
 ### 开发命令
