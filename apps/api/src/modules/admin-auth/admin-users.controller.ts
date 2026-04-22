@@ -9,6 +9,10 @@ import {
 import { AdminRole } from '@prisma/client';
 import { AdminUsersService } from './admin-users.service';
 import { Roles } from './decorators/roles.decorator';
+import { BrandAssignmentsDto } from './dto/brand-assignments.dto';
+import { CreateAdminUserDto } from './dto/create-admin-user.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { UpdateAdminUserDto } from './dto/update-admin-user.dto';
 
 @Roles(AdminRole.SUPER_ADMIN, AdminRole.ADMIN)
 @Controller('admin/users')
@@ -21,33 +25,24 @@ export class AdminUsersController {
   }
 
   @Post()
-  create(
-    @Body() dto: { email: string; password: string; name: string; role: string },
-  ) {
+  create(@Body() dto: CreateAdminUserDto) {
     return this.usersService.create(dto);
   }
 
   @Put(':id')
-  update(
-    @Param('id') id: string,
-    @Body()
-    dto: { email?: string; name?: string; role?: string; isActive?: boolean },
-  ) {
+  update(@Param('id') id: string, @Body() dto: UpdateAdminUserDto) {
     return this.usersService.update(id, dto);
   }
 
   @Put(':id/reset-password')
-  resetPassword(
-    @Param('id') id: string,
-    @Body() dto: { newPassword: string },
-  ) {
+  resetPassword(@Param('id') id: string, @Body() dto: ResetPasswordDto) {
     return this.usersService.resetPassword(id, dto.newPassword);
   }
 
   @Put(':id/brand-assignments')
   setBrandAssignments(
     @Param('id') id: string,
-    @Body() dto: { brandIds: string[] },
+    @Body() dto: BrandAssignmentsDto,
   ) {
     return this.usersService.setBrandAssignments(id, dto.brandIds);
   }

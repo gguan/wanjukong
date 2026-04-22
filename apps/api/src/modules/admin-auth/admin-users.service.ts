@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { AdminRole } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -31,7 +32,7 @@ export class AdminUsersService {
     email: string;
     password: string;
     name: string;
-    role: string;
+    role: AdminRole;
   }) {
     const passwordHash = await argon2.hash(data.password);
     return this.prisma.adminUser.create({
@@ -39,7 +40,7 @@ export class AdminUsersService {
         email: data.email.toLowerCase().trim(),
         passwordHash,
         name: data.name,
-        role: data.role as any,
+        role: data.role,
       },
       select: {
         id: true,
@@ -54,7 +55,12 @@ export class AdminUsersService {
 
   async update(
     id: string,
-    data: { email?: string; name?: string; role?: string; isActive?: boolean },
+    data: {
+      email?: string;
+      name?: string;
+      role?: AdminRole;
+      isActive?: boolean;
+    },
   ) {
     const user = await this.prisma.adminUser.findUnique({ where: { id } });
     if (!user) throw new NotFoundException('管理员不存在');

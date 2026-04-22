@@ -343,7 +343,6 @@ export class PaymentsService {
 
     // Apply discount to balance first, then deposit.
     // Ensures preorder users still pay a deposit even with large coupons.
-    const balanceAfterDiscount = Math.max(0, totalBalanceCents - discountCents);
     const unspentDiscount = Math.max(0, discountCents - totalBalanceCents);
     const depositAfterDiscount = Math.max(0, totalDepositCents - unspentDiscount);
 
