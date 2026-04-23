@@ -43,6 +43,15 @@ const isSuperAdmin = computed(() => store.user?.role === 'SUPER_ADMIN');
 // would be silently overwritten by the stale value loaded into the form.
 const initialImageUrl = ref('');
 
+// Snapshot of the whole form after the initial load — used only to detect
+// "is there unsaved work" for the leave-page guard. Kept separate from
+// initialImageUrl (which has a narrower, server-sync purpose) so changes
+// to the leave-guard behaviour can't accidentally change save semantics.
+const initialFormJson = ref('');
+const isDirty = computed(
+  () => !loadingData.value && initialFormJson.value !== JSON.stringify(form.value),
+);
+
 const brandSlug = computed(() => {
   const b = brands.value.find((x) => x.id === form.value.brandId);
   return b?.slug || '';
@@ -91,7 +100,45 @@ onMounted(async () => {
     updatedAt.value = new Date(product.updatedAt as string).toLocaleString();
   }
 
+  initialFormJson.value = JSON.stringify(form.value);
   loadingData.value = false;
+});
+
+// Browser-level guard: covers tab close, refresh, and external navigation
+// (typing a new URL). onBeforeRouteLeave handles in-app SPA transitions;
+// both are needed because they fire for disjoint scenarios.
+function onBeforeUnload(e: BeforeUnloadEvent) {
+  if (!isDirty.value) return;
+  e.preventDefault();
+  // Modern browsers ignore the message and show their own, but setting
+  // returnValue is still required to trigger the prompt.
+  e.returnValue = '';
+}
+
+onMounted(() => {
+  window.addEventListener('beforeunload', onBeforeUnload);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', onBeforeUnload);
+});
+
+onBeforeRouteLeave(async () => {
+  if (!isDirty.value) return true;
+  try {
+    await ElMessageBox.confirm(
+      '您有未保存的修改，确定离开此页面吗？数据将会丢失。',
+      '确认离开',
+      {
+        confirmButtonText: '确认离开',
+        cancelButtonText: '继续编辑',
+        type: 'warning',
+      },
+    );
+    return true;
+  } catch {
+    return false;
+  }
 });
 
 function toLocalDatetime(iso: string): string {
@@ -210,6 +257,8 @@ async function save() {
 
     await api.put(`/api/admin/products/${route.params.id}`, payload);
     ElMessage.success('商品已更新');
+    // Clear dirty state so the leave-guard doesn't prompt on our own redirect.
+    initialFormJson.value = JSON.stringify(form.value);
     router.push('/products');
   } catch (e: unknown) {
     error.value = e instanceof Error ? e.message : '更新商品失败';
@@ -232,6 +281,8 @@ async function deleteProduct() {
   try {
     await api.del(`/api/admin/products/${route.params.id}`);
     ElMessage.success('商品已删除');
+    // The record is gone; suppress the dirty-leave prompt on the redirect.
+    initialFormJson.value = JSON.stringify(form.value);
     router.push('/products');
   } catch (e: any) {
     ElMessage.error(e?.data?.message || '删除失败');
