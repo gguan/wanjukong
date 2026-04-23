@@ -85,6 +85,7 @@ export class ProductsService {
     if (dto.saleType === 'IN_STOCK') {
       data.preorderStartAt = null;
       data.preorderEndAt = null;
+      data.estimatedShipAt = null;
       data.depositCents = null;
       data.usdDepositCents = null;
     }
@@ -131,8 +132,10 @@ export class ProductsService {
   }
 
   /**
-   * Update product. If edited by a brand manager while ACTIVE or PENDING_REVIEW,
-   * auto-reverts status to DRAFT (requires re-review).
+   * Update product. If a brand manager edits a product that is ACTIVE or
+   * PENDING_REVIEW, status auto-reverts to DRAFT so it goes through review
+   * again. INACTIVE and DRAFT keep their state — silently turning an
+   * admin-deactivated product into DRAFT was destroying the offline reason.
    */
   async update(id: string, dto: UpdateProductDto, isBrandManager = false) {
     const data: Prisma.ProductUncheckedUpdateInput = { ...dto };
@@ -148,25 +151,26 @@ export class ProductsService {
     if (dto.saleType === 'IN_STOCK') {
       data.preorderStartAt = null;
       data.preorderEndAt = null;
+      data.estimatedShipAt = null;
       data.depositCents = null;
       data.usdDepositCents = null;
     }
 
-    // Brand manager cannot edit featured settings
     if (isBrandManager) {
+      // Brand managers can't touch admin-only fields. Frontend disables
+      // these inputs but the API was honouring the values anyway.
       delete (data as Record<string, unknown>).isFeatured;
       delete (data as Record<string, unknown>).featuredSort;
-    }
+      delete (data as Record<string, unknown>).slug;
+      delete (data as Record<string, unknown>).status;
 
-    // Brand manager editing → revert to DRAFT for re-review
-    if (isBrandManager) {
-      const product = await this.prisma.product.findUnique({ where: { id } });
-      if (product && (product.status === 'ACTIVE' || product.status === 'PENDING_REVIEW')) {
+      const current = await this.prisma.product.findUnique({
+        where: { id },
+        select: { status: true },
+      });
+      if (current?.status === 'ACTIVE' || current?.status === 'PENDING_REVIEW') {
         data.status = 'DRAFT';
       }
-      // Brand manager cannot set status directly
-      delete (data as Record<string, unknown>).status;
-      data.status = 'DRAFT';
     }
 
     return this.prisma.product.update({

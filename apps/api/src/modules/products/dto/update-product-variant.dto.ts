@@ -81,9 +81,10 @@ export class UpdateProductVariantDto {
   @IsOptional()
   sortOrder?: number;
 
+  // Nullable so the admin can explicitly clear the variant cover.
   @IsString()
   @IsOptional()
-  coverImageUrl?: string;
+  coverImageUrl?: string | null;
 
   /** See CreateProductVariantDto.coverImageUploadFileId. */
   @IsString()

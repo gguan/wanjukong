@@ -38,7 +38,11 @@ export class ProductVariantsService {
     return variant;
   }
 
-  async create(productId: string, dto: CreateProductVariantDto) {
+  async create(
+    productId: string,
+    dto: CreateProductVariantDto,
+    isBrandManager = false,
+  ) {
     // Verify product exists and load brand info
     const product = await this.prisma.product.findUnique({
       where: { id: productId },
@@ -56,18 +60,24 @@ export class ProductVariantsService {
       where: { productId },
     });
 
-    // Generate or normalize SKU
-    const sku = await this.resolveSkuForCreate(dto, product);
+    // Brand managers cannot dictate SKU / manufacturer SKU — the frontend
+    // disables these fields, the API now matches that contract.
+    const sanitizedDto: CreateProductVariantDto = isBrandManager
+      ? { ...dto, sku: undefined, manufacturerSku: undefined }
+      : dto;
 
-    const { coverImageUploadFileId, ...variantData } = dto;
+    // Generate or normalize SKU
+    const sku = await this.resolveSkuForCreate(sanitizedDto, product);
+
+    const { coverImageUploadFileId, ...variantData } = sanitizedDto;
     const variant = await this.prisma.productVariant.create({
       data: {
         ...variantData,
         sku,
         productId,
         isDefault: dto.isDefault ?? count === 0,
-        specifications: dto.specifications ?? undefined,
-        manufacturerSku: dto.manufacturerSku || undefined,
+        specifications: sanitizedDto.specifications ?? undefined,
+        manufacturerSku: sanitizedDto.manufacturerSku || undefined,
       },
     });
 
@@ -81,6 +91,7 @@ export class ProductVariantsService {
     productId: string,
     variantId: string,
     dto: UpdateProductVariantDto,
+    isBrandManager = false,
   ) {
     const variant = await this.prisma.productVariant.findFirst({
       where: { id: variantId, productId },
@@ -93,6 +104,13 @@ export class ProductVariantsService {
     }
 
     const { coverImageUploadFileId, ...rest } = dto;
+
+    // Brand managers cannot edit SKU / manufacturer SKU. Frontend disables
+    // the inputs but the API was honouring values posted directly.
+    if (isBrandManager) {
+      delete (rest as Record<string, unknown>).sku;
+      delete (rest as Record<string, unknown>).manufacturerSku;
+    }
 
     // Only update SKU if explicitly provided
     const data: any = {

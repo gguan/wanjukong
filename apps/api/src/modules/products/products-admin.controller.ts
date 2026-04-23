@@ -11,6 +11,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { AdminRole } from '@prisma/client';
 import { Request } from 'express';
 import { ProductsService } from './products.service';
 import { ProductImagesService } from './product-images.service';
@@ -22,7 +23,23 @@ import { ReorderProductImagesDto } from './dto/reorder-product-images.dto';
 import { CreateProductVariantDto } from './dto/create-product-variant.dto';
 import { UpdateProductVariantDto } from './dto/update-product-variant.dto';
 import { BrandPermissionGuard } from '../admin-auth/guards/brand-permission.guard';
+import { Roles } from '../admin-auth/decorators/roles.decorator';
 import { toPublicUrl, normalizeKey } from '../../utils/image-url';
+
+/**
+ * Convert an incoming imageUrl/coverImageUrl from the admin form into the
+ * value Prisma should write:
+ * - undefined  → leave field untouched
+ * - empty/null → explicit null (clears the column)
+ * - full URL   → strip the CDN base, store the object key
+ */
+function resolveImageWrite(
+  value: string | null | undefined,
+): string | null | undefined {
+  if (value === undefined) return undefined;
+  if (!value) return null;
+  return normalizeKey(value) || null;
+}
 
 function withImageUrl<T extends { imageUrl?: string | null }>(p: T): T {
   return { ...p, imageUrl: toPublicUrl(p.imageUrl) };
@@ -71,7 +88,10 @@ export class ProductsAdminController {
 
   @Post()
   async create(@Body() dto: CreateProductDto) {
-    const normalized = { ...dto, imageUrl: normalizeKey(dto.imageUrl) ?? undefined };
+    const normalized = {
+      ...dto,
+      imageUrl: resolveImageWrite(dto.imageUrl) ?? undefined,
+    };
     const product = await this.productsService.create(normalized);
     return withImageUrl(product);
   }
@@ -79,14 +99,17 @@ export class ProductsAdminController {
   @Put(':id')
   async update(@Param('id') id: string, @Body() dto: UpdateProductDto, @Req() req: Request) {
     const isBrandManager = (req as any).session?.adminRole === 'BRAND_MANAGER';
-    const normalized = {
-      ...dto,
-      ...(dto.imageUrl !== undefined ? { imageUrl: normalizeKey(dto.imageUrl) ?? undefined } : {}),
-    };
+    const normalized: UpdateProductDto = { ...dto };
+    if (dto.imageUrl !== undefined) {
+      normalized.imageUrl = resolveImageWrite(dto.imageUrl);
+    }
     const product = await this.productsService.update(id, normalized, isBrandManager);
     return withImageUrl(product);
   }
 
+  /** Only super admins can hard-delete products. Frontend already hides the
+   *  button for everyone else, but the API was honouring direct calls. */
+  @Roles(AdminRole.SUPER_ADMIN)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.productsService.remove(id);
@@ -96,38 +119,43 @@ export class ProductsAdminController {
 
   /** Brand manager: DRAFT → PENDING_REVIEW */
   @Post(':id/submit-review')
-  submitForReview(@Param('id') id: string) {
-    return this.productsService.submitForReview(id);
+  async submitForReview(@Param('id') id: string) {
+    return withImageUrl(await this.productsService.submitForReview(id));
   }
 
   /** Brand manager: PENDING_REVIEW → DRAFT */
   @Post(':id/withdraw-review')
-  withdrawReview(@Param('id') id: string) {
-    return this.productsService.withdrawReview(id);
+  async withdrawReview(@Param('id') id: string) {
+    return withImageUrl(await this.productsService.withdrawReview(id));
   }
 
-  /** Admin: PENDING_REVIEW|DRAFT → ACTIVE */
+  /** Admin only: PENDING_REVIEW|DRAFT → ACTIVE.
+   *  Without this guard a brand manager could self-approve via a direct API
+   *  call, bypassing the review workflow the UI implies. */
+  @Roles(AdminRole.SUPER_ADMIN, AdminRole.ADMIN)
   @Post(':id/approve')
-  approve(@Param('id') id: string) {
-    return this.productsService.approve(id);
+  async approve(@Param('id') id: string) {
+    return withImageUrl(await this.productsService.approve(id));
   }
 
-  /** Admin: PENDING_REVIEW → DRAFT */
+  /** Admin only: PENDING_REVIEW → DRAFT */
+  @Roles(AdminRole.SUPER_ADMIN, AdminRole.ADMIN)
   @Post(':id/reject')
-  reject(@Param('id') id: string) {
-    return this.productsService.reject(id);
+  async reject(@Param('id') id: string) {
+    return withImageUrl(await this.productsService.reject(id));
   }
 
   /** Admin or brand manager: ACTIVE → INACTIVE */
   @Post(':id/deactivate')
-  deactivate(@Param('id') id: string) {
-    return this.productsService.deactivate(id);
+  async deactivate(@Param('id') id: string) {
+    return withImageUrl(await this.productsService.deactivate(id));
   }
 
-  /** Admin: INACTIVE → ACTIVE */
+  /** Admin only: INACTIVE → ACTIVE */
+  @Roles(AdminRole.SUPER_ADMIN, AdminRole.ADMIN)
   @Post(':id/reactivate')
-  reactivate(@Param('id') id: string) {
-    return this.productsService.reactivate(id);
+  async reactivate(@Param('id') id: string) {
+    return withImageUrl(await this.productsService.reactivate(id));
   }
 
   // ── Product Images ──────────────────────────────────────
@@ -186,12 +214,14 @@ export class ProductsAdminController {
   async createVariant(
     @Param('id') id: string,
     @Body() dto: CreateProductVariantDto,
+    @Req() req: Request,
   ) {
-    const normalized = {
-      ...dto,
-      ...(dto.coverImageUrl !== undefined ? { coverImageUrl: normalizeKey(dto.coverImageUrl) ?? undefined } : {}),
-    };
-    const v = await this.productVariantsService.create(id, normalized);
+    const isBrandManager = (req as any).session?.adminRole === 'BRAND_MANAGER';
+    const normalized: CreateProductVariantDto = { ...dto };
+    if (dto.coverImageUrl !== undefined) {
+      normalized.coverImageUrl = resolveImageWrite(dto.coverImageUrl) ?? undefined;
+    }
+    const v = await this.productVariantsService.create(id, normalized, isBrandManager);
     return withVariantUrls(v);
   }
 
@@ -209,12 +239,14 @@ export class ProductsAdminController {
     @Param('id') id: string,
     @Param('variantId') variantId: string,
     @Body() dto: UpdateProductVariantDto,
+    @Req() req: Request,
   ) {
-    const normalized = {
-      ...dto,
-      ...(dto.coverImageUrl !== undefined ? { coverImageUrl: normalizeKey(dto.coverImageUrl) ?? undefined } : {}),
-    };
-    const v = await this.productVariantsService.update(id, variantId, normalized);
+    const isBrandManager = (req as any).session?.adminRole === 'BRAND_MANAGER';
+    const normalized: UpdateProductVariantDto = { ...dto };
+    if (dto.coverImageUrl !== undefined) {
+      normalized.coverImageUrl = resolveImageWrite(dto.coverImageUrl);
+    }
+    const v = await this.productVariantsService.update(id, variantId, normalized, isBrandManager);
     return withVariantUrls(v);
   }
 

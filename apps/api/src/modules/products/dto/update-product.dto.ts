@@ -31,9 +31,12 @@ export class UpdateProductDto {
   @IsOptional()
   status?: ProductStatus;
 
+  // Nullable so the admin can explicitly clear the cover image — empty
+  // string from the upload field's "remove" button is normalized to null
+  // by the controller and then written by Prisma.
   @IsString()
   @IsOptional()
-  imageUrl?: string;
+  imageUrl?: string | null;
 
   @IsString()
   @IsOptional()
