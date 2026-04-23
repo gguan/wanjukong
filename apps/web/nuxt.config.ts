@@ -66,6 +66,21 @@ export default defineNuxtConfig({
           href: 'https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&family=Source+Serif+4:ital,wght@0,400;0,500;0,600;1,400&display=swap',
         },
       ],
+      // Site-wide social-card defaults. Per-page useSeoMeta() (e.g. PDPs)
+      // overrides ogImage/ogTitle/ogDescription with product-specific values;
+      // this fallback covers the home page, brand index, contact, and any
+      // route that doesn't set its own og: tags. Without it, Twitter and
+      // Slack scrapers render link previews with no image — and Safe Browsing
+      // reputation classifiers treat e-commerce pages with empty social
+      // metadata as a weak trust signal.
+      meta: [
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { property: 'og:site_name', content: 'OVER REALM' },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:image', content: `${SITE_URL}/logo.png` },
+        { property: 'og:image:alt', content: 'OVER REALM' },
+        { name: 'twitter:image', content: `${SITE_URL}/logo.png` },
+      ],
     },
   },
 

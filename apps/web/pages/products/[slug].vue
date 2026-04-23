@@ -183,31 +183,45 @@ function handleAddToCart() {
 }
 
 // ─── SEO ──────────────────────────────────────────────────
+// useSeoMeta / useHead must be registered synchronously during setup for
+// the first SSR flush to include their output. Previously this block was
+// wrapped in watchEffect(() => …) — the effect fired after SSR had already
+// serialised <head>, so PDP HTML shipped with no <title>, no og:title, no
+// og:description, and no Product JSON-LD. Safe Browsing classifiers treat
+// an e-commerce page with empty title/description as a weak trust signal.
+// Using function / computed values keeps the head reactive without the
+// registration-timing bug.
 const siteUrl = (useRuntimeConfig().public.siteUrl as string) || 'https://overrealm.shop'
 
-watchEffect(() => {
-  if (!product.value) return;
-  useSeoMeta({
-    title: `${product.value.name} — OVER REALM`,
-    description: `${product.value.name} by ${product.value.brand?.name}. ${product.value.scale || ''} scale collectible figure.`,
-    ogTitle: product.value.name,
-    ogDescription: `${product.value.name} by ${product.value.brand?.name}`,
-    ogImage: product.value.imageUrl || undefined,
-    // Note: Nuxt's useSeoMeta typing restricts ogType to the OG spec enum;
-    // "product" is from the product-namespace OG extension. Use "website"
-    // for the typed call and add og:type=product via useHead below so
-    // rich-result crawlers still pick it up.
-    ogType: 'website',
-  })
+useSeoMeta({
+  title: () =>
+    product.value ? `${product.value.name} — OVER REALM` : 'OVER REALM',
+  description: () =>
+    product.value
+      ? `${product.value.name} by ${product.value.brand?.name}. ${product.value.scale || ''} scale collectible figure.`
+      : undefined,
+  ogTitle: () => product.value?.name,
+  ogDescription: () =>
+    product.value
+      ? `${product.value.name} by ${product.value.brand?.name}`
+      : undefined,
+  ogImage: () => product.value?.imageUrl || undefined,
+  // Nuxt's useSeoMeta typing restricts ogType to the OG spec enum;
+  // "product" is from the product-namespace OG extension. Keep "website"
+  // for the typed call; og:type=product is re-declared via useHead below
+  // so rich-result crawlers still pick it up.
+  ogType: 'website',
+})
 
-  // og:type=product via raw meta (not in useSeoMeta's typed enum).
-  useHead({
-    meta: [{ property: 'og:type', content: 'product' }],
-  })
+useHead({
+  meta: [{ property: 'og:type', content: 'product' }],
+})
 
-  // Product structured data — helps Google confirm this is a legitimate
-  // catalog page rather than a phishing lure, and enables rich results.
+// Product structured data — helps Google confirm this is a legitimate
+// catalog page rather than a phishing lure, and enables rich results.
+const productJsonLd = computed(() => {
   const p = product.value;
+  if (!p) return null;
   const primaryVariant =
     p.variants?.find((v) => v.isDefault) || p.variants?.[0];
   const priceCents = primaryVariant?.usdPriceCents ?? primaryVariant?.priceCents ?? 0;
@@ -221,7 +235,7 @@ watchEffect(() => {
       ? 'https://schema.org/OutOfStock'
       : 'https://schema.org/InStock';
 
-  const productJsonLd = {
+  return {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: p.name,
@@ -242,15 +256,19 @@ watchEffect(() => {
         }
       : undefined,
   };
+});
 
-  useHead({
-    script: [
-      {
-        type: 'application/ld+json',
-        innerHTML: JSON.stringify(productJsonLd),
-      },
-    ],
-  })
+useHead({
+  script: [
+    {
+      type: 'application/ld+json',
+      // useHead resolves function values during SSR; wrapping the stringify
+      // in a thunk keeps the script body reactive to productJsonLd without
+      // triggering another useHead call.
+      innerHTML: () =>
+        productJsonLd.value ? JSON.stringify(productJsonLd.value) : '',
+    },
+  ],
 })
 
 // ─── Related Products ────────────────────────────────────
