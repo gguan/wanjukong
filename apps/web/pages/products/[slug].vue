@@ -15,13 +15,22 @@ const { data: product, error, status } = useAsyncData(
 const selectedVariantId = ref<string | null>(null);
 const quantity = ref(1);
 
-watch(product, (p) => {
-  if (!p?.variants?.length) return;
-  const def = p.variants.find((v) => v.isDefault) || p.variants[0];
-  if (def && !selectedVariantId.value) {
-    selectedVariantId.value = def.id;
-  }
-});
+// `immediate: true` so the default variant is selected on the very first
+// render. Without it, useAsyncData has the product hydrated synchronously
+// before this watcher is registered, so it never fires for the initial
+// value — leaving selectedVariantId at null and no pill in the selected
+// state even though `selectedVariant` falls back to variants[0].
+watch(
+  product,
+  (p) => {
+    if (!p?.variants?.length) return;
+    const def = p.variants.find((v) => v.isDefault) || p.variants[0];
+    if (def && !selectedVariantId.value) {
+      selectedVariantId.value = def.id;
+    }
+  },
+  { immediate: true },
+);
 
 const selectedVariant = computed<ProductVariant | null>(() => {
   if (!product.value?.variants?.length) return null;
