@@ -2,9 +2,54 @@
 # Caddy 自动管理 HTTPS 证书
 #
 # 注：生产部署使用的是 deploy/nginx.conf，此文件为备选方案，保留以便快速切换。
+# 头集合与 nginx.conf 保持一致，切换到 Caddy 时不会降低安全评分。
+
+# ─── 复用的头块 ───────────────────────────────────────────
+# Caddy 的 snippet 语法：用 (name) 定义，在站块里 import name 展开。
+# 把安全头集中写一次，三个站段复用，避免漂移。
+
+(web-headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options    "nosniff"
+		X-Frame-Options           "SAMEORIGIN"
+		Referrer-Policy           "strict-origin-when-cross-origin"
+		Permissions-Policy        "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+		# CSP 与 nginx.conf:56 的前台 CSP 对齐：允许 PayPal + Google Fonts，
+		# Nuxt runtime + 内联 JSON-LD 需要 'unsafe-inline'；不给 'unsafe-eval'。
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.paypal.com https://www.paypalobjects.com https://*.paypal.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://api-m.paypal.com https://*.paypal.com; frame-src https://*.paypal.com; object-src 'none'; base-uri 'self'; form-action 'self' https://*.paypal.com; frame-ancestors 'self'; upgrade-insecure-requests"
+		# Caddy 默认会加 Server: Caddy — 去掉以减少指纹信息。
+		-Server
+	}
+}
+
+(admin-headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options    "nosniff"
+		X-Frame-Options           "DENY"
+		Referrer-Policy           "strict-origin-when-cross-origin"
+		Permissions-Policy        "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+		# Admin 不加载 PayPal / 外部脚本，CSP 更紧：frame-ancestors 'none' 防嵌入。
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+		-Server
+	}
+}
+
+(api-headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options    "nosniff"
+		X-Frame-Options           "DENY"
+		Referrer-Policy           "strict-origin-when-cross-origin"
+		-Server
+	}
+}
 
 # 主站：Web 前台 + API
 overrealm.shop {
+	import web-headers
+
 	# API 请求代理到后端
 	handle /api/* {
 		reverse_proxy 127.0.0.1:3001
@@ -18,6 +63,8 @@ overrealm.shop {
 
 # Admin 后台
 admin.wanjukong.com {
+	import admin-headers
+
 	handle /api/* {
 		reverse_proxy 127.0.0.1:3001
 	}
@@ -28,6 +75,8 @@ admin.wanjukong.com {
 
 # 小程序 + 公共 API（屏蔽 admin 路由）
 api.wanjukong.com {
+	import api-headers
+
 	@admin path /api/admin/*
 	respond @admin 403
 	reverse_proxy 127.0.0.1:3001
@@ -35,5 +84,6 @@ api.wanjukong.com {
 
 # wanjukong.com → 301 到 overrealm.shop
 wanjukong.com, www.wanjukong.com {
+	header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
 	redir https://overrealm.shop{uri} 301
 }
