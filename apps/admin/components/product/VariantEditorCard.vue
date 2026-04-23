@@ -158,7 +158,6 @@ async function handleSave() {
       ? { coverImageUploadFileId: coverUploadFileId.value }
       : {}),
   } as any);
-  coverUploadFileId.value = null;
   await nextTick();
   saving.value = false;
 }
@@ -302,4 +301,3 @@ async function handleSave() {
     </div>
   </div>
 </template>
-

@@ -198,6 +198,7 @@ async function save() {
             v-model:form="form"
             :brands="brands"
             :categories="categories"
+            :slug-editable="true"
             @blur-name="generateSlug"
           />
         </AdminProductEditorSection>

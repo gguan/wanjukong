@@ -214,11 +214,17 @@ const statusHint = computed(() => {
 async function doStatusAction(action: string) {
   statusUpdating.value = true;
   try {
-    const result = await api.post<Record<string, string>>(
+    const result = await api.post<Record<string, unknown>>(
       `/api/admin/products/${route.params.id}/${action}`,
       {},
     );
     form.value.status = (result.status as string) || form.value.status;
+    if (result.updatedAt) {
+      updatedAt.value = new Date(result.updatedAt as string).toLocaleString();
+    } else {
+      updatedAt.value = new Date().toLocaleString();
+    }
+    initialFormJson.value = JSON.stringify(form.value);
     ElMessage.success('状态已更新');
   } catch (e: any) {
     ElMessage.error(e?.message || '操作失败');

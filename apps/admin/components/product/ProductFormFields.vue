@@ -17,6 +17,7 @@ const props = defineProps<{
   };
   brands: Option[];
   categories: Option[];
+  slugEditable?: boolean;
   // Per-field validation errors keyed by field name. Keys omitted from the
   // map render as "no error" — that's the normal state, so callers don't
   // need to pass empty strings explicitly.
@@ -35,6 +36,7 @@ const local = computed({
 
 const store = useAdminAuthStore();
 const isBrandManager = computed(() => store.isBrandManager);
+const canEditSlug = computed(() => props.slugEditable ?? !isBrandManager.value);
 
 const api = useAdminApi();
 const generatingSlug = ref(false);
@@ -66,7 +68,7 @@ async function generateSlug() {
 // translate API call was in flight.
 async function handleNameBlur() {
   emit('blur-name');
-  if (isBrandManager.value) return;
+  if (!canEditSlug.value) return;
   if (local.value.slug?.trim() || !local.value.name?.trim()) return;
   if (generatingSlug.value) return;
   generatingSlug.value = true;
@@ -99,9 +101,9 @@ async function handleNameBlur() {
 
     <ElFormItem label="URL 标识" required :error="errors?.slug" data-field="slug">
       <div class="slug-row">
-        <ElInput v-model="local.slug" placeholder="请输入 URL 标识" :disabled="isBrandManager" />
+        <ElInput v-model="local.slug" placeholder="请输入 URL 标识" :disabled="!canEditSlug" />
         <ElButton
-          v-if="!isBrandManager"
+          v-if="canEditSlug"
           :loading="generatingSlug"
           :disabled="!local.name.trim()"
           @click="generateSlug"
@@ -110,8 +112,8 @@ async function handleNameBlur() {
         </ElButton>
       </div>
       <div class="field-hint">
-        <template v-if="isBrandManager">URL 标识由管理员设置</template>
-        <template v-else>用于生成商品链接地址。点击 "AI 生成" 自动翻译商品名称为英文 URL。</template>
+        <template v-if="canEditSlug">用于生成商品链接地址。点击 "AI 生成" 自动翻译商品名称为英文 URL。</template>
+        <template v-else>URL 标识由管理员设置</template>
       </div>
     </ElFormItem>
 

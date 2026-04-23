@@ -114,6 +114,17 @@ export class ProductsService {
         include: includeRelations,
       });
 
+      if (data.imageUrl) {
+        await tx.productImage.create({
+          data: {
+            productId: product.id,
+            imageUrl: data.imageUrl,
+            sortOrder: 0,
+            isPrimary: true,
+          },
+        });
+      }
+
       await tx.productVariant.create({
         data: {
           productId: product.id,

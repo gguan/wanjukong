@@ -97,4 +97,50 @@ describe('ProductsService.findAll (admin)', () => {
       }),
     );
   });
+
+  it('creates a gallery primary image when the product is created with a cover image', async () => {
+    const tx = {
+      product: {
+        create: vi.fn().mockResolvedValue({ id: 'product-1' }),
+      },
+      productImage: {
+        create: vi.fn().mockResolvedValue({ id: 'image-1' }),
+      },
+      productVariant: {
+        create: vi.fn().mockResolvedValue({ id: 'variant-1' }),
+      },
+    };
+    const prisma = {
+      brand: {
+        findUnique: vi.fn().mockResolvedValue({ id: 'brand-1', name: 'Hot Toys', code: 'HT' }),
+      },
+      productVariant: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      $transaction: vi.fn().mockImplementation(async (cb: (client: typeof tx) => unknown) => cb(tx)),
+    } as unknown as PrismaService;
+    const service = new ProductsService(prisma);
+
+    await service.create({
+      name: '蜘蛛侠',
+      slug: 'spider-man',
+      brandId: 'brand-1',
+      categoryId: 'category-1',
+      imageUrl: 'products/hot-toys/spider-man/cover.jpg',
+      defaultVariant: {
+        name: '标准版',
+        priceCents: 199900,
+        stock: 10,
+      },
+    });
+
+    expect(tx.productImage.create).toHaveBeenCalledWith({
+      data: {
+        productId: 'product-1',
+        imageUrl: 'products/hot-toys/spider-man/cover.jpg',
+        sortOrder: 0,
+        isPrimary: true,
+      },
+    });
+  });
 });
