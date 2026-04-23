@@ -29,7 +29,6 @@ const form = ref({
   usdDepositDollar: 0,
   isFeatured: false,
   featuredSort: 0,
-  imageUrl: '',
 });
 
 const updatedAt = ref('');
@@ -37,20 +36,18 @@ const store = useAdminAuthStore();
 const isBrandManager = computed(() => store.isBrandManager);
 const isSuperAdmin = computed(() => store.user?.role === 'SUPER_ADMIN');
 
-// Snapshot of imageUrl at load time. We compare on save and only include
-// imageUrl in the payload if the user actually changed it — otherwise a
-// concurrent edit from the gallery (which calls syncCoverImage server-side)
-// would be silently overwritten by the stale value loaded into the form.
-const initialImageUrl = ref('');
-
-// Snapshot of the whole form after the initial load — used only to detect
-// "is there unsaved work" for the leave-page guard. Kept separate from
-// initialImageUrl (which has a narrower, server-sync purpose) so changes
-// to the leave-guard behaviour can't accidentally change save semantics.
+// Snapshot of the whole form after the initial load — used to detect "is
+// there unsaved work" for the leave-page guard and the sticky-save dirty
+// indicator. Combined with `variantsDirty` (bubbled up from per-card edits
+// inside ProductVariantsManager) so the guard catches unsaved variant
+// edits even though variant saves are scoped per card.
 const initialFormJson = ref('');
-const isDirty = computed(
-  () => !loadingData.value && initialFormJson.value !== JSON.stringify(form.value),
-);
+const variantsDirty = ref(false);
+const isDirty = computed(() => {
+  if (loadingData.value) return false;
+  if (variantsDirty.value) return true;
+  return initialFormJson.value !== JSON.stringify(form.value);
+});
 
 const brandSlug = computed(() => {
   const b = brands.value.find((x) => x.id === form.value.brandId);
@@ -92,9 +89,7 @@ onMounted(async () => {
     usdDepositDollar: (product.usdDepositCents as number) ? (product.usdDepositCents as number) / 100 : 0,
     isFeatured: (product.isFeatured as boolean) || false,
     featuredSort: (product.featuredSort as number) || 0,
-    imageUrl: (product.imageUrl as string) || '',
   };
-  initialImageUrl.value = form.value.imageUrl;
 
   if (product.updatedAt) {
     updatedAt.value = new Date(product.updatedAt as string).toLocaleString();
@@ -115,12 +110,24 @@ function onBeforeUnload(e: BeforeUnloadEvent) {
   e.returnValue = '';
 }
 
+// Cmd/Ctrl+S to save. Scoped to this page via onMounted/onBeforeUnmount so it
+// never survives a route change. Guarded by `!saving` so rapid double-press
+// doesn't double-submit while a PUT is in flight.
+function onKeyDown(e: KeyboardEvent) {
+  if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+    e.preventDefault();
+    if (!saving.value && !loadingData.value) save();
+  }
+}
+
 onMounted(() => {
   window.addEventListener('beforeunload', onBeforeUnload);
+  window.addEventListener('keydown', onKeyDown);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener('beforeunload', onBeforeUnload);
+  window.removeEventListener('keydown', onKeyDown);
 });
 
 onBeforeRouteLeave(async () => {
@@ -151,19 +158,46 @@ function toLocalDatetime(iso: string): string {
 const isPreorder = computed(() => form.value.saleType === 'PREORDER');
 const statusUpdating = ref(false);
 
-// Mirror of API @IsNotEmpty / @IsUUID / @IsDateString rules so users get
-// immediate feedback instead of a round-trip 400.
-function getValidationError(): string | null {
+// Per-field error bag. Mirrors the API's @IsNotEmpty / @IsUUID / @IsDateString
+// so users see the red outline on the offending ElFormItem instead of a
+// generic toast. Cleared on save success and on field edit via watchers.
+const fieldErrors = ref<Record<string, string>>({});
+
+type FieldKey = 'name' | 'slug' | 'brandId' | 'categoryId' | 'preorderStartAt' | 'preorderEndAt';
+
+function validateAll(): FieldKey | null {
   const f = form.value;
-  if (!f.name?.trim()) return '请填写商品名称';
-  if (!f.slug?.trim()) return '请填写 URL 标识';
-  if (!f.brandId) return '请选择品牌';
-  if (!f.categoryId) return '请选择分类';
+  const errs: Record<string, string> = {};
+  if (!f.name?.trim()) errs.name = '请填写商品名称';
+  if (!f.slug?.trim()) errs.slug = '请填写 URL 标识';
+  if (!f.brandId) errs.brandId = '请选择品牌';
+  if (!f.categoryId) errs.categoryId = '请选择分类';
   if (isPreorder.value) {
-    if (!f.preorderStartAt) return '预售模式下请填写预售开始时间';
-    if (!f.preorderEndAt) return '预售模式下请填写预售结束时间';
+    if (!f.preorderStartAt) errs.preorderStartAt = '请填写预售开始时间';
+    if (!f.preorderEndAt) errs.preorderEndAt = '请填写预售结束时间';
   }
-  return null;
+  fieldErrors.value = errs;
+  const keys = Object.keys(errs) as FieldKey[];
+  return keys[0] || null;
+}
+
+// Clear a field's error as soon as the user starts fixing it, so the red
+// outline disappears without waiting for the next save click.
+watch(() => form.value.name, (v) => { if (v?.trim()) delete fieldErrors.value.name; });
+watch(() => form.value.slug, (v) => { if (v?.trim()) delete fieldErrors.value.slug; });
+watch(() => form.value.brandId, (v) => { if (v) delete fieldErrors.value.brandId; });
+watch(() => form.value.categoryId, (v) => { if (v) delete fieldErrors.value.categoryId; });
+watch(() => form.value.preorderStartAt, (v) => { if (v) delete fieldErrors.value.preorderStartAt; });
+watch(() => form.value.preorderEndAt, (v) => { if (v) delete fieldErrors.value.preorderEndAt; });
+
+function scrollToField(key: FieldKey) {
+  nextTick(() => {
+    const el = document.querySelector(`[data-field="${key}"]`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      (el.querySelector('input, textarea, .el-select__wrapper') as HTMLElement | null)?.focus();
+    }
+  });
 }
 
 
@@ -201,9 +235,10 @@ function deactivate() { doStatusAction('deactivate'); }
 function reactivate() { doStatusAction('reactivate'); }
 
 async function save() {
-  const validationErr = getValidationError();
-  if (validationErr) {
-    ElMessage.warning(validationErr);
+  const firstInvalid = validateAll();
+  if (firstInvalid) {
+    ElMessage.warning(fieldErrors.value[firstInvalid]);
+    scrollToField(firstInvalid);
     return;
   }
 
@@ -245,21 +280,24 @@ async function save() {
     delete payload.depositYuan;
     delete payload.usdDepositDollar;
 
-    // Only send imageUrl if the user actually changed it. The gallery
-    // panel can mutate it server-side via syncCoverImage; re-sending the
-    // stale form value would clobber that. Send `null` (not '') when the
-    // user cleared the image so the API knows to wipe the column.
-    if (form.value.imageUrl !== initialImageUrl.value) {
-      payload.imageUrl = form.value.imageUrl ? form.value.imageUrl : null;
-    } else {
-      delete payload.imageUrl;
-    }
+    // imageUrl is owned by the gallery (ProductImagesManager → syncCoverImage
+    // on the server keeps Product.imageUrl in sync with the primary image),
+    // so this form never touches it.
 
-    await api.put(`/api/admin/products/${route.params.id}`, payload);
+    const updated = await api.put<Record<string, unknown>>(
+      `/api/admin/products/${route.params.id}`,
+      payload,
+    );
     ElMessage.success('商品已更新');
-    // Clear dirty state so the leave-guard doesn't prompt on our own redirect.
+    // Stay on the page — connected editing is more useful than bouncing back
+    // to the list. Refresh the dirty snapshot so the leave-guard sees a clean
+    // form, and bump updatedAt from the server response if we got one.
     initialFormJson.value = JSON.stringify(form.value);
-    router.push('/products');
+    if (updated && typeof updated === 'object' && updated.updatedAt) {
+      updatedAt.value = new Date(updated.updatedAt as string).toLocaleString();
+    } else {
+      updatedAt.value = new Date().toLocaleString();
+    }
   } catch (e: unknown) {
     error.value = e instanceof Error ? e.message : '更新商品失败';
   } finally {
@@ -283,6 +321,7 @@ async function deleteProduct() {
     ElMessage.success('商品已删除');
     // The record is gone; suppress the dirty-leave prompt on the redirect.
     initialFormJson.value = JSON.stringify(form.value);
+    variantsDirty.value = false;
     router.push('/products');
   } catch (e: any) {
     ElMessage.error(e?.data?.message || '删除失败');
@@ -306,12 +345,24 @@ async function deleteProduct() {
         <NuxtLink to="/products">
           <ElButton>取消</ElButton>
         </NuxtLink>
-        <ElButton type="primary" :loading="saving" @click="save">保存</ElButton>
+        <ElButton
+          type="primary"
+          :loading="saving"
+          :title="isDirty ? '有未保存的修改（⌘/Ctrl + S）' : '无修改（⌘/Ctrl + S）'"
+          @click="save"
+        >
+          <span v-if="isDirty" class="editor-header__dirty-dot" aria-hidden="true" />
+          {{ isDirty ? '保存修改' : '保存' }}
+        </ElButton>
       </div>
     </div>
 
     <!-- Loading -->
-    <div v-if="loadingData" v-loading="true" style="height: 200px" />
+    <div v-if="loadingData" class="editor-skeleton">
+      <ElSkeleton :rows="3" animated style="margin-bottom: 24px" />
+      <ElSkeleton :rows="4" animated style="margin-bottom: 24px" />
+      <ElSkeleton :rows="2" animated />
+    </div>
 
     <!-- Editor Body -->
     <div v-else class="product-editor">
@@ -325,25 +376,17 @@ async function deleteProduct() {
             v-model:form="form"
             :brands="brands"
             :categories="categories"
+            :errors="fieldErrors"
           />
         </AdminProductEditorSection>
 
 
-
-        <!-- Main Image -->
-        <AdminProductEditorSection title="商品主图" description="商品列表和首页展示的主图。">
-          <AdminImageUploadField
-            v-model="form.imageUrl"
-            prefix="products"
-            :brand-slug="brandSlug"
-            :product-slug="form.slug"
-            label="点击或拖拽上传商品主图"
-            hint="支持 JPG/PNG/WebP，最大 5MB，自动转为 JPG"
-          />
-        </AdminProductEditorSection>
 
         <!-- Media Gallery -->
-        <AdminProductEditorSection title="商品图集" description="商品详情页展示的多张图片。">
+        <AdminProductEditorSection
+          title="商品图片"
+          description="商品详情页展示的多张图片。标记为主图的那张会自动作为列表页和首页的封面。"
+        >
           <ProductImagesManager
             :product-id="(route.params.id as string)"
             :brand-slug="brandSlug"
@@ -357,6 +400,7 @@ async function deleteProduct() {
             :product-id="(route.params.id as string)"
             :brand-slug="brandSlug"
             :product-slug="form.slug"
+            @update:dirty="(d) => (variantsDirty = d)"
           />
         </AdminProductEditorSection>
 
@@ -476,33 +520,50 @@ async function deleteProduct() {
               <div class="field-hint">控制用户当前是否可购买</div>
             </ElFormItem>
 
-            <template v-if="isPreorder">
-              <ElFormItem label="预售开始时间" required>
-                <ElInput v-model="form.preorderStartAt" type="datetime-local" />
-              </ElFormItem>
-              <ElFormItem label="预售结束时间" required>
-                <ElInput v-model="form.preorderEndAt" type="datetime-local" />
-              </ElFormItem>
-              <ElFormItem label="预计发货时间">
-                <ElInput v-model="form.estimatedShipAt" type="datetime-local" />
-              </ElFormItem>
-              <ElFormItem label="定金（元）">
-                <ElInputNumber v-model="form.depositYuan" :min="0" :precision="0" :step="10" style="width: 100%" />
-                <div class="field-hint">为 0 则不收定金，全款预购</div>
-              </ElFormItem>
-              <ElFormItem label="美元定金（$）">
-                <ElInputNumber v-model="form.usdDepositDollar" :min="0" :precision="0" :step="1" style="width: 100%" />
-                <div class="field-hint">留 0 则按版本美元价 10% 自动收取</div>
-              </ElFormItem>
-            </template>
+            <Transition name="preorder-slide">
+              <div v-if="isPreorder">
+                <ElFormItem
+                  label="预售开始时间"
+                  required
+                  :error="fieldErrors.preorderStartAt"
+                  data-field="preorderStartAt"
+                >
+                  <ElInput v-model="form.preorderStartAt" type="datetime-local" />
+                </ElFormItem>
+                <ElFormItem
+                  label="预售结束时间"
+                  required
+                  :error="fieldErrors.preorderEndAt"
+                  data-field="preorderEndAt"
+                >
+                  <ElInput v-model="form.preorderEndAt" type="datetime-local" />
+                </ElFormItem>
+                <ElFormItem label="预计发货时间">
+                  <ElInput v-model="form.estimatedShipAt" type="datetime-local" />
+                </ElFormItem>
+                <ElFormItem label="定金（元）">
+                  <ElInputNumber v-model="form.depositYuan" :min="0" :precision="0" :step="10" style="width: 100%" />
+                  <div class="field-hint">为 0 则不收定金，全款预购</div>
+                </ElFormItem>
+                <ElFormItem label="美元定金（$）">
+                  <ElInputNumber v-model="form.usdDepositDollar" :min="0" :precision="0" :step="1" style="width: 100%" />
+                  <div class="field-hint">留 0 则按版本美元价 10% 自动收取</div>
+                </ElFormItem>
+              </div>
+            </Transition>
           </ElForm>
         </AdminSidebarCard>
 
         <!-- Organization -->
         <AdminSidebarCard title="品牌分类">
           <ElForm label-position="top">
-            <ElFormItem label="品牌" required>
-              <ElSelect v-model="form.brandId" placeholder="请选择品牌" style="width: 100%">
+            <ElFormItem
+              label="品牌"
+              required
+              :error="fieldErrors.brandId"
+              data-field="brandId"
+            >
+              <ElSelect v-model="form.brandId" placeholder="请选择品牌" filterable style="width: 100%">
                 <ElOption
                   v-for="b in brands"
                   :key="b.id"
@@ -511,8 +572,14 @@ async function deleteProduct() {
                 />
               </ElSelect>
             </ElFormItem>
-            <ElFormItem label="分类" required style="margin-bottom: 0">
-              <ElSelect v-model="form.categoryId" placeholder="请选择分类" style="width: 100%">
+            <ElFormItem
+              label="分类"
+              required
+              :error="fieldErrors.categoryId"
+              data-field="categoryId"
+              style="margin-bottom: 0"
+            >
+              <ElSelect v-model="form.categoryId" placeholder="请选择分类" filterable style="width: 100%">
                 <ElOption
                   v-for="c in categories"
                   :key="c.id"

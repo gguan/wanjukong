@@ -17,6 +17,10 @@ const props = defineProps<{
   };
   brands: Option[];
   categories: Option[];
+  // Per-field validation errors keyed by field name. Keys omitted from the
+  // map render as "no error" — that's the normal state, so callers don't
+  // need to pass empty strings explicitly.
+  errors?: Record<string, string>;
 }>();
 
 const emit = defineEmits<{
@@ -54,12 +58,37 @@ async function generateSlug() {
     generatingSlug.value = false;
   }
 }
+
+// Auto-fire the AI slug generator the first time the user leaves the name
+// field, but only if slug is still empty. Silent — no toast — since the user
+// didn't click a button; they only notice the slug has filled in. The
+// re-check after await guards against the user typing a slug while the
+// translate API call was in flight.
+async function handleNameBlur() {
+  emit('blur-name');
+  if (isBrandManager.value) return;
+  if (local.value.slug?.trim() || !local.value.name?.trim()) return;
+  if (generatingSlug.value) return;
+  generatingSlug.value = true;
+  try {
+    const res = await api.post<{ slug: string }>('/api/admin/translate/generate-slug', {
+      name: local.value.name,
+    });
+    if (res.slug && !local.value.slug?.trim()) {
+      local.value = { ...local.value, slug: res.slug };
+    }
+  } catch {
+    // Silent — user can still click the "AI 生成" button or type manually.
+  } finally {
+    generatingSlug.value = false;
+  }
+}
 </script>
 
 <template>
   <ElForm label-position="top">
-    <ElFormItem label="商品名称" required>
-      <ElInput v-model="local.name" placeholder="例如：钢铁侠 Mark XLVII" @blur="emit('blur-name')" />
+    <ElFormItem label="商品名称" required :error="errors?.name" data-field="name">
+      <ElInput v-model="local.name" placeholder="例如：钢铁侠 Mark XLVII" @blur="handleNameBlur" />
       <AdminI18nInput
         :model-value="local.nameI18n || {}"
         :source-text="local.name"
@@ -68,7 +97,7 @@ async function generateSlug() {
       />
     </ElFormItem>
 
-    <ElFormItem label="URL 标识" required>
+    <ElFormItem label="URL 标识" required :error="errors?.slug" data-field="slug">
       <div class="slug-row">
         <ElInput v-model="local.slug" placeholder="请输入 URL 标识" :disabled="isBrandManager" />
         <ElButton

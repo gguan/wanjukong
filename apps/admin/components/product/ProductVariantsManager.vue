@@ -4,6 +4,13 @@ const props = defineProps<{
   brandSlug?: string;
   productSlug?: string;
 }>();
+const emit = defineEmits<{
+  // Aggregated dirty signal for the whole variants section. True when any
+  // card has unsaved per-card changes OR when the "new variant" inline form
+  // is open with non-empty input. The parent page uses this to broaden its
+  // leave-page guard and sticky-save indicator.
+  (e: 'update:dirty', value: boolean): void;
+}>();
 const api = useAdminApi();
 const { rate: usdCnyRate, date: rateDate } = useExchangeRate();
 
@@ -29,6 +36,27 @@ const variants = ref<Variant[]>([]);
 const loading = ref(false);
 const error = ref('');
 const expandedIds = ref<Set<string>>(new Set());
+
+// Per-card dirty flags reported via @update:dirty from each VariantEditorCard.
+// Aggregated below into one boolean and re-emitted upward.
+const cardDirty = reactive<Record<string, boolean>>({});
+
+const newFormDirty = computed(() => {
+  if (!showNewForm.value) return false;
+  return (
+    !!newForm.name?.trim() ||
+    newForm.priceYuan > 0 ||
+    !!newForm.subtitle?.trim() ||
+    !!newForm.coverImageUrl
+  );
+});
+
+const anyDirty = computed(() => {
+  if (newFormDirty.value) return true;
+  return Object.values(cardDirty).some(Boolean);
+});
+
+watch(anyDirty, (v) => emit('update:dirty', v));
 
 // New variant creation
 const showNewForm = ref(false);
@@ -92,6 +120,12 @@ async function loadVariants() {
     variants.value = await api.get<Variant[]>(
       `/api/admin/products/${props.productId}/variants`,
     );
+    // Drop dirty entries for variants that no longer exist (deleted), so the
+    // aggregated dirty flag isn't stuck true after a delete.
+    const validIds = new Set(variants.value.map((v) => v.id));
+    for (const id of Object.keys(cardDirty)) {
+      if (!validIds.has(id)) delete cardDirty[id];
+    }
     // Auto-expand default variant
     const defaultV = variants.value.find((v) => v.isDefault);
     if (defaultV && expandedIds.value.size === 0) {
@@ -248,6 +282,7 @@ onMounted(loadVariants);
           @save="(data) => saveVariant(v.id, data)"
           @delete="deleteVariant(v.id)"
           @set-default="setDefault(v.id)"
+          @update:dirty="(d) => (cardDirty[v.id] = d)"
         />
       </div>
 

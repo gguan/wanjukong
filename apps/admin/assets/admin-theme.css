@@ -87,7 +87,56 @@ body,
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  /* Stick to the top of ElMain's scroll region so the save button stays in
+     reach while scrolling long forms. Negative horizontal margins + padding
+     make the background span the full gutter so content scrolling underneath
+     doesn't peek past the bar sideways; top: -20px cancels ElMain's 20px
+     padding-top so it hugs the viewport edge. */
+  position: sticky;
+  top: -20px;
+  z-index: 10;
+  background: var(--wk-admin-shell-bg, #f6f6f7);
+  margin: -20px -32px 16px;
+  padding: 16px 32px;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+}
+
+.editor-header__dirty-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ff9800;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+/* Initial-load skeleton on product editor pages. Matches the rough vertical
+   rhythm of the real sections so the first paint doesn't jump visually. */
+.editor-skeleton {
+  padding: 8px 0;
+}
+
+/* Smooth open/collapse when toggling between IN_STOCK and PREORDER so the
+   sidebar doesn't jerk. enter-to height is set via max-height which is
+   intentionally larger than the preorder block's real height — clamped by
+   overflow hidden during the transition, snaps back to natural flow after. */
+.preorder-slide-enter-active,
+.preorder-slide-leave-active {
+  transition: max-height 0.24s ease, opacity 0.18s ease;
+  overflow: hidden;
+}
+
+.preorder-slide-enter-from,
+.preorder-slide-leave-to {
+  max-height: 0;
+  opacity: 0;
+}
+
+.preorder-slide-enter-to,
+.preorder-slide-leave-from {
+  max-height: 600px;
+  opacity: 1;
 }
 
 .editor-header__left {

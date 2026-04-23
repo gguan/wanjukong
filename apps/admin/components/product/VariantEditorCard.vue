@@ -30,6 +30,10 @@ const emit = defineEmits<{
   (e: 'save', data: Partial<Variant>): void;
   (e: 'delete'): void;
   (e: 'set-default'): void;
+  // Fires whenever the card's dirty state changes so the parent page can
+  // surface an aggregated "has unsaved work" indicator and leave-page guard
+  // across all variants. Per-card save still goes through its own button.
+  (e: 'update:dirty', value: boolean): void;
 }>();
 
 const editing = reactive({
@@ -90,6 +94,8 @@ watch(editing, () => {
   if (resetting) return;
   dirty.value = true;
 }, { deep: true });
+
+watch(dirty, (v) => emit('update:dirty', v));
 
 function formatCNY(cents: number) {
   return `¥${(cents / 100).toFixed(2)}`;
