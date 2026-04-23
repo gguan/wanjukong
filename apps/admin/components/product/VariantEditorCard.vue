@@ -55,10 +55,16 @@ const coverUploadFileId = ref<string | null>(null);
 
 const dirty = ref(false);
 const saving = ref(false);
+// True while we're populating `editing` from the incoming variant prop.
+// Without this flag the deep watcher fires on the very next flush and
+// flips dirty back to true, leaving the save button enabled even when
+// the user hasn't touched anything.
+let resetting = false;
 
 watch(
   () => props.variant,
-  (v) => {
+  async (v) => {
+    resetting = true;
     editing.name = v.name;
     editing.nameI18n = (v as any).nameI18n || {};
     editing.sku = v.sku;
@@ -73,12 +79,15 @@ watch(
     editing.sortOrder = v.sortOrder;
     editing.coverImageUrl = v.coverImageUrl || '';
     coverUploadFileId.value = null;
+    await nextTick();
+    resetting = false;
     dirty.value = false;
   },
   { immediate: true },
 );
 
 watch(editing, () => {
+  if (resetting) return;
   dirty.value = true;
 }, { deep: true });
 

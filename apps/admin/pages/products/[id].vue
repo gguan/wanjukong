@@ -37,6 +37,12 @@ const store = useAdminAuthStore();
 const isBrandManager = computed(() => store.isBrandManager);
 const isSuperAdmin = computed(() => store.user?.role === 'SUPER_ADMIN');
 
+// Snapshot of imageUrl at load time. We compare on save and only include
+// imageUrl in the payload if the user actually changed it — otherwise a
+// concurrent edit from the gallery (which calls syncCoverImage server-side)
+// would be silently overwritten by the stale value loaded into the form.
+const initialImageUrl = ref('');
+
 const brandSlug = computed(() => {
   const b = brands.value.find((x) => x.id === form.value.brandId);
   return b?.slug || '';
@@ -79,6 +85,7 @@ onMounted(async () => {
     featuredSort: (product.featuredSort as number) || 0,
     imageUrl: (product.imageUrl as string) || '',
   };
+  initialImageUrl.value = form.value.imageUrl;
 
   if (product.updatedAt) {
     updatedAt.value = new Date(product.updatedAt as string).toLocaleString();
@@ -152,6 +159,24 @@ async function save() {
     ElMessage.warning(validationErr);
     return;
   }
+
+  // Brand managers editing a live or in-review product trigger a forced
+  // re-review on the server. Surface that consequence before the click.
+  if (
+    isBrandManager.value &&
+    (form.value.status === 'ACTIVE' || form.value.status === 'PENDING_REVIEW')
+  ) {
+    try {
+      await ElMessageBox.confirm(
+        '保存后商品将回到草稿状态，需重新提交审核。是否继续？',
+        '提示',
+        { confirmButtonText: '保存并退回草稿', cancelButtonText: '取消', type: 'warning' },
+      );
+    } catch {
+      return;
+    }
+  }
+
   saving.value = true;
   error.value = null;
   try {
@@ -172,6 +197,16 @@ async function save() {
     }
     delete payload.depositYuan;
     delete payload.usdDepositDollar;
+
+    // Only send imageUrl if the user actually changed it. The gallery
+    // panel can mutate it server-side via syncCoverImage; re-sending the
+    // stale form value would clobber that. Send `null` (not '') when the
+    // user cleared the image so the API knows to wipe the column.
+    if (form.value.imageUrl !== initialImageUrl.value) {
+      payload.imageUrl = form.value.imageUrl ? form.value.imageUrl : null;
+    } else {
+      delete payload.imageUrl;
+    }
 
     await api.put(`/api/admin/products/${route.params.id}`, payload);
     ElMessage.success('商品已更新');

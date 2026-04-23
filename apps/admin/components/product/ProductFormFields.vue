@@ -86,6 +86,23 @@ async function generateSlug() {
       </div>
     </ElFormItem>
 
+    <ElFormItem label="比例">
+      <ElSelect
+        v-model="local.scale"
+        placeholder="选择比例"
+        clearable
+        allow-create
+        filterable
+        style="width: 100%"
+      >
+        <ElOption label="1/4" value="1/4" />
+        <ElOption label="1/6" value="1/6" />
+        <ElOption label="1/12" value="1/12" />
+        <ElOption label="不适用" value="N/A" />
+      </ElSelect>
+      <div class="field-hint">常见手办比例。可输入自定义值。</div>
+    </ElFormItem>
+
   </ElForm>
 </template>
 
