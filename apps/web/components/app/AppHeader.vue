@@ -1,35 +1,19 @@
 <script setup lang="ts">
-import type { Lang } from '~/composables/useLang';
-
+// Language switcher is hidden until the non-English translations are
+// finished. The i18n routes (/ja, /zh-CN, /zh-TW) still resolve so
+// existing inbound links don't 404, but the UI no longer invites users
+// to pick a locale they'd find half-translated. useLang() is still
+// imported in other pages (e.g. contact form sends locale to the API).
 const APP_NAME = 'OVER REALM';
 const LOGO_SRC = '/logo.png';
 const router = useRouter();
 const localePath = useLocalePath();
 const { count } = useCart();
 const { isLoggedIn, customer } = useStorefrontAuth();
-const { lang, setLang, supported, labels } = useLang();
 
 const searchOpen = ref(false);
 const searchInput = ref('');
 const mobileMenuOpen = ref(false);
-const langMenuOpen = ref(false);
-
-function onPickLang(l: Lang) {
-  langMenuOpen.value = false;
-  if (l !== lang.value) setLang(l);
-}
-
-function toggleLangMenu() {
-  langMenuOpen.value = !langMenuOpen.value;
-}
-
-// Close lang menu when clicking outside
-onMounted(() => {
-  document.addEventListener('click', (e) => {
-    const target = e.target as HTMLElement;
-    if (!target.closest('.lang-switcher')) langMenuOpen.value = false;
-  });
-});
 
 function toggleSearch() {
   searchOpen.value = !searchOpen.value;
@@ -63,30 +47,6 @@ function submitSearch() {
             <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
         </button>
-
-        <!-- Language switcher -->
-        <ClientOnly>
-          <div class="lang-switcher">
-            <button class="lang-toggle" aria-label="Language" @click="toggleLangMenu">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="2" y1="12" x2="22" y2="12" />
-                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-              </svg>
-            </button>
-            <div v-if="langMenuOpen" class="lang-menu">
-              <button
-                v-for="l in supported"
-                :key="l"
-                class="lang-option"
-                :class="{ 'is-active': l === lang }"
-                @click="onPickLang(l)"
-              >
-                {{ labels[l] }}
-              </button>
-            </div>
-          </div>
-        </ClientOnly>
 
         <NuxtLinkLocale to="/cart" class="cart-link" aria-label="Cart">
           <svg class="cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -140,22 +100,6 @@ function submitSearch() {
       >
         Sign In
       </NuxtLinkLocale>
-    </ClientOnly>
-    <ClientOnly>
-      <div class="mobile-menu__section">
-        <div class="mobile-menu__section-title">Language</div>
-        <div class="mobile-menu__lang">
-          <button
-            v-for="l in supported"
-            :key="l"
-            class="mobile-menu__lang-btn"
-            :class="{ 'is-active': l === lang }"
-            @click="onPickLang(l); mobileMenuOpen = false"
-          >
-            {{ labels[l] }}
-          </button>
-        </div>
-      </div>
     </ClientOnly>
   </div>
   <!-- Search bar -->
@@ -315,65 +259,6 @@ function submitSearch() {
   color: #999;
 }
 
-/* Language switcher */
-.lang-switcher {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.lang-toggle {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #111;
-  display: flex;
-  align-items: center;
-  padding: 0;
-  transition: color 0.3s ease;
-}
-
-.lang-toggle:hover {
-  color: #999;
-}
-
-.lang-menu {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  min-width: 140px;
-  padding: 4px;
-  z-index: 200;
-}
-
-.lang-option {
-  display: block;
-  width: 100%;
-  text-align: left;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 8px 12px;
-  font-size: 0.875rem;
-  color: #333;
-  border-radius: 6px;
-  transition: background 0.15s;
-}
-
-.lang-option:hover {
-  background: #f3f4f6;
-}
-
-.lang-option.is-active {
-  background: #f3f4f6;
-  font-weight: 600;
-  color: #111;
-}
-
 .hamburger {
   display: none;
   flex-direction: column;
@@ -481,7 +366,6 @@ function submitSearch() {
      The other entries move into .mobile-menu. */
   .nav .nav-link,
   .search-toggle,
-  .lang-switcher,
   .account-link,
   .login-link {
     display: none;
@@ -497,48 +381,6 @@ function submitSearch() {
     border: none;
     text-align: left;
     cursor: pointer;
-  }
-
-  .mobile-menu__section {
-    padding: 16px 0 4px;
-    border-top: 1px solid #f3f4f6;
-    margin-top: 4px;
-  }
-
-  .mobile-menu__section-title {
-    font-size: 0.7rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: #888;
-    margin-bottom: 8px;
-  }
-
-  .mobile-menu__lang {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .mobile-menu__lang-btn {
-    font: inherit;
-    background: #f6f6f6;
-    border: 1px solid transparent;
-    border-radius: 999px;
-    padding: 6px 14px;
-    font-size: 0.85rem;
-    color: #333;
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
-  }
-
-  .mobile-menu__lang-btn:hover {
-    background: #ececec;
-  }
-
-  .mobile-menu__lang-btn.is-active {
-    background: #111;
-    color: #fff;
-    border-color: #111;
   }
 }
 </style>

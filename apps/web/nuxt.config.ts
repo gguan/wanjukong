@@ -34,13 +34,12 @@ export default defineNuxtConfig({
       { code: 'zh-TW', language: 'zh-Hant-TW', name: '繁體中文', file: 'zh-TW.json' },
     ],
     defaultDirection: 'ltr',
-    detectBrowserLanguage: {
-      useCookie: true,
-      cookieKey: 'i18n_redirected',
-      redirectOn: 'root',
-      alwaysRedirect: false,
-      fallbackLocale: 'en',
-    },
+    // Browser-language auto-redirect is off until the ja / zh-CN / zh-TW
+    // translations are complete. With the header switcher also hidden,
+    // auto-redirecting a Japanese visitor into /ja would trap them on
+    // half-translated pages with no way back. The /ja, /zh-CN, /zh-TW
+    // routes still resolve for direct / inbound links.
+    detectBrowserLanguage: false,
     vueI18n: './i18n.config.ts',
   },
 
