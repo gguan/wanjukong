@@ -146,8 +146,9 @@ const shipQuarter = computed(() => {
 });
 
 function variantShipHint(v: ProductVariant): string | null {
-  if (!v.estimatedShipAt) return null;
-  const d = new Date(v.estimatedShipAt);
+  const iso = v.estimatedShipAt || product.value?.estimatedShipAt;
+  if (!iso || product.value?.saleType !== 'PREORDER') return null;
+  const d = new Date(iso);
   const q = Math.ceil((d.getMonth() + 1) / 3);
   return `Ships Q${q} ${d.getFullYear()}`;
 }
