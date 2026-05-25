@@ -298,6 +298,7 @@ model PaymentIntent {
   provider            PaymentProvider     @default(PAYPAL)
   // PayPal
   paypalOrderId       String?             @unique
+  paypalCaptureId     String?             // PayPal capture id (purchase_units[0].payments.captures[0].id) — required for refund
   // WeChat Pay
   wechatPrepayId      String?
   wechatOutTradeNo    String?             @unique
@@ -419,6 +420,8 @@ model Order {
 
   // Payment
   paypalOrderId         String?
+  paypalCaptureId       String?       // Deposit capture id — required for PayPal refund
+  balancePaypalCaptureId String?      // Balance capture id — separate refund target
   wechatTransactionId   String?
 
   // Locale (for transactional emails and receipts)
@@ -450,22 +453,38 @@ enum RefundStatus {
   FAILED
 }
 
+/// Provider that issued a refund. Determines which provider-specific IDs
+/// are populated and which webhook channel updates the status.
+enum RefundProvider {
+  WECHAT_PAY
+  PAYPAL
+}
+
 model Refund {
-  id              String       @id @default(cuid())
+  id              String          @id @default(cuid())
   orderId         String
+  provider        RefundProvider  @default(WECHAT_PAY)
   amountCents     Int
   reason          String?
-  status          RefundStatus @default(PENDING)
-  wechatRefundId  String?      // 微信退款单号（微信返回）
-  wechatRefundNo  String?      @unique  // 商户退款单号
-  createdBy       String?      // 操作管理员 ID
+  status          RefundStatus    @default(PENDING)
+  // WeChat Pay
+  wechatRefundId  String?         // 微信退款单号（微信返回）
+  wechatRefundNo  String?         @unique  // 商户退款单号
+  // PayPal
+  paypalCaptureId String?         // The capture we refunded against
+  paypalRefundId  String?         @unique  // PayPal-generated refund id
+  // Idempotency key used by the API call. Mirrors `wechatRefundNo` for
+  // PayPal — also used as RefundRequest.customId for reconciliation.
+  outRefundNo     String?         @unique
+  createdBy       String?         // 操作管理员 ID
   processedAt     DateTime?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
   order Order @relation(fields: [orderId], references: [id])
 
   @@index([orderId])
+  @@index([provider])
 }
 
 model OrderItem {
