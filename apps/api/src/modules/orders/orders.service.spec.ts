@@ -8,6 +8,9 @@ import type { CreateBuyNowOrderDto } from './dto/create-buy-now-order.dto';
 const mockMailer = {
   sendOrderConfirmationEmail: vi.fn().mockResolvedValue(undefined),
   sendOrderStatusUpdateEmail: vi.fn().mockResolvedValue(undefined),
+  sendOrderPlacedPendingEmail: vi.fn().mockResolvedValue(undefined),
+  sendOrderRefundCompletedEmail: vi.fn().mockResolvedValue(undefined),
+  sendShipmentNotificationEmail: vi.fn().mockResolvedValue(undefined),
 } as unknown as MailerService;
 
 describe('OrdersService.createBuyNow', () => {
