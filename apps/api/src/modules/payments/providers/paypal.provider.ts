@@ -3,6 +3,7 @@ import {
   Client,
   Environment,
   OrdersController,
+  PaymentsController,
   CheckoutPaymentIntent,
   type Order,
   type OrderRequest,
@@ -12,6 +13,27 @@ import {
   CreateOrderParams,
   CreateOrderResult,
 } from '../interfaces/payment-provider.interface';
+
+/**
+ * Normalised refund status the rest of the app cares about. We collapse
+ * PayPal's RefundStatus (COMPLETED | PENDING | CANCELLED | FAILED) into
+ * three buckets that line up with our internal RefundStatus enum.
+ */
+export type PaypalRefundStatus = 'SUCCESS' | 'PENDING' | 'FAILED';
+
+export interface PaypalRefundResult {
+  refundId: string;
+  status: PaypalRefundStatus;
+}
+
+/**
+ * Pull the deposit/full-payment capture id out of a captureOrder response.
+ * PayPal returns one capture per purchase unit; we only ever issue one
+ * purchase unit, so the first capture is the right one.
+ */
+export function extractCaptureId(order: Order): string | undefined {
+  return order?.purchaseUnits?.[0]?.payments?.captures?.[0]?.id ?? undefined;
+}
 
 /**
  * Thin wrapper around @paypal/paypal-server-sdk. The SDK manages OAuth
@@ -29,6 +51,7 @@ export class PaypalProvider implements IPaymentProvider {
   private readonly logger = new Logger(PaypalProvider.name);
   private _client: Client | null = null;
   private _orders: OrdersController | null = null;
+  private _payments: PaymentsController | null = null;
 
   private get client(): Client {
     if (this._client) return this._client;
@@ -51,6 +74,11 @@ export class PaypalProvider implements IPaymentProvider {
   private get orders(): OrdersController {
     if (!this._orders) this._orders = new OrdersController(this.client);
     return this._orders;
+  }
+
+  private get payments(): PaymentsController {
+    if (!this._payments) this._payments = new PaymentsController(this.client);
+    return this._payments;
   }
 
   private resolveEnvironment(): Environment {
@@ -156,6 +184,74 @@ export class PaypalProvider implements IPaymentProvider {
         `PayPal capture failed for ${paypalOrderId}: ${err instanceof Error ? err.message : String(err)}`,
       );
       throw new BadRequestException('PayPal capture failed');
+    }
+  }
+
+  /**
+   * Refund a previously captured PayPal payment.
+   *
+   * `outRefundNo` is sent both as PayPal-Request-Id (idempotency — PayPal
+   * caches the response for 45 days so a retry returns the same refund
+   * instead of issuing a second one) and as `customId` so the refund is
+   * reconcilable with our Refund row in PayPal reports.
+   *
+   * PayPal v2's RefundStatus is COMPLETED | PENDING | CANCELLED | FAILED.
+   * We collapse it to SUCCESS | PENDING | FAILED to align with our own
+   * RefundStatus enum and with what wechat-pay.provider returns.
+   */
+  async refundCapture(params: {
+    captureId: string;
+    outRefundNo: string;
+    refundCents: number;
+    currency: string;
+    reason?: string;
+  }): Promise<PaypalRefundResult> {
+    const { captureId, outRefundNo, refundCents, currency, reason } = params;
+
+    try {
+      const { result } = await this.payments.refundCapturedPayment({
+        captureId,
+        paypalRequestId: outRefundNo,
+        body: {
+          amount: {
+            currencyCode: currency,
+            value: (refundCents / 100).toFixed(2),
+          },
+          customId: outRefundNo,
+          ...(reason ? { noteToPayer: reason.slice(0, 255) } : {}),
+        },
+      });
+
+      if (!result?.id) {
+        throw new BadRequestException('PayPal returned no refund id');
+      }
+
+      return {
+        refundId: result.id,
+        status: this.normalizeRefundStatus(result.status),
+      };
+    } catch (err) {
+      this.logger.error(
+        `PayPal refund failed for capture ${captureId}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      if (err instanceof BadRequestException) throw err;
+      throw new BadRequestException('PayPal refund failed');
+    }
+  }
+
+  private normalizeRefundStatus(status: string | undefined): PaypalRefundStatus {
+    switch (status) {
+      case 'COMPLETED':
+        return 'SUCCESS';
+      case 'PENDING':
+        return 'PENDING';
+      case 'CANCELLED':
+      case 'FAILED':
+        return 'FAILED';
+      default:
+        // Treat unknown PayPal statuses as PENDING — the refund webhook (or
+        // a follow-up getRefund) will resolve to a terminal state.
+        return 'PENDING';
     }
   }
 }

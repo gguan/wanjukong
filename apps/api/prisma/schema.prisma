@@ -419,6 +419,11 @@ model Order {
 
   // Payment
   paypalOrderId         String?
+  // PayPal capture id for the deposit/full charge. Required to call PayPal's
+  // refund-captured-payment endpoint; the order id alone is not enough.
+  paypalCaptureId       String?
+  // Capture id for the second-phase balance charge on USD preorders.
+  balancePaypalCaptureId String?
   wechatTransactionId   String?
 
   // Locale (for transactional emails and receipts)
@@ -458,6 +463,10 @@ model Refund {
   status          RefundStatus @default(PENDING)
   wechatRefundId  String?      // 微信退款单号（微信返回）
   wechatRefundNo  String?      @unique  // 商户退款单号
+  // PayPal refund id (returned from refundCapturedPayment) and the merchant
+  // outRefundNo we send as paypalRequestId for idempotency / reconciliation.
+  paypalRefundId  String?
+  paypalRefundNo  String?      @unique
   createdBy       String?      // 操作管理员 ID
   processedAt     DateTime?
   createdAt       DateTime     @default(now())
