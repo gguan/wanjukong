@@ -11,7 +11,10 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { OrdersService } from '../orders/orders.service';
 import { MailerService } from '../mailer/mailer.service';
 import { normalizeLocale } from '../mailer/locale.util';
-import { PaypalProvider } from './providers/paypal.provider';
+import {
+  PayPalRefundError,
+  PaypalProvider,
+} from './providers/paypal.provider';
 import { WechatPayProvider } from './providers/wechat-pay.provider';
 import { deriveProductDisplayAvailability } from '../../utils/product-sale-state';
 import type {
@@ -224,9 +227,15 @@ export class PaymentsService {
       }
     }
 
+    const paypalCaptureId = PaypalProvider.extractCaptureId(captureResult);
+
     await this.prisma.paymentIntent.update({
       where: { id: pi.id },
-      data: { status: 'CAPTURED', capturedAt: new Date() },
+      data: {
+        status: 'CAPTURED',
+        capturedAt: new Date(),
+        paypalCaptureId,
+      },
     });
 
     const cartItems: CartItemInput[] = JSON.parse(pi.cartSnapshotJson);
@@ -269,6 +278,16 @@ export class PaymentsService {
       where: { id: pi.id },
       data: { status: 'ORDER_CREATED', orderId: order.id },
     });
+
+    // Mirror the capture id onto the Order so refunds can find it directly
+    // — querying through the PaymentIntent breaks once we add balance
+    // payments because the latest intent isn't the deposit any more.
+    if (paypalCaptureId) {
+      await this.prisma.order.update({
+        where: { id: order.id },
+        data: { paypalCaptureId },
+      });
+    }
 
     // Structured audit trail for real-money captures. Disputes / chargebacks
     // come in days later and the first question is always "which order, how
@@ -633,9 +652,15 @@ export class PaymentsService {
       }
     }
 
+    const balanceCaptureId = PaypalProvider.extractCaptureId(captureResult);
+
     await this.prisma.paymentIntent.update({
       where: { id: pi.id },
-      data: { status: 'ORDER_CREATED', capturedAt: new Date() },
+      data: {
+        status: 'ORDER_CREATED',
+        capturedAt: new Date(),
+        paypalCaptureId: balanceCaptureId,
+      },
     });
 
     const order = await this.prisma.order.update({
@@ -644,6 +669,7 @@ export class PaymentsService {
         paymentStatus: 'PAID',
         balancePaidAt: new Date(),
         balancePaypalOrderId: paypalOrderId,
+        balancePaypalCaptureId: balanceCaptureId,
       },
     });
 
@@ -815,12 +841,53 @@ export class PaymentsService {
           },
         });
       } else if (order.currency === 'USD') {
-        // TODO: implement PayPal refund path — requires storing capture ID
-        // and adding a refundOrder method to PaypalProvider. For now, USD
-        // customers must contact support within the grace period.
-        throw new BadRequestException(
-          'USD orders cannot be cancelled automatically. Please contact customer service within 24 hours of payment for a full refund.',
-        );
+        const captureId = order.paypalCaptureId;
+        if (!captureId) {
+          throw new BadRequestException(
+            'Order is missing the PayPal capture id required to refund. Please contact customer service.',
+          );
+        }
+        const outRefundNo = `RF-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+        const refund = await this.prisma.refund.create({
+          data: {
+            orderId: order.id,
+            provider: 'PAYPAL',
+            amountCents: depositPaidCents,
+            reason: '24h grace-period customer self-cancellation',
+            status: 'PENDING',
+            paypalCaptureId: captureId,
+            outRefundNo,
+            createdBy: customerId,
+          },
+        });
+
+        try {
+          const result = await this.paypalProvider.refundCapture({
+            captureId,
+            outRefundNo,
+            refundCents: depositPaidCents,
+            currency: 'USD',
+            reason: '24h grace-period self-cancellation',
+          });
+
+          await this.prisma.refund.update({
+            where: { id: refund.id },
+            data: {
+              status: result.status,
+              paypalRefundId: result.refundId,
+              processedAt: result.status === 'SUCCESS' ? new Date() : null,
+            },
+          });
+        } catch (err) {
+          await this.handlePayPalRefundFailure(refund.id, err);
+          // PROVIDER_TIMEOUT / PROVIDER_ERROR → caller can retry; surface a
+          // 400 with the same shape the WeChat path uses.
+          throw new BadRequestException(
+            err instanceof PayPalRefundError
+              ? `PayPal refund failed: ${err.code}`
+              : 'PayPal refund failed',
+          );
+        }
       } else {
         throw new BadRequestException(`不支持的订单币种：${order.currency}`);
       }
@@ -1095,7 +1162,16 @@ export class PaymentsService {
 
   /**
    * Initiate a refund for a PAID order.
-   * Calls WeChat Pay refund API, creates Refund record, restores stock if full refund.
+   *
+   * Routes to WeChat Pay or PayPal based on order currency (CNY / USD). For
+   * preorders the deposit and balance are separate captures on the PayPal
+   * side, so partial refunds are applied to the balance capture first and
+   * then to the deposit, matching the order in which the customer was
+   * charged. Refund record carries provider, capture id, and refund id so
+   * disputes / settlement reports remain reconcilable.
+   *
+   * Idempotency: a stable `outRefundNo` per `refund.create` call (forwarded
+   * to PayPal as PayPal-Request-Id) prevents duplicate refunds on retry.
    */
   async refundOrder(
     orderId: string,
@@ -1113,60 +1189,46 @@ export class PaymentsService {
       throw new BadRequestException('只能对已支付订单发起退款');
     }
 
-    // Calculate already-refunded amount
+    // Calculate already-refunded amount. PENDING refunds count too so we
+    // don't authorise a second concurrent refund for funds that are
+    // already in flight to the customer.
     const refundedCents = order.refunds
-      .filter((r) => r.status === 'SUCCESS')
+      .filter((r) => r.status === 'SUCCESS' || r.status === 'PENDING')
       .reduce((sum, r) => sum + r.amountCents, 0);
 
     const maxRefundable = order.totalPriceCents - refundedCents;
+    const currencySymbol = order.currency === 'USD' ? '$' : '¥';
     if (amountCents <= 0 || amountCents > maxRefundable) {
       throw new BadRequestException(
-        `退款金额无效，最多可退 ¥${(maxRefundable / 100).toFixed(2)}`,
+        `退款金额无效，最多可退 ${currencySymbol}${(maxRefundable / 100).toFixed(2)}`,
       );
     }
 
-    // Must have a WeChat transaction ID to refund
-    if (!order.wechatTransactionId) {
-      throw new BadRequestException('该订单没有微信支付记录，无法发起退款');
+    let refund;
+    if (order.currency === 'CNY') {
+      refund = await this.refundOrderViaWechat(order, amountCents, reason, adminId);
+    } else if (order.currency === 'USD') {
+      refund = await this.refundOrderViaPaypal(order, amountCents, reason, adminId);
+    } else {
+      throw new BadRequestException(`不支持的订单币种：${order.currency}`);
     }
 
-    const outRefundNo = `RF-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
-
-    // Call WeChat Pay refund API
-    const result = await this.wechatPayProvider.refundOrder({
-      transactionId: order.wechatTransactionId,
-      outRefundNo,
-      refundCents: amountCents,
-      totalCents: order.totalPriceCents,
-      reason,
-    });
-
-    // Create Refund record
-    const refund = await this.prisma.refund.create({
-      data: {
-        orderId,
-        amountCents,
-        reason,
-        status: result.status === 'SUCCESS' ? 'SUCCESS' : 'PENDING',
-        wechatRefundId: result.refundId,
-        wechatRefundNo: outRefundNo,
-        createdBy: adminId,
-        processedAt: result.status === 'SUCCESS' ? new Date() : null,
-      },
-    });
-
-    // Check if this is a full refund (total refunded == total paid)
+    // Check if this is a full refund (total refunded ≥ total paid)
     const totalRefundedAfter = refundedCents + amountCents;
     const isFullRefund = totalRefundedAfter >= order.totalPriceCents;
 
-    if (isFullRefund && (result.status === 'SUCCESS' || result.status === 'PROCESSING')) {
-      // Update order payment status
+    if (
+      isFullRefund &&
+      (refund.status === 'SUCCESS' || refund.status === 'PENDING')
+    ) {
+      // Update order payment status. We flip to REFUNDED optimistically on
+      // PENDING because the refund webhook only confirms / negates this —
+      // funds have already left our PayPal balance.
       await this.prisma.order.update({
         where: { id: orderId },
         data: { paymentStatus: 'REFUNDED' },
       });
 
-      // Restore stock for all items
       for (const item of order.items) {
         if (item.variantId) {
           await this.prisma.productVariant.update({
@@ -1176,13 +1238,204 @@ export class PaymentsService {
         }
       }
 
-      // Release coupon
       if (order.couponCode) {
         await this.ordersService.releaseCoupon(order.couponCode).catch(() => {});
       }
     }
 
     return refund;
+  }
+
+  private async refundOrderViaWechat(
+    order: { id: string; totalPriceCents: number; wechatTransactionId: string | null },
+    amountCents: number,
+    reason: string | undefined,
+    adminId: string,
+  ) {
+    if (!order.wechatTransactionId) {
+      throw new BadRequestException('该订单没有微信支付记录，无法发起退款');
+    }
+
+    const outRefundNo = `RF-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+
+    const result = await this.wechatPayProvider.refundOrder({
+      transactionId: order.wechatTransactionId,
+      outRefundNo,
+      refundCents: amountCents,
+      totalCents: order.totalPriceCents,
+      reason,
+    });
+
+    const status = result.status === 'SUCCESS' ? 'SUCCESS' : 'PENDING';
+    return this.prisma.refund.create({
+      data: {
+        orderId: order.id,
+        provider: 'WECHAT_PAY',
+        amountCents,
+        reason,
+        status,
+        wechatRefundId: result.refundId,
+        wechatRefundNo: outRefundNo,
+        outRefundNo,
+        createdBy: adminId,
+        processedAt: status === 'SUCCESS' ? new Date() : null,
+      },
+    });
+  }
+
+  /**
+   * PayPal refund path. For preorders we may need to refund across two
+   * captures (balance + deposit). We split the requested amount and create
+   * one Refund row per capture so each one is traceable on the PayPal side
+   * with its own refund id and idempotency key. Partial refund covering
+   * only one capture stays a single row.
+   *
+   * If the second capture's refund fails after the first succeeded, both
+   * Refund records survive and the order remains partly refunded — the
+   * admin can retry the remainder rather than dealing with a hidden
+   * "all-or-nothing rolled back" state that disagrees with PayPal's
+   * settlement report.
+   */
+  private async refundOrderViaPaypal(
+    order: {
+      id: string;
+      currency: string;
+      depositCents: number;
+      balanceCents: number;
+      paypalCaptureId: string | null;
+      balancePaypalCaptureId: string | null;
+    },
+    amountCents: number,
+    reason: string | undefined,
+    adminId: string,
+  ) {
+    const captures = this.planPaypalRefund(order, amountCents);
+    if (!captures.length) {
+      throw new BadRequestException(
+        'Order is missing PayPal capture ids required to refund. Please contact PayPal support to refund manually.',
+      );
+    }
+
+    const refunds: Awaited<ReturnType<typeof this.prisma.refund.create>>[] = [];
+    for (const leg of captures) {
+      const outRefundNo = `RF-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+      const refund = await this.prisma.refund.create({
+        data: {
+          orderId: order.id,
+          provider: 'PAYPAL',
+          amountCents: leg.amountCents,
+          reason,
+          status: 'PENDING',
+          paypalCaptureId: leg.captureId,
+          outRefundNo,
+          createdBy: adminId,
+        },
+      });
+
+      try {
+        const result = await this.paypalProvider.refundCapture({
+          captureId: leg.captureId,
+          outRefundNo,
+          refundCents: leg.amountCents,
+          currency: order.currency,
+          reason,
+        });
+
+        const updated = await this.prisma.refund.update({
+          where: { id: refund.id },
+          data: {
+            status: result.status,
+            paypalRefundId: result.refundId,
+            processedAt: result.status === 'SUCCESS' ? new Date() : null,
+          },
+        });
+        refunds.push(updated);
+      } catch (err) {
+        await this.handlePayPalRefundFailure(refund.id, err);
+        if (err instanceof PayPalRefundError) {
+          throw new BadRequestException(
+            `PayPal refund failed: ${err.code}${err.message ? ` (${err.message})` : ''}`,
+          );
+        }
+        throw new BadRequestException('PayPal refund failed');
+      }
+    }
+
+    // Return the most recent refund as the primary record for the caller.
+    return refunds[refunds.length - 1];
+  }
+
+  /**
+   * Decide how to split a refund amount across the deposit and balance
+   * captures. Refund the balance capture first because that's the latest
+   * money in, mirroring how PayPal recommends refunding orders that were
+   * captured in multiple parts.
+   */
+  private planPaypalRefund(
+    order: {
+      depositCents: number;
+      balanceCents: number;
+      paypalCaptureId: string | null;
+      balancePaypalCaptureId: string | null;
+    },
+    amountCents: number,
+  ): Array<{ captureId: string; amountCents: number }> {
+    const plan: Array<{ captureId: string; amountCents: number }> = [];
+    let remaining = amountCents;
+
+    if (order.balancePaypalCaptureId && order.balanceCents > 0) {
+      const fromBalance = Math.min(remaining, order.balanceCents);
+      if (fromBalance > 0) {
+        plan.push({ captureId: order.balancePaypalCaptureId, amountCents: fromBalance });
+        remaining -= fromBalance;
+      }
+    }
+
+    if (remaining > 0 && order.paypalCaptureId) {
+      plan.push({ captureId: order.paypalCaptureId, amountCents: remaining });
+      remaining = 0;
+    }
+
+    // If we still have remaining > 0, the order is missing a capture id and
+    // we can't split. Fall back to a single-leg refund against whichever
+    // capture id we do have, so the admin sees a partial outcome rather
+    // than nothing.
+    if (remaining > 0) {
+      const fallback = order.paypalCaptureId ?? order.balancePaypalCaptureId;
+      if (fallback) {
+        plan.push({ captureId: fallback, amountCents: remaining });
+      }
+    }
+
+    return plan;
+  }
+
+  /**
+   * Persist a PayPal refund failure on the pending Refund row and surface
+   * the provider-side error code so dashboards can group failures by
+   * cause. CAPTURE_FULLY_REFUNDED is a soft failure (the capture already
+   * has its money back) — we treat it as SUCCESS so the order moves on.
+   */
+  private async handlePayPalRefundFailure(refundId: string, err: unknown): Promise<void> {
+    if (err instanceof PayPalRefundError && err.code === 'CAPTURE_FULLY_REFUNDED') {
+      this.logger.warn(
+        `PayPal refund ${refundId}: capture already fully refunded, marking SUCCESS`,
+      );
+      await this.prisma.refund.update({
+        where: { id: refundId },
+        data: { status: 'SUCCESS', processedAt: new Date() },
+      });
+      return;
+    }
+
+    this.logger.error(
+      `PayPal refund ${refundId} failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
+
+    await this.prisma.refund.update({
+      where: { id: refundId },
+      data: { status: 'FAILED', processedAt: new Date() },
+    });
   }
 
   /**
