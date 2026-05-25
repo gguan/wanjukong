@@ -112,7 +112,7 @@ export class OrdersService {
         throw new BadRequestException('Insufficient stock');
       }
 
-      return tx.order.create({
+      const created = await tx.order.create({
         data: {
           orderNo,
           fullName: dto.fullName,
@@ -149,7 +149,29 @@ export class OrdersService {
         },
         include: { items: true },
       });
+
+      return created;
     });
+
+    // Buy-now orders are always UNPAID at creation — the caller wires the
+    // payment step separately. Send the pending-payment email so the user
+    // has a record of the order even if they abandon checkout.
+    this.mailerService
+      .sendOrderPlacedPendingEmail({
+        email: order.email,
+        name: order.fullName,
+        orderNo: order.orderNo,
+        items: order.items,
+        totalPriceCents: order.totalPriceCents,
+        currency: order.currency,
+        locale: normalizeLocale(order.locale),
+      })
+      .catch((err) =>
+        this.logger.error(
+          `Failed to send buy-now pending-payment email for ${order.orderNo}`,
+          err,
+        ),
+      );
 
     return order;
   }
@@ -271,7 +293,7 @@ export class OrdersService {
         }
       }
 
-      return tx.order.create({
+      const created = await tx.order.create({
         data: {
           orderNo,
           customerId: dto.customerId || null,
@@ -338,7 +360,31 @@ export class OrdersService {
         },
         include: { items: true },
       });
+
+      return created;
     });
+
+    // "下单成功（待支付）" — for UNPAID orders, notify the customer so they
+    // can return to pay. Already-paid orders get the normal confirmation
+    // email from the payment-capture path; do NOT double-send here.
+    if (order.paymentStatus === 'UNPAID') {
+      this.mailerService
+        .sendOrderPlacedPendingEmail({
+          email: order.email,
+          name: order.fullName,
+          orderNo: order.orderNo,
+          items: order.items,
+          totalPriceCents: order.totalPriceCents,
+          currency: order.currency,
+          locale: normalizeLocale(order.locale),
+        })
+        .catch((err) =>
+          this.logger.error(
+            `Failed to send order pending-payment email for ${order.orderNo}`,
+            err,
+          ),
+        );
+    }
 
     return order;
   }

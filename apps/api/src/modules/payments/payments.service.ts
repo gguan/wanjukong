@@ -772,6 +772,24 @@ export class PaymentsService {
       if (order.couponCode) {
         await this.ordersService.releaseCoupon(order.couponCode).catch(() => {});
       }
+
+      // Notify customer that the order is cancelled. Fire-and-forget so a
+      // mail outage doesn't break the cancel API; failed sends land in
+      // MailLog for retry (see MailerService.safeDispatch).
+      this.mailerService
+        .sendOrderStatusUpdateEmail({
+          email: order.email,
+          name: order.fullName,
+          orderNo: order.orderNo,
+          status: 'CANCELLED',
+          locale: normalizeLocale(order.locale),
+        })
+        .catch((err) =>
+          this.logger.error(
+            `Failed to send cancellation email for ${order.orderNo}`,
+            err,
+          ),
+        );
       return;
     }
 
@@ -850,6 +868,26 @@ export class PaymentsService {
       if (order.couponCode) {
         await this.ordersService.releaseCoupon(order.couponCode).catch(() => {});
       }
+
+      // Grace-period cancellation = cancellation + refund. Send the refund
+      // email so the customer has documentation of the returned amount.
+      this.mailerService
+        .sendOrderRefundCompletedEmail({
+          email: order.email,
+          name: order.fullName,
+          orderNo: order.orderNo,
+          refundAmountCents: depositPaidCents,
+          currency: order.currency,
+          reason: '24小时宽限期内用户取消',
+          isFullRefund: true,
+          locale: normalizeLocale(order.locale),
+        })
+        .catch((err) =>
+          this.logger.error(
+            `Failed to send refund email for ${order.orderNo}`,
+            err,
+          ),
+        );
       return;
     }
 
@@ -1182,6 +1220,29 @@ export class PaymentsService {
       }
     }
 
+    // Notify customer when the refund has actually been issued at the
+    // provider. PENDING (WeChat async) waits for the refund notification
+    // handler — sending here would be premature.
+    if (result.status === 'SUCCESS') {
+      this.mailerService
+        .sendOrderRefundCompletedEmail({
+          email: order.email,
+          name: order.fullName,
+          orderNo: order.orderNo,
+          refundAmountCents: amountCents,
+          currency: order.currency,
+          reason,
+          isFullRefund,
+          locale: normalizeLocale(order.locale),
+        })
+        .catch((err) =>
+          this.logger.error(
+            `Failed to send refund email for ${order.orderNo}`,
+            err,
+          ),
+        );
+    }
+
     return refund;
   }
 
@@ -1262,7 +1323,9 @@ export class PaymentsService {
         .filter((r) => r.id === refund.id ? true : r.status === 'SUCCESS')
         .reduce((sum, r) => sum + r.amountCents, 0);
 
-      if (totalRefunded >= refund.order.totalPriceCents) {
+      const isFullRefund = totalRefunded >= refund.order.totalPriceCents;
+
+      if (isFullRefund) {
         // Full refund complete — update order status + restore stock
         await this.prisma.order.update({
           where: { id: refund.order.id },
@@ -1282,6 +1345,28 @@ export class PaymentsService {
           await this.ordersService.releaseCoupon(refund.order.couponCode).catch(() => {});
         }
       }
+
+      // WeChat async refund path: refund just transitioned to SUCCESS at
+      // the provider, so this is the moment to notify the customer. The
+      // synchronous `refundOrder` path skips this email when the provider
+      // returns PENDING — that's intentional, this handler covers it.
+      this.mailerService
+        .sendOrderRefundCompletedEmail({
+          email: refund.order.email,
+          name: refund.order.fullName,
+          orderNo: refund.order.orderNo,
+          refundAmountCents: refund.amountCents,
+          currency: refund.order.currency,
+          reason: refund.reason,
+          isFullRefund,
+          locale: normalizeLocale(refund.order.locale),
+        })
+        .catch((err) =>
+          this.logger.error(
+            `Failed to send refund notification email for ${refund.order!.orderNo}`,
+            err,
+          ),
+        );
     }
   }
 

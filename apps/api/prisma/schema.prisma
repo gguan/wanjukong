@@ -630,6 +630,40 @@ enum ContactMessageStatus {
   SPAM
 }
 
+// ─── Mail Log ─────────────────────────────────────────────
+// Failed transactional sends are persisted here so a cron / human can
+// resend them. We DO NOT log successful sends — Resend/SMTP already keep
+// their own send logs, and this table would otherwise grow without bound.
+
+enum MailLogStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model MailLog {
+  id           String        @id @default(cuid())
+  template     String        // e.g. "order-confirmation", "order-refund-completed"
+  toEmail      String
+  subject      String
+  /// JSON payload of the template params, used by retry to re-render the email.
+  payloadJson  String        @db.Text
+  status       MailLogStatus @default(PENDING)
+  /// Last error message captured at send time; null on success.
+  lastError    String?       @db.Text
+  attempts     Int           @default(0)
+  lastTriedAt  DateTime?
+  sentAt       DateTime?
+  /// Optional cross-reference for operator debugging (e.g. Order.id).
+  refType      String?
+  refId        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([status, createdAt])
+  @@index([refType, refId])
+}
+
 model ContactMessage {
   id          String               @id @default(cuid())
   name        String
