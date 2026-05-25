@@ -7,11 +7,12 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import * as crypto from 'crypto';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { OrdersService } from '../orders/orders.service';
 import { MailerService } from '../mailer/mailer.service';
 import { normalizeLocale } from '../mailer/locale.util';
-import { PaypalProvider } from './providers/paypal.provider';
+import { PaypalProvider, extractCaptureId } from './providers/paypal.provider';
 import { WechatPayProvider } from './providers/wechat-pay.provider';
 import { deriveProductDisplayAvailability } from '../../utils/product-sale-state';
 import type {
@@ -264,6 +265,20 @@ export class PaymentsService {
       couponCode: pi.couponCode || undefined,
       discountCents: pi.discountCents || undefined,
     });
+
+    // Persist the PayPal capture id on the Order so we can refund the
+    // captured payment later without hitting PayPal to look it up again.
+    const depositCaptureId = extractCaptureId(captureResult);
+    if (depositCaptureId) {
+      await this.prisma.order.update({
+        where: { id: order.id },
+        data: { paypalCaptureId: depositCaptureId },
+      });
+    } else {
+      this.logger.warn(
+        `PayPal capture succeeded but no captureId in response (paypalOrderId=${paypalOrderId}). Refunds will require manual lookup.`,
+      );
+    }
 
     await this.prisma.paymentIntent.update({
       where: { id: pi.id },
@@ -638,14 +653,21 @@ export class PaymentsService {
       data: { status: 'ORDER_CREATED', capturedAt: new Date() },
     });
 
+    const balanceCaptureId = extractCaptureId(captureResult);
     const order = await this.prisma.order.update({
       where: { id: pi.orderId },
       data: {
         paymentStatus: 'PAID',
         balancePaidAt: new Date(),
         balancePaypalOrderId: paypalOrderId,
+        ...(balanceCaptureId ? { balancePaypalCaptureId: balanceCaptureId } : {}),
       },
     });
+    if (!balanceCaptureId) {
+      this.logger.warn(
+        `PayPal balance capture succeeded but no captureId in response (paypalOrderId=${paypalOrderId}).`,
+      );
+    }
 
     // Balance captures deserve the same audit breadcrumb as the deposit —
     // disputes on the balance charge need the same reconciliation info.
@@ -815,12 +837,30 @@ export class PaymentsService {
           },
         });
       } else if (order.currency === 'USD') {
-        // TODO: implement PayPal refund path — requires storing capture ID
-        // and adding a refundOrder method to PaypalProvider. For now, USD
-        // customers must contact support within the grace period.
-        throw new BadRequestException(
-          'USD orders cannot be cancelled automatically. Please contact customer service within 24 hours of payment for a full refund.',
-        );
+        if (!order.paypalCaptureId) {
+          throw new BadRequestException('订单无 PayPal 支付记录，无法退款');
+        }
+        const outRefundNo = `RF-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+        const result = await this.paypalProvider.refundCapture({
+          captureId: order.paypalCaptureId,
+          outRefundNo,
+          refundCents: depositPaidCents,
+          currency: 'USD',
+          reason: 'Self-service cancellation within 24h grace period',
+        });
+
+        await this.prisma.refund.create({
+          data: {
+            orderId: order.id,
+            amountCents: depositPaidCents,
+            reason: '24小时宽限期内用户取消（全额退定金）',
+            status: result.status === 'SUCCESS' ? 'SUCCESS' : result.status === 'FAILED' ? 'FAILED' : 'PENDING',
+            paypalRefundId: result.refundId,
+            paypalRefundNo: outRefundNo,
+            createdBy: customerId,
+            processedAt: result.status === 'SUCCESS' ? new Date() : null,
+          },
+        });
       } else {
         throw new BadRequestException(`不支持的订单币种：${order.currency}`);
       }
@@ -1095,7 +1135,11 @@ export class PaymentsService {
 
   /**
    * Initiate a refund for a PAID order.
-   * Calls WeChat Pay refund API, creates Refund record, restores stock if full refund.
+   *
+   * Dispatch is by which capture/transaction id the order carries — PayPal
+   * if `paypalCaptureId` is set, WeChat Pay if `wechatTransactionId` is set.
+   * Creates a Refund row and, when the refund clears the full paid amount,
+   * flips the order to REFUNDED + restores stock + releases the coupon.
    */
   async refundOrder(
     orderId: string,
@@ -1120,30 +1164,46 @@ export class PaymentsService {
 
     const maxRefundable = order.totalPriceCents - refundedCents;
     if (amountCents <= 0 || amountCents > maxRefundable) {
+      const symbol = order.currency === 'USD' ? '$' : '¥';
       throw new BadRequestException(
-        `退款金额无效，最多可退 ¥${(maxRefundable / 100).toFixed(2)}`,
+        `退款金额无效，最多可退 ${symbol}${(maxRefundable / 100).toFixed(2)}`,
       );
-    }
-
-    // Must have a WeChat transaction ID to refund
-    if (!order.wechatTransactionId) {
-      throw new BadRequestException('该订单没有微信支付记录，无法发起退款');
     }
 
     const outRefundNo = `RF-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
 
-    // Call WeChat Pay refund API
-    const result = await this.wechatPayProvider.refundOrder({
-      transactionId: order.wechatTransactionId,
-      outRefundNo,
-      refundCents: amountCents,
-      totalCents: order.totalPriceCents,
-      reason,
-    });
+    let refundData: Prisma.RefundUncheckedCreateInput;
+    let providerStatus: 'SUCCESS' | 'PENDING' | 'FAILED' | 'PROCESSING';
 
-    // Create Refund record
-    const refund = await this.prisma.refund.create({
-      data: {
+    if (order.paypalCaptureId) {
+      const result = await this.paypalProvider.refundCapture({
+        captureId: order.paypalCaptureId,
+        outRefundNo,
+        refundCents: amountCents,
+        currency: order.currency,
+        reason,
+      });
+      providerStatus = result.status;
+      refundData = {
+        orderId,
+        amountCents,
+        reason,
+        status: result.status === 'SUCCESS' ? 'SUCCESS' : result.status === 'FAILED' ? 'FAILED' : 'PENDING',
+        paypalRefundId: result.refundId,
+        paypalRefundNo: outRefundNo,
+        createdBy: adminId,
+        processedAt: result.status === 'SUCCESS' ? new Date() : null,
+      };
+    } else if (order.wechatTransactionId) {
+      const result = await this.wechatPayProvider.refundOrder({
+        transactionId: order.wechatTransactionId,
+        outRefundNo,
+        refundCents: amountCents,
+        totalCents: order.totalPriceCents,
+        reason,
+      });
+      providerStatus = result.status as 'SUCCESS' | 'PENDING' | 'PROCESSING' | 'FAILED';
+      refundData = {
         orderId,
         amountCents,
         reason,
@@ -1152,21 +1212,34 @@ export class PaymentsService {
         wechatRefundNo: outRefundNo,
         createdBy: adminId,
         processedAt: result.status === 'SUCCESS' ? new Date() : null,
-      },
-    });
+      };
+    } else {
+      throw new BadRequestException('该订单没有支付记录，无法发起退款');
+    }
 
-    // Check if this is a full refund (total refunded == total paid)
+    const refund = await this.prisma.refund.create({ data: refundData });
+
+    // Full refund? Flip the order to REFUNDED. PENDING/PROCESSING is treated
+    // as "will land" — the WeChat refund notification handler is idempotent
+    // and won't double-restore stock if we did it here first. PayPal's path
+    // updates synchronously to SUCCESS for non-card refunds, and to PENDING
+    // for card refunds that need bank settlement; treating PENDING as "will
+    // land" matches the WeChat behaviour and lets us release stock + coupon
+    // immediately rather than holding inventory until the bank clears.
     const totalRefundedAfter = refundedCents + amountCents;
     const isFullRefund = totalRefundedAfter >= order.totalPriceCents;
 
-    if (isFullRefund && (result.status === 'SUCCESS' || result.status === 'PROCESSING')) {
-      // Update order payment status
+    if (
+      isFullRefund &&
+      (providerStatus === 'SUCCESS' ||
+        providerStatus === 'PENDING' ||
+        providerStatus === 'PROCESSING')
+    ) {
       await this.prisma.order.update({
         where: { id: orderId },
         data: { paymentStatus: 'REFUNDED' },
       });
 
-      // Restore stock for all items
       for (const item of order.items) {
         if (item.variantId) {
           await this.prisma.productVariant.update({
@@ -1176,7 +1249,6 @@ export class PaymentsService {
         }
       }
 
-      // Release coupon
       if (order.couponCode) {
         await this.ordersService.releaseCoupon(order.couponCode).catch(() => {});
       }
